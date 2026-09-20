@@ -1843,6 +1843,14 @@
   <!-- ================= JAVASCRIPT ARCHITECTURE ================= -->
   <script>
     /* ----------------------------------------------------
+       SUPABASE CLOUD INITIALIZATION
+    ----------------------------------------------------- */
+    const SUPABASE_URL = 'https://zghoanrwgihlefgmqmrr.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_dCOeR_l-E8jaMmAXDArorQ_qllabilh';
+
+    // Initialize the global Supabase client
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    /* ----------------------------------------------------
        1. EXAM CATEGORY MASTER DEFINITIONS
     ----------------------------------------------------- */
     const EXAM_CATEGORIES = {
@@ -2863,34 +2871,55 @@ window.onload = async function() {
       box.classList.remove('hidden');
     }
 
-    function submitPaymentClaim() {
-      if (!currentUser || !checkoutItem) return;
-      const errBox = document.getElementById('checkout-utr-error');
-      const showErr = msg => { errBox.innerText = msg; errBox.classList.remove('hidden'); };
-      const utr = document.getElementById('checkout-utr').value.replace(/\s/g, '');
-      if (!/^\d{12}$/.test(utr)) return showErr('Enter the 12-digit UPI reference number (numbers only).');
-      if (paymentOrders.some(o => o.utr === utr && o.status !== 'rejected')) {
-        return showErr('This reference number has already been submitted. If you think this is a mistake, contact the academy.');
-      }
-      const email = normalizeEmail(currentUser.email);
-      const order = {
-        id: 'ord_' + Date.now(),
-        email,
-        name: currentUser.name,
-        type: checkoutItem.type,
-        itemId: checkoutItem.id,
-        title: checkoutItem.title,
-        amount: checkoutItem.price,
-        utr,
-        status: 'pending',
-        createdAt: new Date().toISOString()
-      };
-      paymentOrders.unshift(order);
-      savePaymentOrders();
-      showCheckoutStatus(order);
-      renderPaymentOrders();
-      renderDashboard();
-    }
+async function submitPaymentClaim() {
+  if (!currentUser || !checkoutItem) return;
+  const errBox = document.getElementById('checkout-utr-error');
+  const showErr = msg => { errBox.innerText = msg; errBox.classList.remove('hidden'); };
+  const utr = document.getElementById('checkout-utr').value.replace(/\s/g, '');
+
+  if (!/^\d{12}$/.test(utr)) return showErr('Enter the 12-digit UPI reference number (numbers only).');
+
+  // Prepare the order object matching your Supabase columns
+  const email = normalizeEmail(currentUser.email);
+  const order = {
+    id: 'ord_' + Date.now(),
+    email: email,
+    name: currentUser.name,
+    type: checkoutItem.type,
+    item_id: checkoutItem.id,
+    title: checkoutItem.title,
+    amount: checkoutItem.price,
+    utr: utr,
+    status: 'pending',
+    created_at: new Date().toISOString()
+  };
+
+  // Change the button text to show loading state
+  const btn = document.querySelector('button[onclick="submitPaymentClaim()"]');
+  const originalText = btn.innerText;
+  btn.innerText = "Submitting to server...";
+  btn.disabled = true;
+
+  // Insert the record into the Supabase 'payment_orders' table
+  const { data, error } = await supabaseClient
+    .from('payment_orders')
+    .insert([order]);
+
+  // Re-enable button
+  btn.innerText = originalText;
+  btn.disabled = false;
+
+  if (error) {
+    console.error("Supabase Insert Error:", error);
+    return showErr("Failed to submit to server. Please try again.");
+  }
+
+  // Update the local UI immediately so the user sees success
+  paymentOrders.unshift({ ...order, itemId: order.item_id, createdAt: order.created_at }); 
+  showCheckoutStatus(order);
+  renderPaymentOrders();
+  renderDashboard();
+}
 
     // Unlocks whatever the order paid for
     function grantOrder(order) {
