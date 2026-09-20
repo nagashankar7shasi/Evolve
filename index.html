@@ -2359,6 +2359,7 @@ window.onload = async function() {
       renderDashboard();
       renderStudentEntitlementsDesk();
       await fetchCloudPayments();
+      await fetchCloudAttempts();
       if (typeof renderStudentDirectoryTable === 'function') renderStudentDirectoryTable();
       if (typeof renderAnnouncements === 'function') renderAnnouncements();
       renderHomeSections();
@@ -2378,6 +2379,43 @@ window.onload = async function() {
       window.addEventListener('popstate', routeFromHash);
       routeFromHash();
     };
+    async function fetchCloudAttempts() {
+  const { data, error } = await supabaseClient
+    .from('attempts')
+    .select('*')
+    .order('created_at', { ascending: false });
+    
+  if (data) {
+    userAttempts = data.map(a => ({
+      id: a.id,
+      userEmail: a.user_email,
+      userName: a.user_name,
+      date: a.date,
+      paperId: a.paper_id,
+      paperTitle: a.paper_title,
+      category: a.category,
+      isCustom: a.is_custom,
+      badge: a.badge,
+      score: Number(a.score).toFixed(2),
+      maxMarks: Number(a.max_marks).toFixed(0),
+      accuracy: a.accuracy.toString(),
+      schemeDesc: a.scheme_desc,
+      passed: a.passed,
+      userSelections: a.user_selections,
+      questionsSnapshot: a.questions_snapshot,
+      schemeSnapshot: a.scheme_snapshot
+    }));
+    
+    renderDashboard();
+    
+    // Refresh Admin Overview if it is currently open
+    if (typeof renderOverview === 'function' && typeof currentAdminPanel !== 'undefined' && currentAdminPanel === 'overview') {
+      renderOverview();
+    }
+  } else if (error) {
+    console.error("Failed to fetch attempts:", error);
+  }
+}
     /* ----------------------------------------------------
        3. PRICING MASTER CONTROLLER & CHECKOUT
     ----------------------------------------------------- */
@@ -5079,86 +5117,130 @@ async function rejectOrder(orderId) {
       }
     }
 
-    function evaluateOMRSubmission() {
-      if (!examInProgress || !activeTest) return; // guards against double submission
-      examInProgress = false;
-      clearInterval(timerInterval);
-      clearExamSession();
-      const s = activeTest.scheme;
-      let correct = 0, wrong = 0, unattempted = 0;
+async function evaluateOMRSubmission() {
+  if (!examInProgress || !activeTest) return; // guards against double submission
+  examInProgress = false;
+  clearInterval(timerInterval);
+  clearExamSession();
+  
+  const s = activeTest.scheme;
+  let correct = 0, wrong = 0, unattempted = 0;
 
-      activeTest.questions.forEach((q, idx) => {
-        const choice = userSelections[idx + 1];
-        if (!choice) unattempted++;
-        else if (choice === q.correct) correct++;
-        else wrong++;
-      });
+  activeTest.questions.forEach((q, idx) => {
+    const choice = userSelections[idx + 1];
+    if (!choice) unattempted++;
+    else if (choice === q.correct) correct++;
+    else wrong++;
+  });
 
-      const totalScore = (correct * s.marksCorrect) - (wrong * s.marksWrong);
-      const maxMarks = activeTest.questions.length * s.marksCorrect;
-      const attempted = correct + wrong;
-      const accuracy = attempted > 0 ? ((correct / attempted) * 100).toFixed(1) : 0;
-      const passed = totalScore >= s.cutoff;
+  const totalScore = (correct * s.marksCorrect) - (wrong * s.marksWrong);
+  const maxMarks = activeTest.questions.length * s.marksCorrect;
+  const attempted = correct + wrong;
+  const accuracy = attempted > 0 ? ((correct / attempted) * 100).toFixed(1) : 0;
+  const passed = totalScore >= s.cutoff;
 
-      // FULL SNAPSHOT RECORD (FOR COMPREHENSIVE DASHBOARD REVIEW)
-      const attemptRecord = {
-        id: 'att_' + Date.now(),
-        userEmail: currentUser ? normalizeEmail(currentUser.email) : null,
-        userName: currentUser ? currentUser.name : null,
-        date: new Date().toLocaleDateString('en-GB'),
-        paperId: activeTest.id,
-        paperTitle: activeTest.title,
-        category: activeTest.category,
-        isCustom: !!activeTest.isCustom,
-        badge: s.examBadge,
-        score: totalScore.toFixed(2),
-        maxMarks: maxMarks.toFixed(0),
-        accuracy: accuracy,
-        schemeDesc: `+${s.marksCorrect} / -${s.marksWrong}`,
-        passed: passed,
-        userSelections: { ...userSelections },
-        questionsSnapshot: JSON.parse(JSON.stringify(activeTest.questions)),
-        schemeSnapshot: { ...s }
-      };
+  // Change the submit button text while communicating with Supabase
+  const submitBtn = document.querySelector('header button[onclick="confirmSubmit()"]');
+  const originalBtnText = submitBtn ? submitBtn.innerText : "Submit OMR";
+  if (submitBtn) {
+    submitBtn.innerText = "Submitting to server...";
+    submitBtn.disabled = true;
+  }
 
-      userAttempts.unshift(attemptRecord);
-      localStorage.setItem('kas_user_attempts', JSON.stringify(userAttempts));
-      renderDashboard();
+  // Format the record for Supabase columns
+  const attemptRecord = {
+    id: 'att_' + Date.now(),
+    user_email: currentUser ? normalizeEmail(currentUser.email) : null,
+    user_name: currentUser ? currentUser.name : null,
+    date: new Date().toLocaleDateString('en-GB'),
+    paper_id: activeTest.id,
+    paper_title: activeTest.title,
+    category: activeTest.category,
+    is_custom: !!activeTest.isCustom,
+    badge: s.examBadge,
+    score: parseFloat(totalScore.toFixed(2)),
+    max_marks: parseFloat(maxMarks.toFixed(0)),
+    accuracy: parseFloat(accuracy),
+    scheme_desc: `+${s.marksCorrect} / -${s.marksWrong}`,
+    passed: passed,
+    user_selections: { ...userSelections },
+    questions_snapshot: JSON.parse(JSON.stringify(activeTest.questions)),
+    scheme_snapshot: { ...s }
+  };
 
-      document.getElementById('res-modal-title').innerText = `${activeTest.title}: Result`;
-      document.getElementById('res-modal-desc').innerText = `Graded via ${s.examBadge} Master: (${correct} × +${s.marksCorrect}) - (${wrong} × -${s.marksWrong})`;
-      document.getElementById('res-score').innerText = totalScore.toFixed(2);
-      document.getElementById('res-max-label').innerText = `Max: ${maxMarks.toFixed(0)}`;
-      document.getElementById('res-correct').innerText = correct;
-      document.getElementById('res-wrong').innerText = wrong;
-      document.getElementById('res-accuracy').innerText = `${accuracy}%`;
+  // Insert the record into the cloud database
+  const { data, error } = await supabaseClient
+    .from('attempts')
+    .insert([attemptRecord]);
 
-      const solBox = document.getElementById('res-solutions-stream');
-      solBox.innerHTML = '';
-      activeTest.questions.forEach((q, idx) => {
-        const qNum = idx + 1;
-        const choice = userSelections[qNum] || 'Skipped';
-        const isRight = choice === q.correct;
-        const item = document.createElement('div');
-        item.className = "p-3 bg-slate-50 border rounded-lg";
-        item.innerHTML = `
-          <div class="flex justify-between items-center mb-1">
-            <span class="font-bold text-slate-800">Q${qNum}</span>
-            <span class="font-bold ${isRight ? 'text-emerald-600' : (choice === 'Skipped' ? 'text-slate-400' : 'text-rose-600')}">
-              ${isRight ? `+${s.marksCorrect.toFixed(2)}` : (choice === 'Skipped' ? '0.00' : `-${s.marksWrong.toFixed(2)}`)}
-            </span>
-          </div>
-          <p class="text-slate-700 mb-1.5">${q.q_en}</p>
-          <div class="text-[11px] mb-1">Your Bubble: <b>${choice}</b> | Answer Key: <b class="text-emerald-700 font-bold">${q.correct}</b></div>
-          <div class="p-2 bg-white rounded border border-slate-100 text-[11px] text-slate-600"><b>Explanation:</b> ${q.exp}</div>
-        `;
-        solBox.appendChild(item);
-      });
+  if (submitBtn) {
+    submitBtn.innerText = originalBtnText;
+    submitBtn.disabled = false;
+  }
 
-      lastSubmittedAttemptId = userAttempts[0] && userAttempts[0].id;
-      document.getElementById('view-engine').classList.add('hidden');
-      document.getElementById('result-modal').classList.remove('hidden');
-    }
+  if (error) {
+    console.error("Supabase Insert Error:", error);
+    return alert("Failed to submit exam to the server. Please try again or contact the academy.");
+  }
+
+  // Remap back to camelCase for the local UI to render instantly
+  const localAttempt = {
+    id: attemptRecord.id,
+    userEmail: attemptRecord.user_email,
+    userName: attemptRecord.user_name,
+    date: attemptRecord.date,
+    paperId: attemptRecord.paper_id,
+    paperTitle: attemptRecord.paper_title,
+    category: attemptRecord.category,
+    isCustom: attemptRecord.is_custom,
+    badge: attemptRecord.badge,
+    score: attemptRecord.score.toFixed(2),
+    maxMarks: attemptRecord.max_marks.toFixed(0),
+    accuracy: attemptRecord.accuracy.toString(),
+    schemeDesc: attemptRecord.scheme_desc,
+    passed: attemptRecord.passed,
+    userSelections: attemptRecord.user_selections,
+    questionsSnapshot: attemptRecord.questions_snapshot,
+    schemeSnapshot: attemptRecord.scheme_snapshot
+  };
+
+  userAttempts.unshift(localAttempt);
+  renderDashboard();
+
+  document.getElementById('res-modal-title').innerText = `${activeTest.title}: Result`;
+  document.getElementById('res-modal-desc').innerText = `Graded via ${s.examBadge} Master: (${correct} × +${s.marksCorrect}) - (${wrong} × -${s.marksWrong})`;
+  document.getElementById('res-score').innerText = totalScore.toFixed(2);
+  document.getElementById('res-max-label').innerText = `Max: ${maxMarks.toFixed(0)}`;
+  document.getElementById('res-correct').innerText = correct;
+  document.getElementById('res-wrong').innerText = wrong;
+  document.getElementById('res-accuracy').innerText = `${accuracy}%`;
+
+  const solBox = document.getElementById('res-solutions-stream');
+  solBox.innerHTML = '';
+  activeTest.questions.forEach((q, idx) => {
+    const qNum = idx + 1;
+    const choice = userSelections[qNum] || 'Skipped';
+    const isRight = choice === q.correct;
+    const item = document.createElement('div');
+    item.className = "p-3 bg-slate-50 border rounded-lg";
+    item.innerHTML = `
+      <div class="flex justify-between items-center mb-1">
+        <span class="font-bold text-slate-800">Q${qNum}</span>
+        <span class="font-bold ${isRight ? 'text-emerald-600' : (choice === 'Skipped' ? 'text-slate-400' : 'text-rose-600')}">
+          ${isRight ? `+${s.marksCorrect.toFixed(2)}` : (choice === 'Skipped' ? '0.00' : `-${s.marksWrong.toFixed(2)}`)}
+        </span>
+      </div>
+      <p class="text-slate-700 mb-1.5">${q.q_en}</p>
+      <div class="text-[11px] mb-1">Your Bubble: <b>${choice}</b> | Answer Key: <b class="text-emerald-700 font-bold">${q.correct}</b></div>
+      <div class="p-2 bg-white rounded border border-slate-100 text-[11px] text-slate-600"><b>Explanation:</b> ${q.exp}</div>
+    `;
+    solBox.appendChild(item);
+  });
+
+  lastSubmittedAttemptId = localAttempt.id;
+  document.getElementById('view-engine').classList.add('hidden');
+  document.getElementById('result-modal').classList.remove('hidden');
+}
 
     /* ----------------------------------------------------
        11. DASHBOARD & COMPLETE REVIEW MODAL
