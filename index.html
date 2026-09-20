@@ -3801,11 +3801,27 @@ async function rejectOrder(orderId) {
         btn.disabled = true;
         btn.innerText = 'Saving…';
         try {
-          await FileStore.put(id, file);
-          if (addPdfToVault({ id, title, category: cat, access, price, url: 'idb:' + id, bytes: file.size })) form.reset();
-          else await FileStore.del(id);
+          // Upload to Supabase Storage
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${id}.${fileExt}`;
+          
+          const { error: uploadError } = await supabaseClient.storage
+            .from('study_materials')
+            .upload(fileName, file, { cacheControl: '3600', upsert: false });
+            
+          if (uploadError) throw uploadError;
+
+          // Get the public URL from Supabase
+          const { data: urlData } = supabaseClient.storage
+            .from('study_materials')
+            .getPublicUrl(fileName);
+            
+          // Save to your Vault catalog using the real cloud URL
+          if (addPdfToVault({ id, title, category: cat, access, price, url: urlData.publicUrl, bytes: file.size })) {
+             form.reset();
+          }
         } catch (err) {
-          alert(`The PDF couldn't be saved: ${err && err.message ? err.message : 'the browser refused it'}.\n\nFree up space by deleting PDFs you no longer need, or use a Google Drive link instead.`);
+          alert(`Failed to upload PDF to the cloud: ${err.message}`);
         } finally {
           btn.disabled = false;
           btn.innerText = '+ Upload & Save Price';
