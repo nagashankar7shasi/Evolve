@@ -2358,7 +2358,7 @@ window.onload = async function() {
       filterExamCategory('kpsc_kas');
       renderDashboard();
       renderStudentEntitlementsDesk();
-      renderPaymentOrders();
+      await fetchCloudPayments();
       if (typeof renderStudentDirectoryTable === 'function') renderStudentDirectoryTable();
       if (typeof renderAnnouncements === 'function') renderAnnouncements();
       renderHomeSections();
@@ -2920,6 +2920,40 @@ async function submitPaymentClaim() {
   renderPaymentOrders();
   renderDashboard();
 }
+    async function fetchCloudPayments() {
+  const { data, error } = await supabaseClient
+    .from('payment_orders')
+    .select('*')
+    .order('created_at', { ascending: false });
+    
+  if (data) {
+    // Map Supabase snake_case columns back to the camelCase properties the app expects
+    paymentOrders = data.map(o => ({
+      id: o.id,
+      email: o.email,
+      name: o.name,
+      type: o.type,
+      itemId: o.item_id,
+      title: o.title,
+      amount: o.amount,
+      utr: o.utr,
+      status: o.status,
+      createdAt: o.created_at,
+      decidedAt: o.decided_at,
+      rejectReason: o.reject_reason,
+      receiptNo: o.receipt_no
+    }));
+    
+    // Refresh the admin dashboard UI with the cloud data
+    renderPaymentOrders();
+    if (typeof currentAdminPanel !== 'undefined') {
+      if (currentAdminPanel === 'overview') renderOverview();
+      if (currentAdminPanel === 'revenue') renderRevenue();
+    }
+  } else if (error) {
+    console.error("Failed to fetch payments:", error);
+  }
+}
 
     // Unlocks whatever the order paid for
     function grantOrder(order) {
@@ -2941,29 +2975,54 @@ async function submitPaymentClaim() {
       return `KAS-${year}-${String(count).padStart(4, '0')}`;
     }
 
-    function approveOrder(orderId) {
-      const order = paymentOrders.find(o => o.id === orderId);
-      if (!order || order.status !== 'pending') return;
-      if (!confirm(`Approve ₹${order.amount} from ${order.email}?\n\nUPI ref: ${order.utr}\nUnlocks: ${order.title}\n\nOnly approve after you've seen this reference in your bank statement.`)) return;
-      grantOrder(order);
-      order.status = 'approved';
-      order.decidedAt = new Date().toISOString();
-      order.receiptNo = nextReceiptNo();
-      savePaymentOrders();
-      afterStudentDataChange();
-    }
+async function approveOrder(orderId) {
+  const order = paymentOrders.find(o => o.id === orderId);
+  if (!order || order.status !== 'pending') return;
+  if (!confirm(`Approve ₹${order.amount} from ${order.email}?\n\nUPI ref: ${order.utr}\nUnlocks: ${order.title}\n\nOnly approve after you've seen this reference in your bank statement.`)) return;
+  
+  const decidedAt = new Date().toISOString();
+  const receiptNo = nextReceiptNo();
 
-    function rejectOrder(orderId) {
-      const order = paymentOrders.find(o => o.id === orderId);
-      if (!order || order.status !== 'pending') return;
-      const reason = prompt(`Reject the payment claim from ${order.email}?\n\nReason shown to the student:`, 'Reference number not found in our bank statement');
-      if (reason === null) return;
-      order.status = 'rejected';
-      order.rejectReason = reason.trim() || 'Payment could not be verified';
-      order.decidedAt = new Date().toISOString();
-      savePaymentOrders();
-      afterStudentDataChange();
-    }
+  // Update Supabase
+  const { error } = await supabaseClient
+    .from('payment_orders')
+    .update({ status: 'approved', decided_at: decidedAt, receipt_no: receiptNo })
+    .eq('id', orderId);
+
+  if (error) return alert("Failed to approve in cloud: " + error.message);
+
+  // Update local directory access
+  grantOrder(order);
+  order.status = 'approved';
+  order.decidedAt = decidedAt;
+  order.receiptNo = receiptNo;
+  
+  afterStudentDataChange();
+}
+
+async function rejectOrder(orderId) {
+  const order = paymentOrders.find(o => o.id === orderId);
+  if (!order || order.status !== 'pending') return;
+  const reason = prompt(`Reject the payment claim from ${order.email}?\n\nReason shown to the student:`, 'Reference number not found in our bank statement');
+  if (reason === null) return;
+  
+  const rejectReason = reason.trim() || 'Payment could not be verified';
+  const decidedAt = new Date().toISOString();
+
+  // Update Supabase
+  const { error } = await supabaseClient
+    .from('payment_orders')
+    .update({ status: 'rejected', decided_at: decidedAt, reject_reason: rejectReason })
+    .eq('id', orderId);
+
+  if (error) return alert("Failed to reject in cloud: " + error.message);
+
+  order.status = 'rejected';
+  order.rejectReason = rejectReason;
+  order.decidedAt = decidedAt;
+  
+  afterStudentDataChange();
+}
 
     function renderPaymentOrders() {
       const body = document.getElementById('orders-table-body');
