@@ -2358,6 +2358,7 @@ window.onload = async function() {
       filterExamCategory('kpsc_kas');
       renderDashboard();
       renderStudentEntitlementsDesk();
+      await fetchCloudContent();
       await fetchCloudPayments();
       await fetchCloudAttempts();
       await fetchCloudStudents();
@@ -2468,6 +2469,56 @@ window.onload = async function() {
     renderStudyPlanner();
     renderPracticeCenter();
   }
+}
+    async function fetchCloudContent() {
+  // Fetch tests
+  const { data: tests } = await supabaseClient.from('tests_catalog').select('*');
+  if (tests && tests.length > 0) {
+    testsCatalog = tests.map(t => ({ id: t.id, category: t.category, title: t.title, price: t.price, scheme: t.scheme, questions: t.questions }));
+  }
+
+  // Fetch pages
+  const { data: pages } = await supabaseClient.from('custom_pages').select('*');
+  if (pages && pages.length > 0) {
+    customPages = pages.map(p => ({
+      id: p.id, slug: p.slug, title: p.title, isGated: p.is_gated, price: p.price, content: p.content,
+      parentId: p.parent_id, icon: p.icon, image: p.image, summary: p.summary, childStyle: p.child_style,
+      order: p.order_num, showOnHome: p.show_on_home, bundleOnly: p.bundle_only, oldSlugs: p.old_slugs || []
+    }));
+  }
+
+  // Fetch bundles
+  const { data: bdl } = await supabaseClient.from('bundles').select('*');
+  if (bdl && bdl.length > 0) {
+    bundles = bdl.map(b => ({
+      id: b.id, name: b.name, price: b.price, validityDays: b.validity_days, allAccess: b.all_access,
+      tagline: b.tagline, categories: b.categories, papers: b.papers, pages: b.pages, pdfs: b.pdfs,
+      planners: b.planners, features: b.features, highlights: b.highlights, active: b.active,
+      featured: b.featured, showOnHome: b.show_on_home, style: b.style, order: b.order_num
+    }));
+  }
+
+  // Fetch navigation menu
+  const { data: menu } = await supabaseClient.from('nav_menu').select('*').order('order_num');
+  if (menu && menu.length > 0) {
+    navStructure = menu.map(m => ({ id: m.id, label: m.label, action: m.action, autoChildren: m.auto_children, submenus: m.submenus || [] }));
+  }
+
+  // Fetch PDF vault
+  const { data: pdfs } = await supabaseClient.from('pdf_vault').select('*');
+  if (pdfs && pdfs.length > 0) {
+    pdfVault = pdfs.map(d => ({ id: d.id, title: d.title, category: d.category, access: d.access, price: d.price, url: d.url, bytes: d.bytes }));
+  }
+
+  // Refresh UI
+  filterExamCategory(selectedCategory);
+  renderNavigation();
+  renderGranularNavTree();
+  renderPagesList();
+  renderPdfVault();
+  renderHomeSections();
+  renderHomeBundles();
+  renderBundlesAdmin();
 }
     
     async function pushStudentToCloud(email) {
@@ -2900,55 +2951,157 @@ window.onload = async function() {
       document.getElementById('bundle-editor').classList.add('hidden');
     }
 
-    function saveBundle(e) {
-      e.preventDefault();
-      const vals = cls => [...document.querySelectorAll(`.${cls}:checked`)].map(cb => cb.value);
-      const data = {
-        name: document.getElementById('bdl-name').value.trim(),
-        tagline: document.getElementById('bdl-tagline').value.trim(),
-        price: Math.max(0, parseInt(document.getElementById('bdl-price').value, 10) || 0),
-        validityDays: Math.max(0, parseInt(document.getElementById('bdl-validity').value, 10) || 0),
-        highlights: document.getElementById('bdl-highlights').value.split('\n').map(x => x.trim()).filter(Boolean),
-        active: document.getElementById('bdl-active').checked,
-        showOnHome: document.getElementById('bdl-home').checked,
-        featured: document.getElementById('bdl-featured').checked,
-        style: document.getElementById('bdl-style').value,
-        order: parseInt(document.getElementById('bdl-order').value, 10) || 0,
-        allAccess: document.getElementById('bdl-all').checked,
-        categories: vals('bdl-cat-cb'), papers: vals('bdl-paper-cb'), pages: vals('bdl-page-cb'),
-        pdfs: vals('bdl-pdf-cb'), planners: vals('bdl-planner-cb'), features: vals('bdl-feature-cb')
-      };
-      if (!data.name) return alert('Give the bundle a name.');
-      const includesSomething = data.allAccess || ['categories', 'papers', 'pages', 'pdfs', 'planners', 'features'].some(k => data[k].length);
-      if (!includesSomething && !confirm('This bundle doesn\'t include anything yet. Save anyway?')) return;
-      if (editingBundleId) Object.assign(getBundle(editingBundleId), data);
-      else bundles.push({ id: 'b_' + Date.now(), ...data });
-      saveBundles();
-      closeBundleEditor();
-      afterBundleChange();
-    }
+async function saveBundle(e) {
+  e.preventDefault();
+  const vals = cls => [...document.querySelectorAll(`.${cls}:checked`)].map(cb => cb.value);
+  const bundleId = editingBundleId || ('b_' + Date.now());
+  
+  const data = {
+    id: bundleId,
+    name: document.getElementById('bdl-name').value.trim(),
+    tagline: document.getElementById('bdl-tagline').value.trim(),
+    price: Math.max(0, parseInt(document.getElementById('bdl-price').value, 10) || 0),
+    validity_days: Math.max(0, parseInt(document.getElementById('bdl-validity').value, 10) || 0),
+    highlights: document.getElementById('bdl-highlights').value.split('\n').map(x => x.trim()).filter(Boolean),
+    active: document.getElementById('bdl-active').checked,
+    show_on_home: document.getElementById('bdl-home').checked,
+    featured: document.getElementById('bdl-featured').checked,
+    style: document.getElementById('bdl-style').value,
+    order_num: parseInt(document.getElementById('bdl-order').value, 10) || 0,
+    all_access: document.getElementById('bdl-all').checked,
+    categories: vals('bdl-cat-cb'),
+    papers: vals('bdl-paper-cb'),
+    pages: vals('bdl-page-cb'),
+    pdfs: vals('bdl-pdf-cb'),
+    planners: vals('bdl-planner-cb'),
+    features: vals('bdl-feature-cb')
+  };
 
-    function duplicateBundle(id) {
-      const b = getBundle(id);
-      if (!b) return;
-      bundles.push({ ...JSON.parse(JSON.stringify(b)), id: 'b_' + Date.now(), name: `${b.name} (copy)`, active: false, showOnHome: false });
-      saveBundles();
-      afterBundleChange();
-    }
+  if (!data.name) return alert('Give the bundle a name.');
 
-    function deleteBundle(id) {
-      const b = getBundle(id);
-      if (!b) return;
-      const holders = studentDirectory.filter(st => st.passes.includes(id)).length;
-      if (holders) {
-        return alert(`${holders} student(s) hold "${b.name}", so it can't be deleted without taking their access away.\n\nUntick "On sale" to stop selling it instead, or remove it from those students first (Student Directory → select → Remove from selected).`);
-      }
-      if (!confirm(`Delete the bundle "${b.name}"?`)) return;
-      bundles = bundles.filter(x => x.id !== id);
-      saveBundles();
-      afterBundleChange();
-    }
+  // --- SYNC TO SUPABASE CLOUD ---
+  const { error } = await supabaseClient.from('bundles').upsert(data);
+  if (error) {
+    return alert("Failed to save bundle to cloud: " + error.message);
+  }
 
+  // Remap back for local runtime state
+  const runtimeBundle = {
+    id: data.id, 
+    name: data.name, 
+    tagline: data.tagline, 
+    price: data.price,
+    validityDays: data.validity_days, 
+    highlights: data.highlights, 
+    active: data.active,
+    showOnHome: data.show_on_home, 
+    featured: data.featured, 
+    style: data.style,
+    order: data.order_num, 
+    allAccess: data.all_access, 
+    categories: data.categories,
+    papers: data.papers, 
+    pages: data.pages, 
+    pdfs: data.pdfs, 
+    planners: data.planners, 
+    features: data.features
+  };
+
+  if (editingBundleId) {
+    const index = bundles.findIndex(b => b.id === editingBundleId);
+    if (index >= 0) bundles[index] = runtimeBundle;
+  } else {
+    bundles.push(runtimeBundle);
+  }
+
+  closeBundleEditor();
+  afterBundleChange();
+  alert(`Bundle "${data.name}" saved live to the cloud!`);
+}
+
+async function duplicateBundle(id) {
+  const b = getBundle(id);
+  if (!b) return;
+
+  const newId = 'b_' + Date.now();
+  const duplicatedData = {
+    id: newId,
+    name: `${b.name} (copy)`,
+    tagline: b.tagline || '',
+    price: b.price,
+    validity_days: b.validityDays,
+    highlights: b.highlights || [],
+    active: false, // Default to inactive so you can review it before making it public
+    show_on_home: false,
+    featured: false,
+    style: b.style || 'light',
+    order_num: (b.order || 0) + 1,
+    all_access: b.allAccess,
+    categories: b.categories || [],
+    papers: b.papers || [],
+    pages: b.pages || [],
+    pdfs: b.pdfs || [],
+    planners: b.planners || [],
+    features: b.features || []
+  };
+
+  // --- SYNC TO SUPABASE CLOUD ---
+  const { error } = await supabaseClient.from('bundles').upsert(duplicatedData);
+  if (error) {
+    return alert("Failed to duplicate bundle to cloud: " + error.message);
+  }
+
+  // Runtime state mapping
+  const runtimeBundle = {
+    id: duplicatedData.id,
+    name: duplicatedData.name,
+    tagline: duplicatedData.tagline,
+    price: duplicatedData.price,
+    validityDays: duplicatedData.validity_days,
+    highlights: duplicatedData.highlights,
+    active: duplicatedData.active,
+    showOnHome: duplicatedData.show_on_home,
+    featured: duplicatedData.featured,
+    style: duplicatedData.style,
+    order: duplicatedData.order_num,
+    allAccess: duplicatedData.all_access,
+    categories: duplicatedData.categories,
+    papers: duplicatedData.papers,
+    pages: duplicatedData.pages,
+    pdfs: duplicatedData.pdfs,
+    planners: duplicatedData.planners,
+    features: duplicatedData.features
+  };
+
+  bundles.push(runtimeBundle);
+  afterBundleChange();
+  alert(`Bundle duplicated successfully as "${runtimeBundle.name}"!`);
+}
+
+async function deleteBundle(id) {
+  const b = getBundle(id);
+  if (!b) return;
+  const holders = studentDirectory.filter(st => st.passes.includes(id)).length;
+  if (holders) {
+    return alert(`${holders} student(s) hold "${b.name}", so it can't be deleted without taking their access away.\n\nUntick "On sale" to stop selling it instead, or remove it from those students first.`);
+  }
+  if (!confirm(`Delete the bundle "${b.name}"?`)) return;
+
+  // --- DELETE FROM SUPABASE CLOUD ---
+  const { error } = await supabaseClient
+    .from('bundles')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    return alert("Failed to delete bundle from cloud: " + error.message);
+  }
+
+  bundles = bundles.filter(x => x.id !== id);
+  saveBundles();
+  afterBundleChange();
+  alert(`Bundle "${b.name}" deleted from cloud.`);
+}
     function afterBundleChange() {
       renderBundlesAdmin();
       renderFeatureAccessAdmin();
@@ -3662,53 +3815,63 @@ async function rejectOrder(orderId) {
       }
     }
 
-    function handleBundleAndUploadPaper() {
-      const category = document.getElementById('upload-exam-category').value;
-      const title = document.getElementById('upload-paper-title').value.trim();
-      const price = parseInt(document.getElementById('upload-paper-price').value) || 0;
-      const marksCorrect = parseFloat(document.getElementById('upload-mark-correct').value) || 2.0;
-      const marksWrong = parseFloat(document.getElementById('upload-mark-wrong').value) || 0.0;
-      const duration = parseInt(document.getElementById('upload-duration').value) || 120;
-      const cutoff = parseFloat(document.getElementById('upload-cutoff').value) || 120;
+async function handleBundleAndUploadPaper() {
+  const category = document.getElementById('upload-exam-category').value;
+  const title = document.getElementById('upload-paper-title').value.trim();
+  const price = parseInt(document.getElementById('upload-paper-price').value) || 0;
+  const marksCorrect = parseFloat(document.getElementById('upload-mark-correct').value) || 2.0;
+  const marksWrong = parseFloat(document.getElementById('upload-mark-wrong').value) || 0.0;
+  const duration = parseInt(document.getElementById('upload-duration').value) || 120;
+  const cutoff = parseFloat(document.getElementById('upload-cutoff').value) || 120;
 
-      if (!title) return alert('Enter exam paper title.');
+  if (!title) return alert('Enter exam paper title.');
 
-      const fileInput = document.getElementById('upload-file-input');
-      if (fileInput.files.length === 0) return alert('Attach a question CSV file containing column "Correct".');
+  const fileInput = document.getElementById('upload-file-input');
+  if (fileInput.files.length === 0) return alert('Attach a question CSV file containing column "Correct".');
 
-      const catBadge = EXAM_CATEGORIES[category]?.defaultScheme.examBadge || 'EXAM';
+  const catBadge = EXAM_CATEGORIES[category]?.defaultScheme.examBadge || 'EXAM';
+  const paperId = 'paper_' + Date.now();
 
-      Papa.parse(fileInput.files[0], {
-        header: true,
-        skipEmptyLines: true,
-        complete: function(res) {
-          const parsed = res.data.map((row, idx) => ({
-            id: idx + 1,
-            q_en: row.Question_EN || row.question_en || '',
-            q_kn: row.Question_KN || row.question_kn || row.Question_EN || '',
-            options_en: [row.Opt_A_EN || row.A_EN || '', row.Opt_B_EN || row.B_EN || '', row.Opt_C_EN || row.C_EN || '', row.Opt_D_EN || row.D_EN || ''],
-            options_kn: [row.Opt_A_KN || row.A_KN || '', row.Opt_B_KN || row.B_KN || '', row.Opt_C_KN || row.C_KN || '', row.Opt_D_KN || row.D_KN || ''],
-            correct: (row.Correct || row.correct || 'A').toUpperCase().trim(),
-            exp: row.Explanation || row.explanation || 'Detailed answer explanation.',
-            subject: (row.Subject || row.subject || row.Topic || row.topic || '').trim()
-          }));
+  Papa.parse(fileInput.files[0], {
+    header: true,
+    skipEmptyLines: true,
+    complete: async function(res) {
+      const parsed = res.data.map((row, idx) => ({
+        id: idx + 1,
+        q_en: row.Question_EN || row.question_en || '',
+        q_kn: row.Question_KN || row.question_kn || row.Question_EN || '',
+        options_en: [row.Opt_A_EN || row.A_EN || '', row.Opt_B_EN || row.B_EN || '', row.Opt_C_EN || row.C_EN || '', row.Opt_D_EN || row.D_EN || ''],
+        options_kn: [row.Opt_A_KN || row.A_KN || '', row.Opt_B_KN || row.B_KN || '', row.Opt_C_KN || row.C_KN || '', row.Opt_D_KN || row.D_KN || ''],
+        correct: (row.Correct || row.correct || 'A').toUpperCase().trim(),
+        exp: row.Explanation || row.explanation || 'Detailed answer explanation.',
+        subject: (row.Subject || row.subject || row.Topic || row.topic || '').trim()
+      }));
 
-          const newPaper = {
-            id: 'paper_' + Date.now(),
-            category: category,
-            title: title,
-            price: price,
-            scheme: { examBadge: catBadge, marksCorrect, marksWrong, duration, cutoff },
-            questions: parsed
-          };
-          testsCatalog.push(newPaper);
-          localStorage.setItem('kas_tests_catalog', JSON.stringify(testsCatalog));
-          renderStudentEntitlementsDesk();
-          filterExamCategory(category);
-          alert(`Success! Paper "${title}" published into ${EXAM_CATEGORIES[category].name} with price ₹${price}.`);
-        }
+      const scheme = { examBadge: catBadge, marksCorrect, marksWrong, duration, cutoff };
+
+      // --- SYNC TO SUPABASE CLOUD ---
+      const { error } = await supabaseClient.from('tests_catalog').upsert({
+        id: paperId,
+        category: category,
+        title: title,
+        price: price,
+        scheme: scheme,
+        questions: parsed
       });
+
+      if (error) {
+        return alert("Failed to upload test paper to cloud: " + error.message);
+      }
+
+      const newPaper = { id: paperId, category, title, price, scheme, questions: parsed };
+      testsCatalog.push(newPaper);
+      
+      renderStudentEntitlementsDesk();
+      filterExamCategory(category);
+      alert(`Success! Paper "${title}" published live to the cloud in ${EXAM_CATEGORIES[category].name}.`);
     }
+  });
+}
 
     /* ----------------------------------------------------
        7. PDF VAULT WITH STANDALONE PRICING
@@ -4343,72 +4506,88 @@ async function rejectOrder(orderId) {
       alert(`Hyperlinked "${highlightedText}" to "${doc.title}"!`);
     }
 
-    function handleSaveCustomPage(e) {
-      e.preventDefault();
-      const title = document.getElementById('page-title-input').value.trim();
-      const slugInput = document.getElementById('page-slug-input');
-      const isGated = document.getElementById('page-gated-check').checked;
-      const bundleOnly = isGated && document.getElementById('page-bundleonly-check').checked;
-      const price = isGated && !bundleOnly ? (parseInt(document.getElementById('page-price-input').value) || 49) : 0;
-      document.querySelectorAll('#word-editor-canvas img.kb-selected').forEach(i => i.classList.remove('kb-selected'));
-      const htmlContent = document.getElementById('word-editor-canvas').innerHTML;
-      const meta = {
-        parentId: document.getElementById('page-parent-input').value || null,
-        icon: document.getElementById('page-icon-input').value.trim() || '📄',
-        image: pendingPageImage,
-        summary: document.getElementById('page-summary-input').value.trim(),
-        childStyle: document.getElementById('page-childstyle-input').value,
-        order: parseInt(document.getElementById('page-order-input').value, 10) || 0,
-        showOnHome: document.getElementById('page-home-check').checked,
-        bundleOnly
-      };
+  async function handleSaveCustomPage(e) {
+  e.preventDefault();
+  const title = document.getElementById('page-title-input').value.trim();
+  const slugInput = document.getElementById('page-slug-input');
+  const isGated = document.getElementById('page-gated-check').checked;
+  const bundleOnly = isGated && document.getElementById('page-bundleonly-check').checked;
+  const price = isGated && !bundleOnly ? (parseInt(document.getElementById('page-price-input').value) || 49) : 0;
+  document.querySelectorAll('#word-editor-canvas img.kb-selected').forEach(i => i.classList.remove('kb-selected'));
+  const htmlContent = document.getElementById('word-editor-canvas').innerHTML;
+  const meta = {
+    parentId: document.getElementById('page-parent-input').value || null,
+    icon: document.getElementById('page-icon-input').value.trim() || '📄',
+    image: pendingPageImage,
+    summary: document.getElementById('page-summary-input').value.trim(),
+    childStyle: document.getElementById('page-childstyle-input').value,
+    order: parseInt(document.getElementById('page-order-input').value, 10) || 0,
+    showOnHome: document.getElementById('page-home-check').checked,
+    bundleOnly
+  };
 
-      // The ID decides which page is saved -- never the text in the link box.
-      const id = editingPageId || ('p_' + Date.now());
-      let slug = slugify(slugInput.value) || slugify(title) || id;
+  const id = editingPageId || ('p_' + Date.now());
+  let slug = slugify(slugInput.value) || slugify(title) || id;
 
-      // Never take a link that belongs to another page (current or old link).
-      const taken = s => customPages.some(p => p.id !== id &&
-        (p.id === s || p.slug === s || (p.oldSlugs || []).includes(s)));
-      if (taken(slug)) {
-        let n = 2;
-        while (taken(`${slug}-${n}`)) n++;
-        const suggestion = `${slug}-${n}`;
-        if (slugManuallyEdited && !confirm(`The link "${slug}" is already used by another page.\n\nUse "${suggestion}" instead?`)) return;
-        slug = suggestion;
-      }
+  const taken = s => customPages.some(p => p.id !== id && (p.slug === s || p.id === s || (p.oldSlugs || []).includes(s)));
+  if (taken(slug)) {
+    let n = 2;
+    while (taken(`${slug}-${n}`)) n++;
+    const suggestion = `${slug}-${n}`;
+    if (slugManuallyEdited && !confirm(`The link "${slug}" is already used by another page.\n\nUse "${suggestion}" instead?`)) return;
+    slug = suggestion;
+  }
 
-      const existing = customPages.find(p => p.id === id);
-      if (existing) {
-        const oldSlugs = (existing.oldSlugs || []).filter(s => s !== slug);
-        if (existing.slug && existing.slug !== slug && !oldSlugs.includes(existing.slug)) {
-          oldSlugs.push(existing.slug); // old links redirect to the new one
-        }
-        if (meta.parentId && [id, ...descendantIds(id)].includes(meta.parentId)) meta.parentId = existing.parentId; // no loops
-        Object.assign(existing, { title, slug, isGated, price, content: htmlContent, oldSlugs, ...meta });
-      } else {
-        customPages.push({ id, title, slug, isGated, price, content: htmlContent, oldSlugs: [], ...meta });
-      }
+  const existing = customPages.find(p => p.id === id);
+  let oldSlugs = existing ? (existing.oldSlugs || []) : [];
+  if (existing && existing.slug && existing.slug !== slug && !oldSlugs.includes(existing.slug)) {
+    oldSlugs.push(existing.slug);
+  }
 
-      editingPageId = id;
-      slugManuallyEdited = true;
-      slugInput.value = slug;
-      setSlugFieldEditable(false);
+  const pageData = {
+    id,
+    slug,
+    title,
+    is_gated: isGated,
+    price,
+    content: htmlContent,
+    parent_id: meta.parentId,
+    icon: meta.icon,
+    image: meta.image,
+    summary: meta.summary,
+    child_style: meta.childStyle,
+    order_num: meta.order,
+    show_on_home: meta.showOnHome,
+    bundle_only: bundleOnly,
+    old_slugs: oldSlugs
+  };
 
-      try {
-        localStorage.setItem('kas_custom_pages', JSON.stringify(customPages));
-      } catch (err) {
-        return alert('The browser ran out of storage space while saving. Use a smaller tile image or remove large images from the page content, then save again.');
-      }
-      renderPagesList();
-      renderNavigation();
-      renderGranularNavTree();
-      renderStudentEntitlementsDesk();
-      renderHomeSections();
-      fillParentPicker(id, meta.parentId);
-      updateSlugHint();
-      alert(`Page "${title}" saved.\n\nLink: #/page/${slug}`);
-    }
+  // --- SYNC TO SUPABASE CLOUD ---
+  const { error } = await supabaseClient.from('custom_pages').upsert(pageData);
+  if (error) {
+    return alert("Failed to save page to cloud: " + error.message);
+  }
+
+  if (existing) {
+    Object.assign(existing, { title, slug, isGated, price, content: htmlContent, oldSlugs, ...meta });
+  } else {
+    customPages.push({ id, title, slug, isGated, price, content: htmlContent, oldSlugs, ...meta });
+  }
+
+  editingPageId = id;
+  slugManuallyEdited = true;
+  slugInput.value = slug;
+  setSlugFieldEditable(false);
+
+  renderPagesList();
+  renderNavigation();
+  renderGranularNavTree();
+  renderStudentEntitlementsDesk();
+  renderHomeSections();
+  fillParentPicker(id, meta.parentId);
+  updateSlugHint();
+  alert(`Page "${title}" saved and published live to the cloud!\n\nLink: #/page/${slug}`);
+}
 
     function renderPagesList() {
       const container = document.getElementById('pages-list-display');
