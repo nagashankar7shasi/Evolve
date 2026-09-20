@@ -18,7 +18,7 @@
     {
       "id": "nav_1789838140095",
       "label": "Free Resources",
-      "action": "category:kpsc_kas",
+      "action": "#",
       "submenus": [
         { "id": "nav_1789838187313", "label": "Current Affairs", "action": "category:kpsc_kas" },
         { "id": "nav_1789838968465", "label": "Free Current Affairs", "action": "page:p_1789838870191" }
