@@ -2293,29 +2293,45 @@
     let timerInterval = null;
 
 window.onload = async function() {
-      // --- NEW: FETCH LIVE DATA FROM GITHUB JSON ---
+      // --- FETCH LIVE DATA FROM GITHUB JSON ---
       try {
         const response = await fetch('data.json');
         if (response.ok) {
           const liveData = await response.json();
-          
-          // Overwrite global variables with the live data from GitHub
-          if (liveData.EXAM_CATEGORIES) EXAM_CATEGORIES = liveData.EXAM_CATEGORIES;
-          if (liveData.initialPricingMaster) pricingMaster = liveData.initialPricingMaster;
-          if (liveData.initialNav) navStructure = liveData.initialNav;
-          if (liveData.initialPdfs) pdfVault = liveData.initialPdfs;
-          if (liveData.initialPapersCatalog) testsCatalog = liveData.initialPapersCatalog;
-          
-          // Push updates securely to the browser's storage
-          localStorage.setItem('kas_pricing_master', JSON.stringify(pricingMaster));
-          localStorage.setItem('kas_nav_menu', JSON.stringify(navStructure));
-          localStorage.setItem('kas_pdf_vault', JSON.stringify(pdfVault));
-          localStorage.setItem('kas_tests_catalog', JSON.stringify(testsCatalog));
+
+          // 1. Support both backup format ('nav') and code format ('initialNav')
+          const newNav = liveData.nav || liveData.initialNav;
+          const newPages = liveData.pages || liveData.initialPages;
+          const newCatalog = liveData.catalog || liveData.initialPapersCatalog;
+          const newPricing = liveData.pricing || liveData.initialPricingMaster;
+          const newPdfs = liveData.pdfs || liveData.initialPdfs;
+
+          // 2. Overwrite state and update browser storage
+          if (newNav) {
+            navStructure = newNav;
+            localStorage.setItem('kas_nav_menu', JSON.stringify(navStructure));
+          }
+          if (newPages) {
+            customPages = newPages;
+            localStorage.setItem('kas_custom_pages', JSON.stringify(customPages));
+          }
+          if (newCatalog) {
+            testsCatalog = newCatalog;
+            localStorage.setItem('kas_tests_catalog', JSON.stringify(testsCatalog));
+          }
+          if (newPricing) {
+            pricingMaster = newPricing;
+            localStorage.setItem('kas_pricing_master', JSON.stringify(pricingMaster));
+          }
+          if (newPdfs) {
+            pdfVault = newPdfs;
+            localStorage.setItem('kas_pdf_vault', JSON.stringify(pdfVault));
+          }
         }
       } catch (err) {
-        console.warn("Could not fetch data.json from GitHub. Falling back to local defaults.");
+        console.warn("Could not fetch data.json. Using local storage or defaults.");
       }
-      // ----------------------------------------------
+      // ----------------------------------------
 
       // Resume normal startup sequence
       if (typeof validateSession === 'function') validateSession();
