@@ -2361,6 +2361,9 @@ window.onload = async function() {
       await fetchCloudPayments();
       await fetchCloudAttempts();
       await fetchCloudStudents();
+      if (currentUser) {
+        await fetchCloudProgress();
+      }
       if (typeof renderStudentDirectoryTable === 'function') renderStudentDirectoryTable();
       if (typeof renderAnnouncements === 'function') renderAnnouncements();
       renderHomeSections();
@@ -2446,6 +2449,27 @@ window.onload = async function() {
     console.error("Failed to fetch students:", error);
   }
 }
+    async function fetchCloudProgress() {
+  if (!currentUser) return;
+  const { data, error } = await supabaseClient
+    .from('student_progress')
+    .select('*')
+    .eq('email', normalizeEmail(currentUser.email))
+    .single();
+
+  if (data) {
+    if (data.planner_data) plannerStore = data.planner_data;
+    if (data.practice_log) practiceLog = data.practice_log;
+    
+    // Update local storage so the UI stays snappy
+    localStorage.setItem('kas_study_planner', JSON.stringify(plannerStore));
+    localStorage.setItem('kas_practice_log', JSON.stringify(practiceLog));
+    
+    renderStudyPlanner();
+    renderPracticeCenter();
+  }
+}
+    
     async function pushStudentToCloud(email) {
   const student = getStudentRecord(email);
   if (!student) return;
@@ -5632,9 +5656,16 @@ async function evaluateOMRSubmission() {
       return plannerList().map(pl => `${pl.label} ${examOverallPct((exams[pl.id] || {}).done, pl.id, student)}%`).join(', ') || 'No planners';
     }
 
-    function savePlannerStore() {
+    async function savePlannerStore() {
       try {
         localStorage.setItem('kas_study_planner', JSON.stringify(plannerStore));
+        if (currentUser) {
+          await supabaseClient.from('student_progress').upsert({
+            email: normalizeEmail(currentUser.email),
+            planner_data: plannerStore,
+            updated_at: new Date().toISOString()
+          });
+        }
         return true;
       } catch (err) {
         return false;
@@ -6386,8 +6417,15 @@ async function evaluateOMRSubmission() {
     ----------------------------------------------------- */
     // Answers given in practice mode: { "<email>": { "<paperId>::<qid>": { wrongAt, rightAt, wrongCount } } }
     let practiceLog = JSON.parse(localStorage.getItem('kas_practice_log')) || {};
-    function savePracticeLog() {
+    async function savePracticeLog() {
       localStorage.setItem('kas_practice_log', JSON.stringify(practiceLog));
+      if (currentUser) {
+        await supabaseClient.from('student_progress').upsert({
+          email: normalizeEmail(currentUser.email),
+          practice_log: practiceLog,
+          updated_at: new Date().toISOString()
+        });
+      }
     }
 
     // A question keeps the same key wherever it appears (its own paper, a topic test, practice)
