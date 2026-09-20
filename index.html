@@ -1834,199 +1834,287 @@
     </div>
   </footer>
 
+The reason it failed is that AI systems have a strict character/token limit per message. Your HTML file is over 1,600 lines long, which means it physically cannot be printed in a single output without getting abruptly cut off (which damages your code).
+
+To do this successfully with **zero data loss**, I will give you the complete `data.json` file, and show you exactly how to update your `index.html` file by replacing just the top part of your `<script>`.
+
+Here are your two separated files:
+
+### 1. `data.json`
+
+Create a new file named `data.json` in the same folder as your HTML file and paste this exactly. I have converted all your data into strict JSON format:
+
+```json
+{
+  "EXAM_CATEGORIES": {
+    "kpsc_kas": {
+      "id": "kpsc_kas",
+      "name": "KPSC KAS (Gazetted)",
+      "desc": "Official Preliminary Exam: Paper 1 & Paper 2 (+2.00 / -0.50, 120 Mins, Target: 120)",
+      "defaultScheme": { "examBadge": "KPSC KAS", "marksCorrect": 2.0, "marksWrong": 0.5, "duration": 120, "cutoff": 120 }
+    },
+    "karnataka_psi": {
+      "id": "karnataka_psi",
+      "name": "Karnataka Police Sub-Inspector (PSI)",
+      "desc": "Civil Police Sub-Inspector Paper 2 (+1.50 / -0.375, 90 Mins, Target: 110)",
+      "defaultScheme": { "examBadge": "Karnataka PSI", "marksCorrect": 1.5, "marksWrong": 0.375, "duration": 90, "cutoff": 110 }
+    },
+    "kpsc_fda_sda": {
+      "id": "kpsc_fda_sda",
+      "name": "KPSC FDA / SDA / Group C",
+      "desc": "First Division Assistant / Second Division Assistant GK (+1.00 / -0.25, 90 Mins, Target: 75)",
+      "defaultScheme": { "examBadge": "KPSC FDA/SDA", "marksCorrect": 1.0, "marksWrong": 0.25, "duration": 90, "cutoff": 75 }
+    },
+    "upsc_cse": {
+      "id": "upsc_cse",
+      "name": "UPSC Civil Services Examination",
+      "desc": "Union Public Service Commission GS Paper 1 (+2.00 / -0.666, 120 Mins, Target: 95)",
+      "defaultScheme": { "examBadge": "UPSC CSE", "marksCorrect": 2.0, "marksWrong": 0.666, "duration": 120, "cutoff": 95 }
+    }
+  },
+  "initialPricingMaster": {
+    "upiId": "yourkasacademy@upi",
+    "payeeName": "KAS Officer's Academy",
+    "allAccessPrice": 1499,
+    "categoryPasses": {
+      "kpsc_kas": 699,
+      "karnataka_psi": 499,
+      "kpsc_fda_sda": 399,
+      "upsc_cse": 999
+    }
+  },
+  "initialNav": [
+    { "id": "m1", "label": "Home", "action": "home", "submenus": [] },
+    {
+      "id": "m2",
+      "label": "Exam Rooms",
+      "action": "#",
+      "submenus": [
+        { "id": "s1", "label": "KPSC KAS Hub", "action": "category:kpsc_kas" },
+        { "id": "s2", "label": "Karnataka PSI Hub", "action": "category:karnataka_psi" },
+        { "id": "s3", "label": "FDA / SDA Hub", "action": "category:kpsc_fda_sda" },
+        { "id": "s4", "label": "UPSC CSE Hub", "action": "category:upsc_cse" }
+      ]
+    },
+    { "id": "m3", "label": "Current Affairs", "action": "page:p_current_affairs", "submenus": [] },
+    { "id": "m4", "label": "KAS Syllabus Guide", "action": "page:p_1", "submenus": [] }
+  ],
+  "initialPdfs": [
+    {
+      "id": "doc_1",
+      "title": "Karnataka Economic Survey 2026 Summary",
+      "category": "KPSC KAS",
+      "access": "paid",
+      "price": 49,
+      "url": "https://finance.karnataka.gov.in",
+      "autoUrl": "https://kasportal.in/vault/doc-m51a-karnataka-economic-survey-2026.pdf"
+    }
+  ],
+  "initialPages": [
+    {
+      "id": "p_current_affairs",
+      "slug": "current-affairs",
+      "title": "Current Affairs & Karnataka State Snippets",
+      "isGated": false,
+      "price": 0,
+      "content": "<h1>Karnataka Current Affairs & Administrative Updates</h1>\n<p>Daily curated summaries mapped to KPSC Gazetted Probationers Preliminary and Mains syllabi.</p>\n<h2>Karnataka Economic Indicators & Budget Highlights</h2>\n<p>The state has registered over 8.2% contribution to national GDP with steady tertiary sector expansion. Aspirants can download the official summary document: <a href=\"javascript:void(0)\" onclick=\"downloadOrOpenPdf('doc_1')\" class=\"text-amber-600 font-bold underline cursor-pointer\">Karnataka Economic Survey 2026 Summary<span class=\"text-[10px] bg-red-100 text-red-700 px-1 py-0.2 rounded ml-1 font-sans font-normal\">PDF</span></a>.</p>\n<h2>Administrative Reforms & Citizen Services</h2>\n<ul>\n<li><b>Sakala Act Extensions:</b> Over 1,000 public delivery timelines now legally mandated across district offices.</li>\n<li><b>Western Ghats Conservation:</b> Latest status updates on village cluster recommendations under central review.</li>\n</ul>"
+    },
+    {
+      "id": "p_1",
+      "slug": "kas-syllabus",
+      "title": "KPSC KAS Preliminary Examination Blueprint",
+      "isGated": false,
+      "price": 0,
+      "content": "<h1>KPSC KAS Preliminary Examination Structure</h1>\n<p>The preliminary examination consists of two objective papers evaluated with strict negative marking.</p>\n<h2>Prescribed Reference Study Material</h2>\n<p>Aspirants must thoroughly review the state economic indicators before taking the mock papers. You can download the complete summary document directly by clicking on the <a href=\"javascript:void(0)\" onclick=\"downloadOrOpenPdf('doc_1')\" class=\"text-amber-600 font-bold underline cursor-pointer\">Karnataka Economic Survey PDF<span class=\"text-[10px] bg-red-100 text-red-700 px-1 py-0.2 rounded ml-1 font-sans font-normal\">PDF</span></a> provided for this batch.</p>\n<h2>Negative Marking Ratio</h2>\n<p>Each incorrect bubble results in a deduction of <b>0.25 (1/4th)</b> of the marks assigned to that specific question.</p>"
+    }
+  ],
+  "initialPapersCatalog": [
+    {
+      "id": "kas_mock_01",
+      "category": "kpsc_kas",
+      "title": "KAS Prelims Paper 1: General Studies Mock 01",
+      "price": 99,
+      "scheme": { "examBadge": "KPSC KAS", "marksCorrect": 2.0, "marksWrong": 0.5, "duration": 120, "cutoff": 120 },
+      "questions": [
+        {
+          "id": 1,
+          "q_en": "With reference to the Karnataka State Budget, which sector contributes the highest share to the Gross State Value Added (GSVA)?",
+          "q_kn": "ಕರ್ನಾಟಕ ರಾಜ್ಯ ಬಜೆಟ್‌ನ ಪ್ರಕಾರ, ಈ ಕೆಳಗಿನ ಯಾವ ವಲಯವು ರಾಜ್ಯದ ಒಟ್ಟು ಮೌಲ್ಯವರ್ಧನೆಗೆ (GSVA) ಅತಿ ಹೆಚ್ಚಿನ ಕೊಡುಗೆ ನೀಡುತ್ತದೆ?",
+          "options_en": ["Agriculture and Allied Activities", "Industry and Manufacturing", "Services Sector", "Mining and Quarrying"],
+          "options_kn": ["ಕೃಷಿ ಮತ್ತು ಸಂಬಂಧಿತ ಚಟುವಟಿಕೆಗಳು", "ಕೈಗಾರಿಕೆ ಮತ್ತು ಉತ್ಪಾದನೆ", "ಸೇವಾ ವಲಯ", "ಗಣಿಗಾರಿಕೆ ಮತ್ತು ಉತ್ಖನನ"],
+          "correct": "C",
+          "subject": "Economy",
+          "exp": "The Services sector consistently contributes over 64% of Karnataka's GSVA."
+        },
+        {
+          "id": 2,
+          "q_en": "Under the Vijayanagara Empire, the central land revenue assessment department was known as:",
+          "q_kn": "ವಿಜಯನಗರ ಸಾಮ್ರಾಜ್ಯದ ಆಡಳಿತದಲ್ಲಿ ಭೂಕಂದಾಯ ಇಲಾಖೆಯನ್ನು ಏನೆಂದು ಕರೆಯಲಾಗುತ್ತಿತ್ತು?",
+          "options_en": ["Athavana", "Kandachara", "Samprathi", "Karanika"],
+          "options_kn": ["ಅಠವಣೆ (Athavana)", "ಕಂದಾಚಾರ", "ಸಂಪ್ರತಿ", "ಕರಣಿಕ"],
+          "correct": "A",
+          "subject": "Karnataka History",
+          "exp": "'Athavana' was the central land revenue department in Vijayanagara administration."
+        }
+      ]
+    },
+    {
+      "id": "psi_mock_01",
+      "category": "karnataka_psi",
+      "title": "Karnataka PSI Civil Paper 2: General Studies Mock 01",
+      "price": 99,
+      "scheme": { "examBadge": "Karnataka PSI", "marksCorrect": 1.5, "marksWrong": 0.375, "duration": 90, "cutoff": 110 },
+      "questions": [
+        {
+          "id": 1,
+          "q_en": "Under the Code of Criminal Procedure (CrPC), who is empowered to establish a Court of Session in a district?",
+          "q_kn": "ದಂಡ ಪ್ರಕ್ರಿಯಾ ಸಂಹಿತೆಯ (CrPC) ಅಡಿಯಲ್ಲಿ ಜಿಲ್ಲೆಯಲ್ಲಿ ಸೆಷನ್ಸ್ ನ್ಯಾಯಾಲಯವನ್ನು ಸ್ಥಾಪಿಸಲು ಯಾರಿಗೆ ಅಧಿಕಾರವಿದೆ?",
+          "options_en": ["High Court", "State Government", "District Magistrate", "Supreme Court"],
+          "options_kn": ["ಉಚ್ಚ ನ್ಯಾಯಾಲಯ", "ರಾಜ್ಯ ಸರ್ಕಾರ", "ಜಿಲ್ಲಾಧಿಕಾರಿ", "ಸರ್ವೋಚ್ಚ ನ್ಯಾಯಾಲಯ"],
+          "correct": "B",
+          "subject": "Polity & Law",
+          "exp": "Section 9 of CrPC empowers the State Government to establish a Court of Session for every sessions division."
+        }
+      ]
+    }
+  ],
+  "initialStudentDirectory": [
+    {
+      "email": "student@gmail.com",
+      "utr": "UPI1234567890",
+      "status": "active",
+      "allowedExams": ["kas_mock_01"],
+      "allowedPages": ["p_1", "p_current_affairs"],
+      "allowedPdfs": ["doc_1"]
+    }
+  ]
+}
+
+```
+
+---
+
+### 2. `index.html` Update Instructions
+
+Keep your original HTML file entirely intact (all of your CSS, Tailwind, `divs`, and `modals` are safe). You only need to change the top section of the Javascript `<script>` tag.
+
+Open `index.html` and scroll down to around line 980 where you see:
+`<!-- ================= JAVASCRIPT ARCHITECTURE ================= -->`
+`<script>`
+
+Delete everything from there until you reach `function slugify(text) {`, and replace it with this exact block:
+
+```javascript
   <!-- ================= JAVASCRIPT ARCHITECTURE ================= -->
   <script>
     /* ----------------------------------------------------
-       1. EXAM CATEGORY MASTER DEFINITIONS
+       1. GLOBAL DATA VARIABLES (Fetched from JSON)
     ----------------------------------------------------- */
-    const EXAM_CATEGORIES = {
-      kpsc_kas: {
-        id: 'kpsc_kas',
-        name: 'KPSC KAS (Gazetted)',
-        desc: 'Official Preliminary Exam: Paper 1 & Paper 2 (+2.00 / -0.50, 120 Mins, Target: 120)',
-        defaultScheme: { examBadge: 'KPSC KAS', marksCorrect: 2.00, marksWrong: 0.50, duration: 120, cutoff: 120 }
-      },
-      karnataka_psi: {
-        id: 'karnataka_psi',
-        name: 'Karnataka Police Sub-Inspector (PSI)',
-        desc: 'Civil Police Sub-Inspector Paper 2 (+1.50 / -0.375, 90 Mins, Target: 110)',
-        defaultScheme: { examBadge: 'Karnataka PSI', marksCorrect: 1.50, marksWrong: 0.375, duration: 90, cutoff: 110 }
-      },
-      kpsc_fda_sda: {
-        id: 'kpsc_fda_sda',
-        name: 'KPSC FDA / SDA / Group C',
-        desc: 'First Division Assistant / Second Division Assistant GK (+1.00 / -0.25, 90 Mins, Target: 75)',
-        defaultScheme: { examBadge: 'KPSC FDA/SDA', marksCorrect: 1.00, marksWrong: 0.25, duration: 90, cutoff: 75 }
-      },
-      upsc_cse: {
-        id: 'upsc_cse',
-        name: 'UPSC Civil Services Examination',
-        desc: 'Union Public Service Commission GS Paper 1 (+2.00 / -0.666, 120 Mins, Target: 95)',
-        defaultScheme: { examBadge: 'UPSC CSE', marksCorrect: 2.00, marksWrong: 0.666, duration: 120, cutoff: 95 }
-      }
-    };
+    let EXAM_CATEGORIES, initialPricingMaster, initialNav, initialPdfs;
+    let initialPages, initialPapersCatalog, initialStudentDirectory;
+
+    let pricingMaster, navStructure, pdfVault, testsCatalog, studentDirectory;
+    let userAttempts, currentUser, customPages, paymentOrders, bundles;
+    let planners, featureAccess, practiceLog, plannerStore;
+
+    // Runtime state variables
+    let selectedCategory = 'kpsc_kas';
+    let savedEditorRange = null;
+    let activeSelectedStudent = null;
+    let activeReviewAttempt = null;
+    let activeTest = null;
+    let currentLang = 'en';
+    let userSelections = {};
+    let timerSeconds = 0;
+    let timerInterval = null;
+    let editingPageId = null;       
+    let slugManuallyEdited = false; 
+    let currentPageId = null; 
 
     /* ----------------------------------------------------
-       2. INITIAL PRICING MASTER & SYSTEM STORAGE
+       2. ASYNC INITIALIZATION ENGINE
     ----------------------------------------------------- */
-    const initialPricingMaster = {
-      upiId: 'yourkasacademy@upi',
-      payeeName: "KAS Officer's Academy",
-      allAccessPrice: 1499,
-      categoryPasses: {
-        kpsc_kas: 699,
-        karnataka_psi: 499,
-        kpsc_fda_sda: 399,
-        upsc_cse: 999
+    window.onload = async function() {
+      try {
+        // Fetch external data.json
+        const response = await fetch('data.json');
+        if (!response.ok) throw new Error("Failed to load JSON data");
+        const data = await response.json();
+
+        // Assign JSON data to globals
+        EXAM_CATEGORIES = data.EXAM_CATEGORIES;
+        initialPricingMaster = data.initialPricingMaster;
+        initialNav = data.initialNav;
+        initialPdfs = data.initialPdfs;
+        initialPages = data.initialPages;
+        initialPapersCatalog = data.initialPapersCatalog;
+        initialStudentDirectory = data.initialStudentDirectory;
+
+        // Run Storage Retrieval & Auto-Migrator
+        pricingMaster = JSON.parse(localStorage.getItem('kas_pricing_master')) || initialPricingMaster;
+        navStructure = JSON.parse(localStorage.getItem('kas_nav_menu')) || initialNav;
+        pdfVault = JSON.parse(localStorage.getItem('kas_pdf_vault')) || initialPdfs;
+        testsCatalog = JSON.parse(localStorage.getItem('kas_tests_catalog')) || initialPapersCatalog;
+        studentDirectory = JSON.parse(localStorage.getItem('kas_student_directory')) || initialStudentDirectory;
+        userAttempts = JSON.parse(localStorage.getItem('kas_user_attempts')) || [];
+        currentUser = JSON.parse(localStorage.getItem('kas_user')) || null;
+
+        customPages = JSON.parse(localStorage.getItem('kas_custom_pages'));
+        if (!Array.isArray(customPages)) {
+          customPages = JSON.parse(JSON.stringify(initialPages));
+        }
+
+        // Initialize dependencies that require loaded data
+        bundles = JSON.parse(localStorage.getItem('kas_bundles')) || seedBundles();
+        saveBundles(); 
+        
+        normalizeStudentDirectory();
+        normalizePageReferences();
+
+        // Start DOM manipulation and view setup
+        if (typeof validateSession === "function") validateSession();
+        if (typeof renderAuthSettings === "function") renderAuthSettings();
+        applyPricingLabels();
+        renderNavigation();
+        renderGranularNavTree();
+        renderPagesList();
+        renderPdfVault();
+        filterExamCategory('kpsc_kas');
+        renderDashboard();
+        renderStudentEntitlementsDesk();
+        renderPaymentOrders();
+        renderStudentDirectoryTable();
+        
+        if (typeof renderAnnouncements === "function") renderAnnouncements();
+        renderHomeSections();
+        renderHomeBundles();
+        updateCategoryBundleButton();
+        renderFeatureAccessAdmin();
+        renderPlannersAdmin();
+        resetMenuForm();
+        
+        if (typeof currentAdminPanel !== 'undefined') {
+            showAdminPanel(currentAdminPanel);
+        } else {
+            showAdminPanel('overview');
+        }
+        
+        renderPricingMasterSettings();
+        if (typeof updateAuthUI === "function") updateAuthUI();
+        resetWordEditorToNew();
+
+        // Initialize routes and checks
+        checkUnfinishedExam();
+        migrateStoredPdfs();
+        window.addEventListener('hashchange', routeFromHash);
+        window.addEventListener('popstate', routeFromHash);
+        routeFromHash();
+
+      } catch (error) {
+        console.error("Critical Application Error: ", error);
+        alert("Failed to load application data. Please ensure you are running this on a local server or GitHub pages to fetch data.json properly.");
       }
     };
-
-    const initialNav = [
-      { id: 'm1', label: 'Home', action: 'home', submenus: [] },
-      { 
-        id: 'm2', 
-        label: 'Exam Rooms', 
-        action: '#', 
-        submenus: [
-          { id: 's1', label: 'KPSC KAS Hub', action: 'category:kpsc_kas' },
-          { id: 's2', label: 'Karnataka PSI Hub', action: 'category:karnataka_psi' },
-          { id: 's3', label: 'FDA / SDA Hub', action: 'category:kpsc_fda_sda' },
-          { id: 's4', label: 'UPSC CSE Hub', action: 'category:upsc_cse' }
-        ] 
-      },
-      { id: 'm3', label: 'Current Affairs', action: 'page:p_current_affairs', submenus: [] },
-      { id: 'm4', label: 'KAS Syllabus Guide', action: 'page:p_1', submenus: [] }
-    ];
-
-    const initialPdfs = [
-      {
-        id: 'doc_1',
-        title: 'Karnataka Economic Survey 2026 Summary',
-        category: 'KPSC KAS',
-        access: 'paid',
-        price: 49,
-        url: 'https://finance.karnataka.gov.in',
-        autoUrl: 'https://kasportal.in/vault/doc-m51a-karnataka-economic-survey-2026.pdf'
-      }
-    ];
-
-    const initialPages = [
-      {
-        id: 'p_current_affairs',
-        slug: 'current-affairs',
-        title: 'Current Affairs & Karnataka State Snippets',
-        isGated: false,
-        price: 0,
-        content: `
-          <h1>Karnataka Current Affairs & Administrative Updates</h1>
-          <p>Daily curated summaries mapped to KPSC Gazetted Probationers Preliminary and Mains syllabi.</p>
-          <h2>Karnataka Economic Indicators & Budget Highlights</h2>
-          <p>The state has registered over 8.2% contribution to national GDP with steady tertiary sector expansion. Aspirants can download the official summary document: <a href="javascript:void(0)" onclick="downloadOrOpenPdf('doc_1')" class="text-amber-600 font-bold underline cursor-pointer">Karnataka Economic Survey 2026 Summary<span class="text-[10px] bg-red-100 text-red-700 px-1 py-0.2 rounded ml-1 font-sans font-normal">PDF</span></a>.</p>
-          <h2>Administrative Reforms & Citizen Services</h2>
-          <ul>
-            <li><b>Sakala Act Extensions:</b> Over 1,000 public delivery timelines now legally mandated across district offices.</li>
-            <li><b>Western Ghats Conservation:</b> Latest status updates on village cluster recommendations under central review.</li>
-          </ul>
-        `
-      },
-      {
-        id: 'p_1',
-        slug: 'kas-syllabus',
-        title: 'KPSC KAS Preliminary Examination Blueprint',
-        isGated: false,
-        price: 0,
-        content: `
-          <h1>KPSC KAS Preliminary Examination Structure</h1>
-          <p>The preliminary examination consists of two objective papers evaluated with strict negative marking.</p>
-          <h2>Prescribed Reference Study Material</h2>
-          <p>Aspirants must thoroughly review the state economic indicators before taking the mock papers. You can download the complete summary document directly by clicking on the <a href="javascript:void(0)" onclick="downloadOrOpenPdf('doc_1')" class="text-amber-600 font-bold underline cursor-pointer">Karnataka Economic Survey PDF<span class="text-[10px] bg-red-100 text-red-700 px-1 py-0.2 rounded ml-1 font-sans font-normal">PDF</span></a> provided for this batch.</p>
-          <h2>Negative Marking Ratio</h2>
-          <p>Each incorrect bubble results in a deduction of <b>0.25 (1/4th)</b> of the marks assigned to that specific question.</p>
-        `
-      }
-    ];
-
-    const initialPapersCatalog = [
-      {
-        id: 'kas_mock_01',
-        category: 'kpsc_kas',
-        title: 'KAS Prelims Paper 1: General Studies Mock 01',
-        price: 99,
-        scheme: { examBadge: 'KPSC KAS', marksCorrect: 2.00, marksWrong: 0.500, duration: 120, cutoff: 120 },
-        questions: [
-          {
-            id: 1,
-            q_en: "With reference to the Karnataka State Budget, which sector contributes the highest share to the Gross State Value Added (GSVA)?",
-            q_kn: "ಕರ್ನಾಟಕ ರಾಜ್ಯ ಬಜೆಟ್‌ನ ಪ್ರಕಾರ, ಈ ಕೆಳಗಿನ ಯಾವ ವಲಯವು ರಾಜ್ಯದ ಒಟ್ಟು ಮೌಲ್ಯವರ್ಧನೆಗೆ (GSVA) ಅತಿ ಹೆಚ್ಚಿನ ಕೊಡುಗೆ ನೀಡುತ್ತದೆ?",
-            options_en: ["Agriculture and Allied Activities", "Industry and Manufacturing", "Services Sector", "Mining and Quarrying"],
-            options_kn: ["ಕೃಷಿ ಮತ್ತು ಸಂಬಂಧಿತ ಚಟುವಟಿಕೆಗಳು", "ಕೈಗಾರಿಕೆ ಮತ್ತು ಉತ್ಪಾದನೆ", "ಸೇವಾ ವಲಯ", "ಗಣಿಗಾರಿಕೆ ಮತ್ತು ಉತ್ಖನನ"],
-            correct: "C",
-            subject: "Economy",
-            exp: "The Services sector consistently contributes over 64% of Karnataka's GSVA."
-          },
-          {
-            id: 2,
-            q_en: "Under the Vijayanagara Empire, the central land revenue assessment department was known as:",
-            q_kn: "ವಿಜಯನಗರ ಸಾಮ್ರಾಜ್ಯದ ಆಡಳಿತದಲ್ಲಿ ಭೂಕಂದಾಯ ಇಲಾಖೆಯನ್ನು ಏನೆಂದು ಕರೆಯಲಾಗುತ್ತಿತ್ತು?",
-            options_en: ["Athavana", "Kandachara", "Samprathi", "Karanika"],
-            options_kn: ["ಅಠವಣೆ (Athavana)", "ಕಂದಾಚಾರ", "ಸಂಪ್ರತಿ", "ಕರಣಿಕ"],
-            correct: "A",
-            subject: "Karnataka History",
-            exp: "'Athavana' was the central land revenue department in Vijayanagara administration."
-          }
-        ]
-      },
-      {
-        id: 'psi_mock_01',
-        category: 'karnataka_psi',
-        title: 'Karnataka PSI Civil Paper 2: General Studies Mock 01',
-        price: 99,
-        scheme: { examBadge: 'Karnataka PSI', marksCorrect: 1.50, marksWrong: 0.375, duration: 90, cutoff: 110 },
-        questions: [
-          {
-            id: 1,
-            q_en: "Under the Code of Criminal Procedure (CrPC), who is empowered to establish a Court of Session in a district?",
-            q_kn: "ದಂಡ ಪ್ರಕ್ರಿಯಾ ಸಂಹಿತೆಯ (CrPC) ಅಡಿಯಲ್ಲಿ ಜಿಲ್ಲೆಯಲ್ಲಿ ಸೆಷನ್ಸ್ ನ್ಯಾಯಾಲಯವನ್ನು ಸ್ಥಾಪಿಸಲು ಯಾರಿಗೆ ಅಧಿಕಾರವಿದೆ?",
-            options_en: ["High Court", "State Government", "District Magistrate", "Supreme Court"],
-            options_kn: ["ಉಚ್ಚ ನ್ಯಾಯಾಲಯ", "ರಾಜ್ಯ ಸರ್ಕಾರ", "ಜಿಲ್ಲಾಧಿಕಾರಿ", "ಸರ್ವೋಚ್ಚ ನ್ಯಾಯಾಲಯ"],
-            correct: "B",
-            subject: "Polity & Law",
-            exp: "Section 9 of CrPC empowers the State Government to establish a Court of Session for every sessions division."
-          }
-        ]
-      }
-    ];
-
-    const initialStudentDirectory = [
-      {
-        email: "student@gmail.com",
-        utr: "UPI1234567890",
-        status: "active",
-        allowedExams: ["kas_mock_01"],
-        allowedPages: ["p_1", "p_current_affairs"],
-        allowedPdfs: ["doc_1"]
-      }
-    ];
-
-    // ================= STORAGE RETRIEVAL WITH AUTO-MIGRATOR =================
-    let pricingMaster = JSON.parse(localStorage.getItem('kas_pricing_master')) || initialPricingMaster;
-    let navStructure = JSON.parse(localStorage.getItem('kas_nav_menu')) || initialNav;
-    let pdfVault = JSON.parse(localStorage.getItem('kas_pdf_vault')) || initialPdfs;
-    let testsCatalog = JSON.parse(localStorage.getItem('kas_tests_catalog')) || initialPapersCatalog;
-    let studentDirectory = JSON.parse(localStorage.getItem('kas_student_directory')) || initialStudentDirectory;
-    let userAttempts = JSON.parse(localStorage.getItem('kas_user_attempts')) || [];
-    let currentUser = JSON.parse(localStorage.getItem('kas_user')) || null;
-
-    // Pages: seed the starter pages on FIRST RUN only, so deleted/renamed pages stay that way.
-    let customPages = JSON.parse(localStorage.getItem('kas_custom_pages'));
-    if (!Array.isArray(customPages)) {
-      customPages = JSON.parse(JSON.stringify(initialPages));
-    }
-
-    // Page state. The page ID is the permanent key; the slug is only a friendly link.
-    let editingPageId = null;       // page currently open in the editor (null = new page)
-    let slugManuallyEdited = false; // stop auto-filling the link from the title
-    let currentPageId = null;       // page currently shown to the visitor
 
     function slugify(text) {
       return (text || '').toLowerCase()
