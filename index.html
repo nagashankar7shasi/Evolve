@@ -3533,23 +3533,51 @@ async function rejectOrder(orderId) {
   alert(`Access updated in cloud for ${activeSelectedStudent.email}!\n\n• Passes: ${passes.length ? passes.map(passLabel).join(', ') : 'none'}\n• Tests: ${exams.length}\n• Pages: ${pages.length}\n• PDFs: ${pdfs.length}`);
 }
 
-    function revokeCurrentStudent() {
-      if (!activeSelectedStudent) return;
-      if (confirm(`Revoke all access and remove ${activeSelectedStudent.email} from directory?`)) {
-        studentDirectory = studentDirectory.filter(s => s.email !== activeSelectedStudent.email);
-        delete plannerStore[activeSelectedStudent.email];
-        savePlannerStore();
-        localStorage.setItem('kas_student_directory', JSON.stringify(studentDirectory));
-        activeSelectedStudent = null;
-        document.getElementById('selected-student-display').innerText = 'None Selected';
-        renderSelectedStudentLoginInfo();
-        document.getElementById('entitle-student-email').value = '';
-        document.getElementById('entitle-student-utr').value = '';
-        selectAllEntitlements(false);
-        renderStudentEntitlementsDesk();
-        filterExamCategory(selectedCategory);
-      }
+  async function revokeCurrentStudent() {
+  if (!activeSelectedStudent) return;
+  
+  if (confirm(`Revoke all access and remove ${activeSelectedStudent.email} from directory?`)) {
+    
+    // 1. Delete the student from the Supabase cloud
+    const { error: studentError } = await supabaseClient
+      .from('students')
+      .delete()
+      .eq('email', activeSelectedStudent.email);
+
+    // 2. Delete their progress (planners and mistakes) from the cloud
+    const { error: progressError } = await supabaseClient
+      .from('student_progress')
+      .delete()
+      .eq('email', activeSelectedStudent.email);
+
+    if (studentError) {
+      return alert("Failed to delete student from cloud: " + studentError.message);
     }
+
+    // 3. Clear them from local memory
+    studentDirectory = studentDirectory.filter(s => s.email !== activeSelectedStudent.email);
+    delete plannerStore[activeSelectedStudent.email];
+    
+    // savePlannerStore is now async, so we await it
+    await savePlannerStore(); 
+    localStorage.setItem('kas_student_directory', JSON.stringify(studentDirectory));
+    
+    activeSelectedStudent = null;
+    
+    // 4. Reset the UI
+    document.getElementById('selected-student-display').innerText = 'None Selected';
+    renderSelectedStudentLoginInfo();
+    document.getElementById('entitle-student-email').value = '';
+    document.getElementById('entitle-student-utr').value = '';
+    selectAllEntitlements(false);
+    
+    renderStudentEntitlementsDesk();
+    if (typeof filterExamCategory === 'function') filterExamCategory(selectedCategory);
+    if (typeof renderStudentDirectoryTable === 'function') renderStudentDirectoryTable();
+    
+    alert("Student and all associated privileges have been completely revoked.");
+  }
+}
 
     /* ----------------------------------------------------
        6. CATEGORY-WISE EXAM PAGES & TEST INGESTION
