@@ -2292,9 +2292,34 @@
     let timerSeconds = 0;
     let timerInterval = null;
 
-    window.onload = function() {
-      validateSession();
-      renderAuthSettings();
+window.onload = async function() {
+      // --- NEW: FETCH LIVE DATA FROM GITHUB JSON ---
+      try {
+        const response = await fetch('data.json');
+        if (response.ok) {
+          const liveData = await response.json();
+          
+          // Overwrite global variables with the live data from GitHub
+          if (liveData.EXAM_CATEGORIES) EXAM_CATEGORIES = liveData.EXAM_CATEGORIES;
+          if (liveData.initialPricingMaster) pricingMaster = liveData.initialPricingMaster;
+          if (liveData.initialNav) navStructure = liveData.initialNav;
+          if (liveData.initialPdfs) pdfVault = liveData.initialPdfs;
+          if (liveData.initialPapersCatalog) testsCatalog = liveData.initialPapersCatalog;
+          
+          // Push updates securely to the browser's storage
+          localStorage.setItem('kas_pricing_master', JSON.stringify(pricingMaster));
+          localStorage.setItem('kas_nav_menu', JSON.stringify(navStructure));
+          localStorage.setItem('kas_pdf_vault', JSON.stringify(pdfVault));
+          localStorage.setItem('kas_tests_catalog', JSON.stringify(testsCatalog));
+        }
+      } catch (err) {
+        console.warn("Could not fetch data.json from GitHub. Falling back to local defaults.");
+      }
+      // ----------------------------------------------
+
+      // Resume normal startup sequence
+      if (typeof validateSession === 'function') validateSession();
+      if (typeof renderAuthSettings === 'function') renderAuthSettings();
       applyPricingLabels();
       renderNavigation();
       renderGranularNavTree();
@@ -2304,27 +2329,25 @@
       renderDashboard();
       renderStudentEntitlementsDesk();
       renderPaymentOrders();
-      renderStudentDirectoryTable();
-      renderAnnouncements();
+      if (typeof renderStudentDirectoryTable === 'function') renderStudentDirectoryTable();
+      if (typeof renderAnnouncements === 'function') renderAnnouncements();
       renderHomeSections();
       renderHomeBundles();
       updateCategoryBundleButton();
       renderFeatureAccessAdmin();
       renderPlannersAdmin();
       resetMenuForm();
-      showAdminPanel(currentAdminPanel);
+      if (typeof currentAdminPanel !== 'undefined') showAdminPanel(currentAdminPanel);
       renderPricingMasterSettings();
-      updateAuthUI();
+      if (typeof updateAuthUI === 'function') updateAuthUI();
       resetWordEditorToNew();
 
-      // Page links (#/page/<link>) open the page directly, and Back/Forward work.
       checkUnfinishedExam();
       migrateStoredPdfs();
       window.addEventListener('hashchange', routeFromHash);
       window.addEventListener('popstate', routeFromHash);
       routeFromHash();
     };
-
     /* ----------------------------------------------------
        3. PRICING MASTER CONTROLLER & CHECKOUT
     ----------------------------------------------------- */
