@@ -2446,6 +2446,29 @@ window.onload = async function() {
     console.error("Failed to fetch students:", error);
   }
 }
+    async function pushStudentToCloud(email) {
+  const student = getStudentRecord(email);
+  if (!student) return;
+  
+  const { error } = await supabaseClient
+    .from('students')
+    .upsert({
+      email: student.email,
+      name: student.name || '',
+      utr: student.utr || '',
+      status: student.status || 'active',
+      allowed_exams: student.allowedExams || [],
+      allowed_pages: student.allowedPages || [],
+      allowed_pdfs: student.allowedPdfs || [],
+      passes: student.passes || [],
+      pass_expiry: student.passExpiry || {},
+      password_hash: student.passwordHash,
+      password_salt: student.passwordSalt,
+      last_login_at: student.lastLoginAt
+    });
+
+  if (error) console.error("Failed to sync student to cloud:", error);
+}
     /* ----------------------------------------------------
        3. PRICING MASTER CONTROLLER & CHECKOUT
     ----------------------------------------------------- */
