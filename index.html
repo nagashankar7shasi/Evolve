@@ -2360,6 +2360,7 @@ window.onload = async function() {
       renderStudentEntitlementsDesk();
       await fetchCloudPayments();
       await fetchCloudAttempts();
+      await fetchCloudStudents();
       if (typeof renderStudentDirectoryTable === 'function') renderStudentDirectoryTable();
       if (typeof renderAnnouncements === 'function') renderAnnouncements();
       renderHomeSections();
@@ -2414,6 +2415,35 @@ window.onload = async function() {
     }
   } else if (error) {
     console.error("Failed to fetch attempts:", error);
+  }
+}
+    async function fetchCloudStudents() {
+  const { data, error } = await supabaseClient
+    .from('students')
+    .select('*');
+
+  if (data) {
+    studentDirectory = data.map(s => ({
+      email: normalizeEmail(s.email),
+      name: s.name || '',
+      utr: s.utr || '',
+      status: s.status || 'active',
+      allowedExams: Array.isArray(s.allowed_exams) ? s.allowed_exams : [],
+      allowedPages: Array.isArray(s.allowed_pages) ? s.allowed_pages : [],
+      allowedPdfs: Array.isArray(s.allowed_pdfs) ? s.allowed_pdfs : [],
+      passes: Array.isArray(s.passes) ? s.passes : [],
+      passExpiry: s.pass_expiry || {},
+      passwordHash: s.password_hash || undefined,
+      passwordSalt: s.password_salt || undefined,
+      createdAt: s.created_at,
+      lastLoginAt: s.last_login_at
+    }));
+
+    renderStudentEntitlementsDesk();
+    if (typeof renderStudentDirectoryTable === 'function') renderStudentDirectoryTable();
+    if (typeof filterExamCategory === 'function') filterExamCategory(selectedCategory);
+  } else if (error) {
+    console.error("Failed to fetch students:", error);
   }
 }
     /* ----------------------------------------------------
@@ -2994,24 +3024,48 @@ async function submitPaymentClaim() {
 }
 
     // Unlocks whatever the order paid for
-    function grantOrder(order) {
-      let student = getStudentRecord(order.email);
-      if (!student) {
-        student = { email: order.email, name: order.name, utr: order.utr, status: 'active', allowedExams: [], allowedPages: [], allowedPdfs: [], passes: [], createdAt: new Date().toISOString() };
-        studentDirectory.push(student);
-      }
-      if (order.type === 'pass') grantPass(student, order.itemId);
-      const listFor = { paper: 'allowedExams', page: 'allowedPages', pdf: 'allowedPdfs' }[order.type];
-      if (listFor && !student[listFor].includes(order.itemId)) student[listFor].push(order.itemId);
-      student.utr = order.utr;
-      localStorage.setItem('kas_student_directory', JSON.stringify(studentDirectory));
-    }
+    async function grantOrder(order) {
+  let student = getStudentRecord(order.email);
+  if (!student) {
+    student = { 
+      email: normalizeEmail(order.email), 
+      name: order.name, 
+      utr: order.utr, 
+      status: 'active', 
+      allowedExams: [], 
+      allowedPages: [], 
+      allowedPdfs: [], 
+      passes: [], 
+      passExpiry: {},
+      createdAt: new Date().toISOString() 
+    };
+    studentDirectory.push(student);
+  }
+  
+  if (order.type === 'pass') grantPass(student, order.itemId);
+  const listFor = { paper: 'allowedExams', page: 'allowedPages', pdf: 'allowedPdfs' }[order.type];
+  if (listFor && !student[listFor].includes(order.itemId)) student[listFor].push(order.itemId);
+  student.utr = order.utr;
 
-    function nextReceiptNo() {
-      const year = new Date().getFullYear();
-      const count = paymentOrders.filter(o => o.receiptNo && o.receiptNo.startsWith(`KAS-${year}-`)).length + 1;
-      return `KAS-${year}-${String(count).padStart(4, '0')}`;
-    }
+  // Push the updated student access layers to Supabase
+  const { error } = await supabaseClient
+    .from('students')
+    .upsert({
+      email: student.email,
+      name: student.name,
+      utr: student.utr,
+      status: student.status,
+      allowed_exams: student.allowedExams,
+      allowed_pages: student.allowedPages,
+      allowed_pdfs: student.allowedPdfs,
+      passes: student.passes,
+      pass_expiry: student.passExpiry
+    });
+
+  if (error) {
+    console.error("Failed to sync student permissions to cloud:", error);
+  }
+}
 
 async function approveOrder(orderId) {
   const order = paymentOrders.find(o => o.id === orderId);
@@ -3388,28 +3442,48 @@ async function rejectOrder(orderId) {
       });
     }
 
-    function saveStudentEntitlements() {
-      if (!activeSelectedStudent) return alert('Select or load a student profile first.');
+    async function saveStudentEntitlements() {
+  if (!activeSelectedStudent) return alert('Select or load a student profile first.');
 
-      const exams = Array.from(document.querySelectorAll('.entitle-paper-cb:checked')).map(cb => cb.value);
-      const pages = Array.from(document.querySelectorAll('.entitle-page-cb:checked')).map(cb => cb.value);
-      const pdfs = Array.from(document.querySelectorAll('.entitle-pdf-cb:checked')).map(cb => cb.value);
-      const passes = Array.from(document.querySelectorAll('.entitle-pass-cb:checked')).map(cb => cb.value);
-      [...activeSelectedStudent.passes].forEach(id => { if (!passes.includes(id)) revokePass(activeSelectedStudent, id); });
-      passes.forEach(id => { if (!activeSelectedStudent.passes.includes(id) || isPassExpired(activeSelectedStudent, id)) grantPass(activeSelectedStudent, id); });
+  const exams = Array.from(document.querySelectorAll('.entitle-paper-cb:checked')).map(cb => cb.value);
+  const pages = Array.from(document.querySelectorAll('.entitle-page-cb:checked')).map(cb => cb.value);
+  const pdfs = Array.from(document.querySelectorAll('.entitle-pdf-cb:checked')).map(cb => cb.value);
+  const passes = Array.from(document.querySelectorAll('.entitle-pass-cb:checked')).map(cb => cb.value);
+  
+  [...activeSelectedStudent.passes].forEach(id => { if (!passes.includes(id)) revokePass(activeSelectedStudent, id); });
+  passes.forEach(id => { if (!activeSelectedStudent.passes.includes(id) || isPassExpired(activeSelectedStudent, id)) grantPass(activeSelectedStudent, id); });
 
-      activeSelectedStudent.allowedExams = exams;
-      activeSelectedStudent.allowedPages = pages;
-      activeSelectedStudent.allowedPdfs = pdfs;
-      activeSelectedStudent.utr = document.getElementById('entitle-student-utr').value.trim();
+  activeSelectedStudent.allowedExams = exams;
+  activeSelectedStudent.allowedPages = pages;
+  activeSelectedStudent.allowedPdfs = pdfs;
+  activeSelectedStudent.utr = document.getElementById('entitle-student-utr').value.trim();
 
-      localStorage.setItem('kas_student_directory', JSON.stringify(studentDirectory));
-      renderStudentEntitlementsDesk();
-      renderSelectedStudentLoginInfo();
-      renderStudentDirectoryTable();
-      refreshUserScopedViews();
-      alert(`Access updated for ${activeSelectedStudent.email}!\n\n• Passes: ${passes.length ? passes.map(passLabel).join(', ') : 'none'}\n• Tests: ${exams.length}\n• Pages: ${pages.length}\n• PDFs: ${pdfs.length}`);
-    }
+  // Save to Supabase Cloud
+  const { error } = await supabaseClient
+    .from('students')
+    .upsert({
+      email: activeSelectedStudent.email,
+      name: activeSelectedStudent.name || '',
+      utr: activeSelectedStudent.utr,
+      status: activeSelectedStudent.status || 'active',
+      allowed_exams: activeSelectedStudent.allowedExams,
+      allowed_pages: activeSelectedStudent.allowedPages,
+      allowed_pdfs: activeSelectedStudent.allowedPdfs,
+      passes: activeSelectedStudent.passes,
+      pass_expiry: activeSelectedStudent.passExpiry || {}
+    });
+
+  if (error) {
+    alert("Error saving to cloud: " + error.message);
+    return;
+  }
+
+  renderStudentEntitlementsDesk();
+  renderSelectedStudentLoginInfo();
+  renderStudentDirectoryTable();
+  refreshUserScopedViews();
+  alert(`Access updated in cloud for ${activeSelectedStudent.email}!\n\n• Passes: ${passes.length ? passes.map(passLabel).join(', ') : 'none'}\n• Tests: ${exams.length}\n• Pages: ${pages.length}\n• PDFs: ${pdfs.length}`);
+}
 
     function revokeCurrentStudent() {
       if (!activeSelectedStudent) return;
