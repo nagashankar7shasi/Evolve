@@ -3448,13 +3448,14 @@ async function rejectOrder(orderId) {
       el.innerText = parts.join('. ') + '.';
     }
 
-    function clearStudentPassword() {
+    async function clearStudentPassword() {
       const st = activeSelectedStudent;
       if (!st) return alert('Select or load a student profile first.');
       if (!confirm(`Clear the password for ${st.email}?\n\nThey will need to log in with an OTP or use "Forgot password" to set a new one.`)) return;
       delete st.passwordHash;
       delete st.passwordSalt;
       localStorage.setItem('kas_student_directory', JSON.stringify(studentDirectory));
+      await pushStudentToCloud(st.email);
       renderSelectedStudentLoginInfo();
       alert(`Password cleared for ${st.email}.`);
     }
@@ -7572,7 +7573,7 @@ async function evaluateOMRSubmission() {
       }
     }
 
-    async function handleSetPassword(e) {
+    async function handleSetPassword(event) {
       e.preventDefault();
       if (!verifiedResetEmail) return showAuthPanel('login');
       const p1 = document.getElementById('auth-new-pass').value;
@@ -7587,6 +7588,8 @@ async function evaluateOMRSubmission() {
       student.passwordUpdatedAt = new Date().toISOString();
       student.emailVerified = true;
       localStorage.setItem('kas_student_directory', JSON.stringify(studentDirectory));
+      await pushStudentToCloud(document.getElementById('auth-setpass-email').innerText.trim().toLowerCase());
+      await pushStudentToCloud(document.getElementById('auth-signup-email').value.trim().toLowerCase());
       verifiedResetEmail = null;
       delete passwordFails[student.email];
       loginStudent(student);
