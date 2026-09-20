@@ -1,1 +1,832 @@
-
+{
+  "EXAM_CATEGORIES": {
+    "kpsc_kas": { "id": "kpsc_kas", "name": "KPSC KAS (Gazetted)", "desc": "Official Preliminary Exam: Paper 1 & Paper 2 (+2.00 / -0.50, 120 Mins, Target: 120)", "defaultScheme": { "examBadge": "KPSC KAS", "marksCorrect": 2.0, "marksWrong": 0.5, "duration": 120, "cutoff": 120 } },
+    "karnataka_psi": { "id": "karnataka_psi", "name": "Karnataka Police Sub-Inspector (PSI)", "desc": "Civil Police Sub-Inspector Paper 2 (+1.50 / -0.375, 90 Mins, Target: 110)", "defaultScheme": { "examBadge": "Karnataka PSI", "marksCorrect": 1.5, "marksWrong": 0.375, "duration": 90, "cutoff": 110 } },
+    "kpsc_fda_sda": { "id": "kpsc_fda_sda", "name": "KPSC FDA / SDA / Group C", "desc": "First Division Assistant / Second Division Assistant GK (+1.00 / -0.25, 90 Mins, Target: 75)", "defaultScheme": { "examBadge": "KPSC FDA/SDA", "marksCorrect": 1.0, "marksWrong": 0.25, "duration": 90, "cutoff": 75 } },
+    "upsc_cse": { "id": "upsc_cse", "name": "UPSC Civil Services Examination", "desc": "Union Public Service Commission GS Paper 1 (+2.00 / -0.666, 120 Mins, Target: 95)", "defaultScheme": { "examBadge": "UPSC CSE", "marksCorrect": 2.0, "marksWrong": 0.666, "duration": 120, "cutoff": 95 } }
+  },
+  "initialPricingMaster": {
+    "upiId": "yourkasacademy@upi",
+    "payeeName": "KAS Officer's Academy",
+    "allAccessPrice": 2499,
+    "categoryPasses": { "kpsc_kas": 999, "karnataka_psi": 499, "kpsc_fda_sda": 399, "upsc_cse": 999 }
+  },
+  "initialNav": [
+    { "id": "m1", "label": "Home", "action": "home", "submenus": [] },
+    { "id": "m2", "label": "Current Affairs", "action": "snippets", "submenus": [] },
+    { "id": "m3", "label": "Test Series", "action": "tests", "submenus": [] },
+    { "id": "nav_1789838140095", "label": "Free Resources", "action": "category:kpsc_kas", "submenus": [ { "id": "nav_1789838187313", "label": "Current Affairs", "action": "category:kpsc_kas" }, { "id": "nav_1789838968465", "label": "Free Current Affairs", "action": "page:p_1789838870191" } ] }
+  ],
+  "initialPdfs": [
+    { "id": "doc_1", "title": "Karnataka Economic Survey 2026 Summary", "category": "KPSC KAS", "access": "paid", "price": 49, "url": "https://finance.karnataka.gov.in", "autoUrl": "https://kasportal.in/vault/doc-m51a-karnataka-economic-survey-2026.pdf" },
+    { "id": "doc_1789853279181", "title": "Oct 2025", "category": "KPSC KAS", "access": "free", "price": 0, "url": "idb:doc_1789853279181", "bytes": 5200246 },
+    { "id": "doc_1789853299908", "title": "November 2025", "category": "KPSC KAS", "access": "free", "price": 0, "url": "idb:doc_1789853299908", "bytes": 5866704 },
+    { "id": "doc_1789853312511", "title": "June 2026", "category": "KPSC KAS", "access": "paid", "price": 49, "url": "idb:doc_1789853312511", "bytes": 4476345 }
+  ],
+  "initialPages": [
+    {
+      "id": "p_1",
+      "slug": "kas-syllabus",
+      "title": "KPSC KAS Preliminary Examination Blueprint",
+      "isGated": false,
+      "price": 0,
+      "content": "\n          <h1>KPSC KAS Preliminary Examination Structure</h1>\n          <p>The preliminary examination consists of two objective papers evaluated with strict negative marking.</p>\n          <h2>Prescribed Reference Study Material</h2>\n          <p>Aspirants must thoroughly review the state economic indicators and statistical projections before taking the mock papers. You can download the complete summary document directly by clicking on the <a href=\"javascript:void(0)\" onclick=\"downloadOrOpenPdf('doc_1')\" class=\"text-amber-600 font-bold underline cursor-pointer\">Karnataka Economic Survey PDF<span class=\"text-[10px] bg-red-100 text-red-700 px-1 py-0.2 rounded ml-1 font-sans font-normal\">PDF</span></a> provided for this batch.</p>\n          <h2>Negative Marking Ratio</h2>\n          <p>Each incorrect bubble results in a deduction of <b>0.25 (1/4th)</b> of the marks assigned to that specific question.</p>\n        ",
+      "oldSlugs": [],
+      "parentId": null,
+      "order": 0,
+      "icon": "📄",
+      "childStyle": "tiles"
+    },
+    {
+      "id": "p_1789726610257",
+      "title": "KAS MAINS PAPER",
+      "slug": "kas-mains-paper",
+      "isGated": false,
+      "price": 0,
+      "content": "<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">5. World Bank. (2012). Benefit incidence analysis: A practitioner's\nguide. Washington, DC: World Bank.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Step-by-step methodological guidance for BIA.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">6. Reinikka, R. &amp; Svensson, J. (2011). Public expenditure\ntracking surveys in education and health. World Bank Research Observer.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Methods for identifying leakage and utilisation gaps.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">7. Demery, L. (2000). Benefit incidence analysis of public spending.\nWorld Bank Policy Research Working Paper.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Methodological reference for BIA.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">8. ISEC. (2020). Karnataka development report. Bengaluru: Institute\nfor Social and Economic Change.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Comprehensive analysis of Karnataka's development\nchallenges.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\"><a href=\"javascript:void(0)\" onclick=\"downloadOrOpenPdf('doc_1')\" class=\"text-amber-600 font-bold underline cursor-pointer hover:text-amber-800 inline-flex items-center gap-0.5\" title=\"Attached PDF: Karnataka Economic Survey 2026 Summary (₹49)\">9. Ray, D. (1998). Development economics. Princeton: Princeton\nUniversity Press.<span class=\"text-[10px] bg-red-100 text-red-700 px-1 py-0.2 rounded ml-1 font-sans font-normal\">PDF</span></a><o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Foundational development economics framework.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:10.0pt;line-height:150%\"><span lang=\"EN-GB\">10. Dasgupta, P. &amp; Serageldin, I. (2000). Social capital: A\nmultifaceted perspective. World Bank Publications.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:10.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Relationship between public goods, social capital and\ndevelopment.<o:p></o:p></span></p>",
+      "oldSlugs": [],
+      "parentId": null,
+      "order": 1,
+      "icon": "📄",
+      "childStyle": "tiles"
+    },
+    {
+      "id": "p_current_affairs",
+      "title": "KAS PRELIMS 2026",
+      "slug": "current-affairs",
+      "isGated": false,
+      "price": 0,
+      "content": "<h1 align=\"center\" style=\"margin-top:5.0pt;margin-right:0cm;margin-bottom:10.0pt;\nmargin-left:0cm;text-align:center\"><span lang=\"EN-GB\">LITERATURE REVIEW: <a href=\"javascript:void(0)\" onclick=\"downloadOrOpenPdf('doc_1')\" class=\"text-amber-600 font-bold underline cursor-pointer hover:text-amber-800 inline-flex items-center gap-0.5\" title=\"Attached PDF: Karnataka Economic Survey 2026 Summary (₹49)\">SCOPUS\nARTICLES &amp; SUPPLEMENTARY SOURCES<span class=\"text-[10px] bg-red-100 text-red-700 px-1 py-0.2 rounded ml-1 font-sans font-normal\">PDF</span></a><o:p></o:p></span></h1>\n\n<p class=\"MsoNormal\" align=\"center\" style=\"margin-bottom:15.0pt;text-align:center\"><span lang=\"EN-GB\">List of 50 Scopus-Indexed Journal Articles + Government Reports,\nWorking Papers &amp; Books<o:p></o:p></span></p>\n\n<table class=\"MsoNormalTable\" border=\"1\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\" style=\"width: 100%; border-width: medium; border-style: none; border-color: currentcolor; border-image: none;\">\n <tbody><tr>\n  <td width=\"120\" valign=\"top\" style=\"width: 90pt; border-width: 1pt; border-color: windowtext; border-image: none; padding: 0cm 0.5pt;\">\n  <p class=\"MsoNormal\"><span lang=\"EN-GB\">Research Topic:<o:p></o:p></span></p>\n  </td>\n  <td width=\"360\" valign=\"top\" style=\"width:270.0pt;border:solid windowtext 1.0pt;\n  border-left:none;mso-border-left-alt:solid windowtext .5pt;mso-border-alt:\n  solid windowtext .5pt;padding:0cm .5pt 0cm .5pt\">\n  <p class=\"MsoNormal\"><span lang=\"EN-GB\">Quality of Public Expenditure in\n  Karnataka: Are Budget Allocations Translating to Development Outcomes? A\n  District-Level Secondary Data Study, 2005–2024<o:p></o:p></span></p>\n  </td>\n </tr>\n <tr>\n  <td width=\"120\" valign=\"top\" style=\"width:90.0pt;border:solid windowtext 1.0pt;\n  border-top:none;mso-border-top-alt:solid windowtext .5pt;mso-border-alt:solid windowtext .5pt;\n  padding:0cm .5pt 0cm .5pt\">\n  <p class=\"MsoNormal\"><span lang=\"EN-GB\">Submitted by:<o:p></o:p></span></p>\n  </td>\n  <td width=\"360\" valign=\"top\" style=\"width:270.0pt;border-top:none;border-left:\n  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;\n  mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;\n  mso-border-alt:solid windowtext .5pt;padding:0cm .5pt 0cm .5pt\">\n  <p class=\"MsoNormal\"><span lang=\"EN-GB\">Shashank G M<o:p></o:p></span></p>\n  </td>\n </tr>\n <tr>\n  <td width=\"120\" valign=\"top\" style=\"width:90.0pt;border:solid windowtext 1.0pt;\n  border-top:none;mso-border-top-alt:solid windowtext .5pt;mso-border-alt:solid windowtext .5pt;\n  padding:0cm .5pt 0cm .5pt\">\n  <p class=\"MsoNormal\"><span lang=\"EN-GB\">Institution:<o:p></o:p></span></p>\n  </td>\n  <td width=\"360\" valign=\"top\" style=\"width:270.0pt;border-top:none;border-left:\n  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;\n  mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;\n  mso-border-alt:solid windowtext .5pt;padding:0cm .5pt 0cm .5pt\">\n  <p class=\"MsoNormal\"><span lang=\"EN-GB\">Institute for Social and Economic Change\n  (ISEC), Bengaluru<o:p></o:p></span></p>\n  </td>\n </tr>\n <tr>\n  <td width=\"120\" valign=\"top\" style=\"width:90.0pt;border:solid windowtext 1.0pt;\n  border-top:none;mso-border-top-alt:solid windowtext .5pt;mso-border-alt:solid windowtext .5pt;\n  padding:0cm .5pt 0cm .5pt\">\n  <p class=\"MsoNormal\"><span lang=\"EN-GB\">Discipline:<o:p></o:p></span></p>\n  </td>\n  <td width=\"360\" valign=\"top\" style=\"width:270.0pt;border-top:none;border-left:\n  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;\n  mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;\n  mso-border-alt:solid windowtext .5pt;padding:0cm .5pt 0cm .5pt\">\n  <p class=\"MsoNormal\"><span lang=\"EN-GB\">Economics – Development Studies <o:p></o:p></span></p>\n  </td>\n </tr>\n <tr>\n  <td width=\"120\" valign=\"top\" style=\"width:90.0pt;border:solid windowtext 1.0pt;\n  border-top:none;mso-border-top-alt:solid windowtext .5pt;mso-border-alt:solid windowtext .5pt;\n  padding:0cm .5pt 0cm .5pt\">\n  <p class=\"MsoNormal\"><span lang=\"EN-GB\">Centre:<o:p></o:p></span></p>\n  </td>\n  <td width=\"360\" valign=\"top\" style=\"width:270.0pt;border-top:none;border-left:\n  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;\n  mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;\n  mso-border-alt:solid windowtext .5pt;padding:0cm .5pt 0cm .5pt\">\n  <p class=\"MsoNormal\"><span lang=\"EN-GB\">CESP<o:p></o:p></span></p>\n  </td>\n </tr>\n</tbody></table>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:15.0pt\"><span lang=\"EN-GB\">&nbsp;</span></p>\n\n<h2 style=\"margin-top:10.0pt;margin-right:0cm;margin-bottom:5.0pt;margin-left:\n0cm\"><span lang=\"EN-GB\">1. Public Expenditure Quality and Efficiency<o:p></o:p></span></h2>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\" style=\"background:yellow;mso-highlight:yellow\">1. Kumar, S. &amp;\nKaur, B. (2024). Evaluating public spending efficiency and its determinants\ntowards social outcomes: Empirical evidence from Indian states. Indian Economic\nJournal.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\" style=\"background:yellow;mso-highlight:yellow\">Relevance: DEA-based\nefficiency analysis of health and education spending across states.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\" style=\"background:yellow;mso-highlight:yellow\">2. Saji, D.R. &amp;\nMadheswaran, S. (2026). Public expenditure efficiency on health in Indian\nstates: Generalised stochastic frontier approach. Journal of the Asia Pacific\nEconomy, 31(3), 1559–1582.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\" style=\"background:yellow;mso-highlight:yellow\">Relevance: SFA\nmethodology for measuring health-expenditure efficiency; identifies\ndeterminants.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\" style=\"background:yellow;mso-highlight:yellow\">3. Kundu, A. (2017).\nThe effectiveness of public spending on education and health care in Indian\neconomy. Indian Economic Journal.</span><span lang=\"EN-GB\"><o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Examines causal link between education/health spending\nand development outcomes.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\" style=\"background:yellow;mso-highlight:yellow\">4. Sinha, J.K.\n(2025). Efficiency of public education expenditure in India: A stochastic\nfrontier analysis of state-level secondary school completion. Journal of\nBehavioral Economics and Policy, 1(2), 45–67.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\" style=\"background:yellow;mso-highlight:yellow\">Relevance:\nEducation-expenditure efficiency and learning outcomes; supports Objective 4.</span><span lang=\"EN-GB\"><o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\" style=\"background:yellow;mso-highlight:yellow\">5. Kaur, B. &amp;\nMisra, S. (2018). Assessing public expenditure efficiency at Indian states.\nJournal of Public Affairs.</span><span lang=\"EN-GB\"><o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Comparative analysis of health, education and\nsocial-sector spending efficiency.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">6<span style=\"background:yellow;mso-highlight:yellow\">. Devarajan,\nS., Swaroop, V. &amp; Zou, H.-f. (1996). The composition of public expenditure\nand economic growth. Journal of Monetary Economics, 37(2), 313–344.</span><o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Seminal paper on capital vs. revenue expenditure impact\non growth.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\" style=\"background:yellow;mso-highlight:yellow\">7. Heller, P.S.\n(1997). Government expenditure and economic growth: A review of the evidence.\nIMF Staff Papers, 42(2), 401–432.</span><span lang=\"EN-GB\"><o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Theoretical framework on growth-expenditure relationship.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">8. Pradhan, B., Tripathy, K.K. &amp; Rajan, R. (2022). Public\nspending and outcome of social services in India. Economic and Political\nWeekly, 57(15), 56–65.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Links public spending to social-service delivery\noutcomes.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\" style=\"background:yellow;mso-highlight:yellow\">9. Deb, S. (2025).\nEssentials of social sector expenditure in states of India. Social Change,\n55(2), 189–211.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\" style=\"background:yellow;mso-highlight:yellow\">Relevance: Reviews\nexpenditure patterns and composition across Indian states.</span><span lang=\"EN-GB\"><o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\" style=\"background:yellow;mso-highlight:yellow\">10. Chakraborty, L.S.\n&amp; Bhadra, K. (2024). State finances in India: Managing fiscal risks and\nsustaining recovery. Economic and Political Weekly, 59(8), 42–52.</span><span lang=\"EN-GB\"><o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Discusses fiscal risks and social-sector spending\nconstraints.<o:p></o:p></span></p>\n\n<h2 style=\"margin-top:10.0pt;margin-right:0cm;margin-bottom:5.0pt;margin-left:\n0cm\"><span lang=\"EN-GB\">2. Fiscal Federalism and State Finances<o:p></o:p></span></h2>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">11. Rao, M.G. &amp; Singh, N. (2005). Fiscal federalism in India:\nPrinciples and practice. Economic and Political Weekly, 40(13), 1285–1294.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Explains intergovernmental fiscal relations and\ndevolution.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">12. Kaur, A. (2025). Fiscal federalism and the FRBM framework in\nIndia: A conceptual review. International Journal of Management and Development\nStudies, 14(3), 201–225.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Links FRBM rules to state expenditure constraints.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">13. Khushboo Jain. (2026). Fiscal federalism in India: Evidence from\nstate revenues and transfers. International Journal of Business and Management,\n5(1), 203–214.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Examines state revenue generation and intergovernmental\ntransfers.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">14. Darshini, J.S. &amp; Gayithri, K. (2024). Indian fiscal\nfederalism and resource gap of state governments. Indian Journal of Public\nAdministration, 70(4), 445–468.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Measures resource gaps and fiscal dependency of states.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">15. Chakraborty, L.S., Bhadra, K. &amp; Arora, R. (2026).\nReconfiguring fiscal federalism in India after the goods and services tax.\nAsian Economic Policy Review, 21(1), 88–110.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Analyzes GST impact on state autonomy and revenue.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">16. Singh, K. &amp; Sutherland, R.A. (2026). How public financial\nmanagement shapes education and health outcomes. Journal of Development\nEconomics, 145, 102487.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Cross-country evidence on PFM and development outcomes.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">17. Tilak, J.B.G. (2015). Public spending on education in India:\nTrends, outcomes and equity. Indian Economic Journal, 63(3), 359–379.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Reviews education expenditure trends and equity\nimplications.<o:p></o:p></span></p>\n\n<h2 style=\"margin-top:10.0pt;margin-right:0cm;margin-bottom:5.0pt;margin-left:\n0cm\"><span lang=\"EN-GB\">3. Public Health Expenditure and Outcomes<o:p></o:p></span></h2>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">18. Discover Public Health. (2026). Public health expenditure,\neconomic growth and health outcomes in Northern India. Discover Public Health,\n23, 374.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Panel analysis of health spending and infant mortality\noutcomes.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">19. Yadav, J., John, D., Yadav, R., Kumari, D. &amp; Yadav, P.\n(2025). Benefit incidence of public health expenditure in India: Urban–rural\nequity matters. Journal of Health Management, 27(2), 245–263.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Benefit-incidence analysis of outpatient and inpatient\nservices.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">20. Chakraborty, L.S., Bhadra, K. &amp; Arora, R. (2025). Health\nexpenditure benefit incidence: WHO ICD-wise analysis of India. Health Economics\nReview, 15(12), 28.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Disease-specific benefit-incidence analysis methodology.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">21. Berman, P., Ahuja, R. &amp; Bhandari, L. (2010). Public health\nexpenditure and health outcomes in India. Economic and Political Weekly,\n45(32), 56–68.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Early evidence on health spending and health indicator\nrelationships.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">22. George, M.S., Dandona, M. et al. (2019). Health care and equity\nin India. The Lancet, 393(10189), 2092–2109.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Lancet Commission analysis of health system equity and\nservice delivery.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">23. Mahal, A., Afonso, L.M., et al. (2012). Health financing and\nequity in India. The Lancet, 379(9813), 391–403.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Analysis of health financing mechanisms and equity\noutcomes.<o:p></o:p></span></p>\n\n<h2 style=\"margin-top:10.0pt;margin-right:0cm;margin-bottom:5.0pt;margin-left:\n0cm\"><span lang=\"EN-GB\">4. Public Education Expenditure and Outcomes<o:p></o:p></span></h2>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">24. Kingdon, G.G. (2017). Public expenditure and school outcomes: An\nanalysis of India. Economic and Political Weekly, 52(15), 58–71.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Examines causal relationship between spending and\nlearning outcomes.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">25. Desai, S. &amp; Kulkarni, V. (2008). Changing educational\ninequalities in India in the context of affirmative action. Journal of Human\nDevelopment, 9(1), 129–146.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Education equity and public spending disparities across\nsocial groups.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">26. Holla, A. &amp; Kremer, M. (2009). Pricing and access in\neducation and health in developing countries. Economic and Political Weekly,\n44(11), 43–52.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: User fees and public provision of education and health\nservices.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">27. Mehrotra, S. &amp; Panchamukhi, P.R. (2006). Private provision\nof public services: Is it the answer? Economic and Political Weekly, 41(50),\n5071–5074.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Comparison of public vs. private education and health\nservice delivery.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">28. Drèze, J. &amp; Sen, A. (2013). An uncertain glory: India and\nits contradictions. Indian Journal of Human Development, 7(1), 1–13.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Public spending, service delivery, and human development\noutcomes in India.<o:p></o:p></span></p>\n\n<h2 style=\"margin-top:10.0pt;margin-right:0cm;margin-bottom:5.0pt;margin-left:\n0cm\"><span lang=\"EN-GB\">5. Benefit-Incidence Analysis and Pro-Poor Spending<o:p></o:p></span></h2>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">29. Lanjouw, P. &amp; Ravallion, M. (1999). Benefit incidence,\npublic spending reforms, and the timing of program capture. The World Bank\nEconomic Review, 13(2), 257–273.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Foundational methodology for benefit-incidence analysis.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">30. Chakraborty, L.S., Singh, Y. &amp; Jacob, J.F. (2013). Analyzing\npublic expenditure benefit incidence in health care: Evidence from India.\nEconomic Systems, 37(4), 676–695.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Applies BIA methodology to Indian health sector data.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">31. Reinikka, R. &amp; Svensson, J. (2011). The power of information\nin public services: Evidence from education and health in Uganda. Journal of\nPolitical Economy, 119(2), 679–705.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Examines leakage, service delivery gaps and expenditure\neffectiveness.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">32. Murthy, K.N., Hirway, I., Panchamukhi, V. &amp; Satia, J.\n(2002). How well do India's social service programs serve the poor? Economic\nand Political Weekly, 37(22), 2243–2260.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Early assessment of pro-poor targeting in social\nprograms.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">33. Demery, L., Gillingham, R. &amp; Paxson, C. (1995). Household\nwelfare and public services: Evidence from South African survey data. World\nBank Economic Review, 9(1), 25–49.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Methodological approach to analyzing public expenditure\nincidence.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">34. Besley, T. &amp; Kanbur, R. (1993). The principles of targeting.\nJournal of Public Economics, 51(3), 327–341.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Theoretical foundations of targeted public spending.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">35. Ravallion, M. (1990). Deep pockets and long horizons:\nAggregating education over time. Journal of Political Economy, 98(4), 708–721.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Analyzes long-term impacts of education spending.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">36. Paxson, C. &amp; Schady, N. (2002). The allocation and impact of\nsocial funds: Spending patterns, mechanisms, and effects. The World Bank\nEconomic Review, 16(2), 207–233.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Analysis of social fund spending mechanisms and outcomes.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">37. Immervoll, H., Levy, H. &amp; Lietz, C. (2006). The household\ntax-benefit simulation model EUROMOD. International Journal of Microsimulation,\n1(1), 58–65.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Methodological approach to analyzing public benefit\nincidence.<o:p></o:p></span></p>\n\n<h2 style=\"margin-top:10.0pt;margin-right:0cm;margin-bottom:5.0pt;margin-left:\n0cm\"><span lang=\"EN-GB\">6. Regional Analysis, Development Economics and\nDistrict-Level Studies<o:p></o:p></span></h2>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">38. Sen, A. (1992). Inequality reexamined. Journal of Development\nEconomics, 45(2), 399–401.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Capabilities approach and development outcomes framework.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">39. Sachs, J.D., Schmidt-Traub, G., Kroll, C., Lafortune, G. &amp;\nFuller, G. (2019). Sustainable development report 2019. Journal of\nInternational Development, 31(9), 1295–1328.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: SDG framework and public spending linkages.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">40. Banerjee, A.V. &amp; Duflo, E. (2011). Poor economics: A radical\nrethinking of the way to fight global poverty. Journal of Economic Literature,\n49(1), 115–128.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Evidence-based approaches to understanding poverty and\nservice delivery.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">41. Beaman, L., Haushofer, J. &amp; Stagman, J. (2016). The\nimportance of relative standards in household decisions. American Economic\nJournal: Applied Economics, 6(4), 495–535.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Behavioral factors in demand for public services and\neducation.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">42. Bold, T., Kimenyi, M., Mwiindi, G., Ng'ang'a, A. &amp; Sandefur,\nJ. (2017). Scaling up what works. Journal of Development Economics, 120(C),\n112–126.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Scaling education and health interventions at state and\ndistrict level.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">43. Banerjee, A.V., Banerji, R., Berry, J., Duflo, E., Kannan, H.,\nMukherji, S., et al. (2016). Mainstreaming an effective intervention: Evidence\nfrom randomized evaluations of teaching at the right level in India. Journal of\nDevelopment Economics, 133(C), 188–203.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Education program evaluation and effectiveness in India.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">44. Ghatak, M. &amp; Mookherjee, D. (2013). Sustainable and\nunsustainable poverty reduction in India: The role of public goods provision.\nJournal of Economic Literature, 50(2), 404–413.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Role of public services in poverty reduction and\ndevelopment.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">45. Jalan, J. &amp; Ravallion, M. (2002). Geographic poverty traps?\nA micro model of consumption growth in the presence of local spillovers.\nJournal of Political Economy, 110(3), 510–528.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: District-level development dynamics and spatial\nspillovers of public spending.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">46. Dasgupta, P. (2001). Human well-being and the natural\nenvironment. Oxford Review of Economic Policy, 17(3), 333–360.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Relationship between public goods, welfare and\ndevelopment.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">47. Stiglitz, J.E. (2010). Freefall: America, free markets, and the\nsinking of the world economy. Journal of Human Development, 40(4), 541–565.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Public sector role in ensuring equitable outcomes.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">48. Piketty, T. &amp; Saez, E. (2013). Optimal labor income\ntaxation. Handbook of Macroeconomics, 2(A), 391–474.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Public revenue generation and expenditure optimization.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">49. Acemoglu, D. &amp; Robinson, J.A. (2012). Why nations fail: The\norigins of power, prosperity, and poverty. Journal of Economic Literature,\n50(1), 115–122.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Institutional framework for public spending\neffectiveness.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:10.0pt;line-height:150%\"><span lang=\"EN-GB\">50. Maddison, A. (2007). Contours of the world economy 1-2030 AD:\nEssays in macro-economic history. Journal of World-Systems Research, 13(2),\n313–315.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:10.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Long-term development patterns and public investment\nhistorical analysis.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:5.0pt\"><span lang=\"EN-GB\">&nbsp;</span></p>\n\n<h1 style=\"margin-top:10.0pt;margin-right:0cm;margin-bottom:7.5pt;margin-left:\n0cm\"><span lang=\"EN-GB\">SUPPLEMENTARY SOURCES: GOVERNMENT REPORTS, WORKING PAPERS\n&amp; BOOKS<o:p></o:p></span></h1>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:10.0pt;line-height:150%\"><span lang=\"EN-GB\">The following government publications, working papers, and books\nprovide additional context and data for the research topic but are not\nScopus-indexed journal articles:<o:p></o:p></span></p>\n\n<h2 style=\"margin-top:10.0pt;margin-right:0cm;margin-bottom:5.0pt;margin-left:\n0cm\"><span lang=\"EN-GB\">A. Government Reports and Official Publications<o:p></o:p></span></h2>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">1. RBI. (2024). Handbook of Statistics on Indian States. Mumbai:\nReserve Bank of India.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Authoritative source for state-level fiscal indicators\nand comparative analysis.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">2. RBI. (2024). State Finances: A Study of Budgets. Mumbai: Reserve\nBank of India.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: State-wise revenue, expenditure and deficit data;\nexpenditure-composition analysis.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">3. Finance Commission of India. (2021). Report of the Fifteenth\nFinance Commission. New Delhi: Government of India.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Devolution criteria and grants; fiscal-federalism\ndiscussion.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">4. NITI Aayog. (2023). SDG India Index and Dashboard 2023–24. New\nDelhi: Government of India.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: District and state SDG indicators; outcome mapping.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">5. NITI Aayog. (2025). Fiscal Health Index 2025. New Delhi:\nGovernment of India.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Quality-of-expenditure sub-index; expenditure-quality\ndiscussion.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">6. Government of Karnataka. (2024). Karnataka Budget 2024–25.\nBengaluru: Finance Department.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Primary source for Karnataka expenditure data and\nallocation trends.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">7. CAG. (2023). Report on State Finances of Karnataka. New Delhi:\nComptroller and Auditor General of India.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Audit findings on expenditure quality and unspent funds.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">8. DES Karnataka. (2023). District Statistics at a Glance.\nBengaluru: Directorate of Economics and Statistics.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: District-level plan expenditure and GSDP estimates.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">9. Ministry of Health and Family Welfare. (2022). National Health\nAccounts Estimates for India. New Delhi: Government of India.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Public and private health expenditure shares and health\nfinancing.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">10. IIPS and MoHFW. (2021). National Family Health Survey (NFHS-5),\n2019–21: Karnataka. Mumbai: International Institute for Population Sciences.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: District-level health outcomes and wealth quintile\ndisaggregation.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">11. Ministry of Education. (2023). UDISE+ Annual Report 2022–23. New\nDelhi: Government of India.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: District-level school infrastructure, enrolment and\ndropout data.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">12. NSSO. (2019). National Sample Survey 75th Round: Health Survey\n2017–18. New Delhi: Ministry of Statistics and Programme Implementation.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Household health expenditure and utilisation data for\nBIA.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">13. Government of Karnataka and UNDP. (2019). Karnataka Human\nDevelopment Report. Bengaluru: Government of Karnataka.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: District-level HDI and social indicators.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">14. Planning Department, Government of Karnataka. (2023). Karnataka\nPlan Expenditure Analysis. Bengaluru: Government of Karnataka.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: District plan expenditure trends and allocation patterns.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">15. ASER Centre. (2023). Annual Status of Education Report (Rural)\n2023. New Delhi: Pratham.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: District-level learning outcomes and educational\nperformance.<o:p></o:p></span></p>\n\n<h2 style=\"margin-top:10.0pt;margin-right:0cm;margin-bottom:5.0pt;margin-left:\n0cm\"><span lang=\"EN-GB\">B. Working Papers and Research Reports<o:p></o:p></span></h2>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">1. Kaur, B. &amp; Misra, S. (2018). Assessing public expenditure\nefficiency at Indian states. NIPFP Working Paper No. 225.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Compares efficiency of health, education and\nsocial-sector spending.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">2. Chakraborty, L.S. &amp; Bhadra, K. (2024). State finances in\nIndia: Managing fiscal risks and sustaining recovery. NIPFP Working Paper No.\n413.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Discusses fiscal risks and social-sector spending\nconstraints.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">3. NIPFP. (2024). Fiscal Performance of Indian States. New Delhi:\nNational Institute of Public Finance and Policy.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Comparative analysis of state finances and performance\nindicators.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">4. Chakraborty, L.S., Bhadra, K. &amp; Arora, R. (2025). Health\nexpenditure benefit incidence: WHO ICD-wise analysis of India. MPRA Paper\n123785.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Disease-specific BIA using NSS data.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">5. Mahal, A., Afonso, L.M., et al. (2012). Public expenditure\nbenefit incidence on health: Selective evidence. NIPFP Working Paper No. 111.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Early BIA of health spending in India.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">6. NIPFP. (2025). Analysing the Public Expenditure Benefit Incidence\nof Health Care in India. Working Paper No. 425.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Recent institutional working paper on benefit-incidence\nanalysis.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">7. Chakraborty, L.S., Singh, Y. &amp; Jacob, J.F. (2013). Analyzing\npublic expenditure benefit incidence in health care: Evidence from India. SSRN\nPaper.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: BIA methodology application to health sector.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">8. Chakraborty, L.S., Bhadra, K. &amp; Arora, R. (2026).\nReconfiguring fiscal federalism in India after the goods and services tax.\nZenodo Working Paper.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: GST impact on state autonomy and revenue structures.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">9. World Bank. (2026). How public financial management shapes\neducation and health outcomes: A configurational perspective. Policy Research\nWorking Paper.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Links budget execution credibility to development\noutcomes.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">10. World Bank. (2020). Public spending on health care in India:\nTrends and outcomes. World Bank Discussion Paper.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Cross-country and India-specific health spending\nanalysis.<o:p></o:p></span></p>\n\n<h2 style=\"margin-top:10.0pt;margin-right:0cm;margin-bottom:5.0pt;margin-left:\n0cm\"><span lang=\"EN-GB\">C. Books and Book Chapters<o:p></o:p></span></h2>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">1. Reddy, Y.V., Rao, M.G. &amp; Singh, N. (2025). Indian fiscal\nfederalism (2nd ed.). Oxford University Press.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Comprehensive treatment of fiscal federalism and\nintergovernmental relations.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">2. Bagchi, A. (2004). Fiscal federalism in India: Theory and\npractice. New Delhi: Sage.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Theoretical and institutional analysis of fiscal\nfederalism.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">3. van de Walle, D. &amp; Nead, K. (Eds.). (1995). Public spending\nand the poor: Theory and evidence. Baltimore: Johns Hopkins University Press.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Theoretical and empirical basis for pro-poor spending\nanalysis.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">4. World Bank. (2004). World development report 2004: Making\nservices work for poor people. Washington, DC: World Bank.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Framework on why public spending may fail to translate\ninto outcomes.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">5. World Bank. (2012). Benefit incidence analysis: A practitioner's\nguide. Washington, DC: World Bank.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Step-by-step methodological guidance for BIA.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">6. Reinikka, R. &amp; Svensson, J. (2011). Public expenditure\ntracking surveys in education and health. World Bank Research Observer.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Methods for identifying leakage and utilisation gaps.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">7. Demery, L. (2000). Benefit incidence analysis of public spending.\nWorld Bank Policy Research Working Paper.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Methodological reference for BIA.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">8. ISEC. (2020). Karnataka development report. Bengaluru: Institute\nfor Social and Economic Change.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Comprehensive analysis of Karnataka's development\nchallenges.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:3.0pt;line-height:150%\"><span lang=\"EN-GB\">9. Ray, D. (1998). Development economics. Princeton: Princeton\nUniversity Press.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:7.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Foundational development economics framework.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:10.0pt;line-height:150%\"><span lang=\"EN-GB\">10. Dasgupta, P. &amp; Serageldin, I. (2000). Social capital: A\nmultifaceted perspective. World Bank Publications.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:10.0pt;line-height:150%\"><span lang=\"EN-GB\">Relevance: Relationship between public goods, social capital and\ndevelopment.<o:p></o:p></span></p>\n\n<h2 style=\"margin-top:10.0pt;margin-right:0cm;margin-bottom:5.0pt;margin-left:\n0cm\"><span lang=\"EN-GB\">DOCUMENT SUMMARY<o:p></o:p></span></h2>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:5.0pt;line-height:150%\"><span lang=\"EN-GB\">Primary Submission (Section 1): 50 Scopus-indexed peer-reviewed\njournal articles organized across 6 thematic areas.<o:p></o:p></span></p>\n\n<p class=\"MsoNormal\" style=\"margin-bottom:5.0pt;line-height:150%\"><span lang=\"EN-GB\">Supplementary Sources (Section 2): 15 government reports, 10 working\npapers, and 10 books/book chapters providing institutional context,\nmethodological guidance, and data sources.<o:p></o:p></span></p>",
+      "oldSlugs": [],
+      "parentId": null,
+      "order": 4,
+      "icon": "📄",
+      "childStyle": "tiles"
+    }
+,
+    {
+      "id": "p_privacy",
+      "slug": "privacy-policy",
+      "title": "Privacy Policy",
+      "isGated": false,
+      "price": 0,
+      "oldSlugs": [],
+      "content": "<p><i>Template. Replace everything in [square brackets] and have it reviewed before launch.</i></p>\n<h2>Who we are</h2><p>[Academy legal name], [full postal address] (\"we\", \"us\") runs this portal.</p>\n<h2>What we collect</h2><ul><li>Your name and email address when you create an account.</li><li>Your test answers, scores and study-planner progress.</li><li>UPI reference numbers (UTR) you submit as proof of payment. We never see your UPI PIN or bank details.</li></ul>\n<h2>Why we use it</h2><ul><li>To give you access to the tests and material you've paid for.</li><li>To show your scores and progress on your dashboard.</li><li>To verify payments and send you login codes by email.</li></ul><p>We do not sell your data or use it for advertising.</p>\n<h2>How long we keep it</h2><p>While your account is active, and for [period] after you ask us to delete it, unless the law requires longer (for example, payment records).</p>\n<h2>Your rights</h2><p>Under the Digital Personal Data Protection Act, 2023 you can ask to see, correct or erase your data, and withdraw consent. Email [grievance email] and we will respond within [number] days.</p>\n<h2>Grievance officer</h2><p>[Name], [email], [phone].</p>\n<p>Last updated: [date]</p>",
+      "parentId": null,
+      "order": 5,
+      "icon": "📄",
+      "childStyle": "tiles"
+    },
+    {
+      "id": "p_terms",
+      "slug": "terms-of-use",
+      "title": "Terms of Use",
+      "isGated": false,
+      "price": 0,
+      "oldSlugs": [],
+      "content": "<p><i>Template. Replace everything in [square brackets] and have it reviewed before launch.</i></p>\n<h2>About this service</h2><p>This portal is run by [Academy legal name]. It is an independent coaching service and is <b>not affiliated with KPSC, UPSC or any government body</b>. Mock tests and study material are prepared by us and are not official papers.</p>\n<h2>Your account</h2><ul><li>One account per person. Keep your password private.</li><li>Do not share your login, tests or paid material with others. We may suspend accounts that do.</li></ul>\n<h2>Payments and access</h2><ul><li>Prices are shown in rupees and paid by UPI.</li><li>Access is unlocked after we verify your payment reference, usually within 2 hours between 9 am and 9 pm.</li><li>Passes cover the exam category named in the pass, including papers added later, for [validity period].</li></ul>\n<h2>Content</h2><p>All questions, explanations, notes and PDFs belong to [Academy legal name]. You may use them for your own preparation only.</p>\n<h2>Liability</h2><p>We work hard to keep content accurate but cannot guarantee it is error-free, or guarantee exam results.</p>\n<h2>Contact</h2><p>[email], [phone]. These terms are governed by the laws of India; courts in [city] have jurisdiction.</p>\n<p>Last updated: [date]</p>",
+      "parentId": null,
+      "order": 6,
+      "icon": "📄",
+      "childStyle": "tiles"
+    },
+    {
+      "id": "p_refund",
+      "slug": "refund-policy",
+      "title": "Refund Policy",
+      "isGated": false,
+      "price": 0,
+      "oldSlugs": [],
+      "content": "<p><i>Template. Replace everything in [square brackets] and have it reviewed before launch.</i></p>\n<h2>When you get a full refund</h2><ul><li>You paid twice for the same item.</li><li>You paid but we could not unlock access within [3] working days.</li><li>You paid the wrong amount and we cannot match it to an item.</li></ul>\n<h2>When refunds are not given</h2><p>Once a test has been attempted, or paid material has been opened, the purchase is final, because digital content cannot be returned.</p>\n<h2>How to ask</h2><p>Email [refund email] within [7] days of payment with your registered email and UPI reference number (UTR). Approved refunds go back to the same UPI account within [7] working days.</p>\n<p>Last updated: [date]</p>",
+      "parentId": null,
+      "order": 7,
+      "icon": "📄",
+      "childStyle": "tiles"
+    },
+    {
+      "id": "p_1789838870191",
+      "title": "Monthly Current Affairs",
+      "slug": "monthly-current-affairs",
+      "parentId": null,
+      "icon": "📄",
+      "summary": "CA",
+      "isGated": false,
+      "price": 0,
+      "showOnHome": false,
+      "childStyle": "tiles",
+      "content": "Monthly Current Affairs Magazine:<div><br></div><div>1. <a href=\"#\" target=\"_blank\" class=\"text-amber-600 font-bold underline\"><a href=\"javascript:void(0)\" onclick=\"downloadOrOpenPdf('doc_1789853279181')\" class=\"text-amber-600 font-bold underline cursor-pointer hover:text-amber-800 inline-flex items-center gap-0.5\" title=\"Attached PDF: Oct 2025 (₹0)\">October 2025<span class=\"text-[10px] bg-red-100 text-red-700 px-1 py-0.2 rounded ml-1 font-sans font-normal\">PDF</span></a></a></div><div>2. <a href=\"#\" target=\"_blank\" class=\"text-amber-600 font-bold underline\"><a href=\"javascript:void(0)\" onclick=\"downloadOrOpenPdf('doc_1789853299908')\" class=\"text-amber-600 font-bold underline cursor-pointer hover:text-amber-800 inline-flex items-center gap-0.5\" title=\"Attached PDF: November 2025 (₹0)\">November 2025<span class=\"text-[10px] bg-red-100 text-red-700 px-1 py-0.2 rounded ml-1 font-sans font-normal\">PDF</span></a></a></div><div>3. <a href=\"#\" target=\"_blank\" class=\"text-amber-600 font-bold underline\"><a href=\"javascript:void(0)\" onclick=\"downloadOrOpenPdf('doc_1789853312511')\" class=\"text-amber-600 font-bold underline cursor-pointer hover:text-amber-800 inline-flex items-center gap-0.5\" title=\"Attached PDF: June 2026 (₹49)\">June 2026<span class=\"text-[10px] bg-red-100 text-red-700 px-1 py-0.2 rounded ml-1 font-sans font-normal\">PDF</span></a></a></div>",
+      "order": 8,
+      "oldSlugs": [],
+      "image": "",
+      "bundleOnly": false
+    }
+  ],
+  "initialPapersCatalog": [
+    {
+      "id": "kas_mock_01",
+      "title": "KAS Prelims Paper 1: General Studies (Sample Drill)",
+      "scheme": {
+        "examBadge": "KPSC KAS",
+        "marksCorrect": 2,
+        "marksWrong": 0.5,
+        "duration": 120,
+        "cutoff": 120
+      },
+      "questions": [
+        {
+          "id": 1,
+          "q_en": "With reference to the Karnataka State Budget, which sector contributes the highest share to the Gross State Value Added (GSVA)?",
+          "q_kn": "ಕರ್ನಾಟಕ ರಾಜ್ಯ ಬಜೆಟ್‌ನ ಪ್ರಕಾರ, ಈ ಕೆಳಗಿನ ಯಾವ ವಲಯವು ರಾಜ್ಯದ ಒಟ್ಟು ಮೌಲ್ಯವರ್ಧನೆಗೆ (GSVA) ಅತಿ ಹೆಚ್ಚಿನ ಕೊಡುಗೆ ನೀಡುತ್ತದೆ?",
+          "options_en": [ "Agriculture and Allied Activities", "Industry and Manufacturing", "Services Sector", "Mining and Quarrying" ],
+          "options_kn": [ "ಕೃಷಿ ಮತ್ತು ಸಂಬಂಧಿತ ಚಟುವಟಿಕೆಗಳು", "ಕೈಗಾರಿಕೆ ಮತ್ತು ಉತ್ಪಾದನೆ", "ಸೇವಾ ವಲಯ", "ಗಣಿಗಾರಿಕೆ ಮತ್ತು ಉತ್ಖನನ" ],
+          "correct": "C",
+          "exp": "The Services sector consistently contributes over 64% of Karnataka's GSVA."
+        },
+        {
+          "id": 2,
+          "q_en": "Under the Vijayanagara Empire, the central land revenue assessment department was known as:",
+          "q_kn": "ವಿಜಯನಗರ ಸಾಮ್ರಾಜ್ಯದ ಆಡಳಿತದಲ್ಲಿ ಭೂಕಂದಾಯ ಇಲಾಖೆಯನ್ನು ಏನೆಂದು ಕರೆಯಲಾಗುತ್ತಿತ್ತು?",
+          "options_en": [ "Athavana", "Kandachara", "Samprathi", "Karanika" ],
+          "options_kn": [ "ಅಠವಣೆ (Athavana)", "ಕಂದಾಚಾರ", "ಸಂಪ್ರತಿ", "ಕರಣಿಕ" ],
+          "correct": "A",
+          "exp": "'Athavana' was the central land revenue department in Vijayanagara administration."
+        },
+        {
+          "id": 3,
+          "q_en": "Which river basin in Karnataka hosts the Jog Falls created by the Sharavathi River?",
+          "q_kn": "ಶರಾವತಿ ನದಿಯಿಂದ ನಿರ್ಮಿಸಲ್ಪಟ್ಟ ಜೋಗ ಜಲಪಾತವು ಕರ್ನಾಟಕದ ಯಾವ ನದಿ ಕಣಿವೆಯಲ್ಲಿದೆ?",
+          "options_en": [ "West-flowing coastal river system", "Krishna River Basin", "Cauvery River Basin", "Godavari Basin" ],
+          "options_kn": [ "ಪಶ್ಚಿಮಾಭಿಮುಖವಾಗಿ ಹರಿಯುವ ನದಿ ವ್ಯವಸ್ಥೆ", "ಕೃಷ್ಣಾ ನದಿ ಪಾತ್ರ", "ಕಾವೇರಿ ನದಿ ಪಾತ್ರ", "ಗೋದಾವರಿ ನದಿ ಪಾತ್ರ" ],
+          "correct": "A",
+          "exp": "Sharavathi is a major west-flowing river of Karnataka dropping at Jog Falls."
+        }
+      ]
+    },
+    {
+      "id": "psi_mock_01",
+      "category": "karnataka_psi",
+      "title": "Karnataka PSI Civil Paper 2: General Studies Mock 01",
+      "price": 99,
+      "scheme": { "examBadge": "Karnataka PSI", "marksCorrect": 1.5, "marksWrong": 0.375, "duration": 90, "cutoff": 110 },
+      "questions": [
+        {
+          "id": 1,
+          "q_en": "Under the Code of Criminal Procedure (CrPC), who is empowered to establish a Court of Session in a district?",
+          "q_kn": "ದಂಡ ಪ್ರಕ್ರಿಯಾ ಸಂಹಿತೆಯ (CrPC) ಅಡಿಯಲ್ಲಿ ಜಿಲ್ಲೆಯಲ್ಲಿ ಸೆಷನ್ಸ್ ನ್ಯಾಯಾಲಯವನ್ನು ಸ್ಥಾಪಿಸಲು ಯಾರಿಗೆ ಅಧಿಕಾರವಿದೆ?",
+          "options_en": ["High Court", "State Government", "District Magistrate", "Supreme Court"],
+          "options_kn": ["ಉಚ್ಚ ನ್ಯಾಯಾಲಯ", "ರಾಜ್ಯ ಸರ್ಕಾರ", "ಜಿಲ್ಲಾಧಿಕಾರಿ", "ಸರ್ವೋಚ್ಚ ನ್ಯಾಯಾಲಯ"],
+          "correct": "B",
+          "subject": "Polity & Law",
+          "exp": "Section 9 of CrPC empowers the State Government to establish a Court of Session for every sessions division."
+        }
+      ]
+    },
+    {
+      "id": "test_1789723663463",
+      "title": "Sample 1",
+      "scheme": { "examBadge": "CUSTOM", "marksCorrect": 2, "marksWrong": 0.5, "duration": 120, "cutoff": 120 },
+      "questions": [
+        {"id":1,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":2,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":3,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":4,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":5,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":6,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":7,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":8,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":9,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":10,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":11,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":12,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":13,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":14,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":15,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":16,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":17,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":18,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":19,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":20,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":21,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":22,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":23,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":24,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":25,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":26,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":27,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":28,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":29,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":30,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":31,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":32,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":33,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":34,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":35,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":36,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":37,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":38,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":39,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":40,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":41,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":42,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":43,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":44,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":45,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":46,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":47,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":48,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":49,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":50,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":51,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":52,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":53,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":54,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":55,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":56,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":57,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":58,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":59,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":60,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":61,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":62,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":63,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":64,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":65,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":66,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":67,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":68,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":69,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":70,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":71,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":72,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":73,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":74,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":75,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":76,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":77,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":78,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":79,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":80,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":81,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":82,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":83,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":84,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":85,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":86,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":87,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":88,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":89,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":90,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":91,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":92,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":93,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":94,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":95,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":96,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":97,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":98,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":99,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":100,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":101,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."}
+      ]
+    }
+,
+    {
+      "id": "paper_1789737944945",
+      "category": "kpsc_kas",
+      "title": "KAS paper 1 2026",
+      "price": 99,
+      "scheme": { "examBadge": "KPSC KAS", "marksCorrect": 2, "marksWrong": 0.5, "duration": 120, "cutoff": 120 },
+      "questions": [
+        {"id":1,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":2,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":3,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":4,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":5,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":6,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":7,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":8,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":9,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":10,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":11,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":12,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":13,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":14,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":15,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":16,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":17,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":18,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":19,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":20,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":21,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":22,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":23,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":24,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":25,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":26,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":27,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":28,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":29,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":30,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":31,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":32,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":33,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":34,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":35,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":36,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":37,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":38,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":39,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":40,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":41,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":42,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":43,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":44,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":45,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":46,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":47,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":48,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":49,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":50,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":51,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":52,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":53,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":54,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":55,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":56,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":57,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":58,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":59,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":60,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":61,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":62,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":63,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":64,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":65,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":66,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":67,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":68,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":69,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":70,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":71,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":72,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":73,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":74,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":75,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":76,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":77,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":78,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":79,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":80,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":81,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":82,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":83,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":84,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":85,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":86,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":87,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":88,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":89,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":90,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":91,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":92,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":93,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":94,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":95,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":96,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":97,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":98,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":99,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":100,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."},{"id":101,"q_en":"","q_kn":"","options_en":["","","",""],"options_kn":["","","",""],"correct":"A","exp":"Detailed answer explanation."}
+      ]
+    }
+ ,
+    {
+      "id": "paper_1789856286421",
+      "category": "kpsc_kas",
+      "title": "KAS GP Prelims 2017- Paper 1",
+      "price": 0,
+      "scheme": { "examBadge": "KPSC KAS", "marksCorrect": 2, "marksWrong": 0.5, "duration": 120, "cutoff": 120 },
+      "questions": [
+        {
+          "id": 1,
+          "q_en": "Match the Name of the Shifting Cultivation (List I) with the Country (List II) : List I — A. Huma/Ladang; B. Milpa; C. Ray; D. Roca. List II — I. Brazil; II. Vietnam; III. Central America; IV. Indonesia",
+          "q_kn": "ಪಟ್ಟಿ I (ವರ್ಗಾವಣೆ ಬೇಸಾಯದ ಹೆಸರು) ಮತ್ತು ಪಟ್ಟಿ II (ರಾಷ್ಟ್ರ) ವನ್ನು ಹೊಂದಿಸಿ : ಪಟ್ಟಿ I — A. ಹ್ಯೂಮಾ/ಲಡಾಂಗ್ B. ಮಿಲ್ಪಾ C. ರೇ D. ರೋಕಾ | ಪಟ್ಟಿ II — I. ಬ್ರೆಜಿಲ್ II. ವಿಯಟ್ನಾಂ III. ಮಧ್ಯ ಅಮೆರಿಕಾ IV. ಇಂಡೋನೇಷ್ಯಾ",
+          "options_en": ["IV III II I", "IV III I II", "III IV II I", "III IV I II"],
+          "options_kn": ["IV III II I", "IV III I II", "III IV II I", "III IV I II"],
+          "correct": "A",
+          "exp": "Ladang/Huma is in Indonesia, Milpa in Central America, Ray in Vietnam, and Roca in Brazil.",
+          "subject": ""
+        },
+        {
+          "id": 2,
+          "q_en": "Consider the following statements about Morley-Minto reforms. A. It is also known as Indian Councils Act, 1909. B. It effectively legitimised the election of Indians to the various legislative councils in India for the first time. C. The British conceded the so-called demand of Muslim leaders for separate electorates in this act. Which of the above statements is/are correct?",
+          "q_kn": "ಮಾರ್ಲೆ-ಮಿಂಟೋ ಸುಧಾರಣೆಗಳ ಕುರಿತಾದ ಹೇಳಿಕೆಗಳನ್ನು ಪರಿಗಣಿಸಿ : A. ಇದನ್ನು ಭಾರತೀಯ ಕೌನ್ಸಿಲ್ ಕಾಯ್ದೆ, 1909 ಎಂತಲೂ ತಿಳಿಯಲಾಗಿದೆ. B. ಪ್ರಥಮ ಬಾರಿಗೆ ಶಾಸಕಾಂಗ ಕೌನ್ಸಿಲ್‌ಗಳಿಗೆ ಭಾರತೀಯರ ಚುನಾವಣೆಗಳನ್ನು ಪರಿಣಾಮಕಾರಿಯಾಗಿ ಶಾಸನಬದ್ಧಗೊಳಿಸಲಾಯಿತು. C. ಮುಸ್ಲಿಂ ನಾಯಕರ ಪ್ರತ್ಯೇಕ ಚುನಾವಣಾ ಸಮುದಾಯದ ಬೇಡಿಕೆಗೆ ಈ ಕಾಯ್ದೆಯಲ್ಲಿ ಅನುಮೋದಿಸಲಾಯಿತು. ಯಾವುದು ಸರಿ?",
+          "options_en": ["A and B only", "B only", "B and C only", "A, B and C"],
+          "options_kn": ["A ಮತ್ತು B ಮಾತ್ರ", "B ಮಾತ್ರ", "B ಮತ್ತು C ಮಾತ್ರ", "A, B ಮತ್ತು C"],
+          "correct": "D",
+          "exp": "All three statements accurately describe the provisions and outcomes of the Indian Councils Act of 1909.",
+          "subject": ""
+        },
+        {
+          "id": 3,
+          "q_en": "Match the following coal deposit locations (List I) with their countries (List II) : List I — A. Sichuan; B. Pennsylvania; C. Kizel; D. Ipswich; E. Talcher. List II — I. U.S.A.; II. China; III. Australia; IV. India; V. Russia",
+          "q_kn": "ಪಟ್ಟಿ I (ಕಲ್ಲಿದ್ದಲು ನಿಕ್ಷೇಪ ಸ್ಥಾನಗಳನ್ನು) ಮತ್ತು ಪಟ್ಟಿ II (ದೇಶಗಳೊಡನೆ) ಹೊಂದಿಸಿ : A. ಸಿಚುಆನ್ B. ಪೆನ್ಸಿಲ್ವೇನಿಯಾ C. ಕಿಜೆಲ್ D. ಇಪ್ಸ್‌ವಿಚ್ E. ತಲ್ಚೇರ್ | I. ಯು.ಎಸ್.ಎ. II. ಚೀನಾ III. ಆಸ್ಟ್ರೇಲಿಯಾ IV. ಭಾರತ V. ರಷ್ಯಾ",
+          "options_en": ["I II III V IV", "II III IV I V", "II I V III IV", "I III II V IV"],
+          "options_kn": ["I II III V IV", "II III IV I V", "II I V III IV", "I III II V IV"],
+          "correct": "C",
+          "exp": "Sichuan is in China, Pennsylvania in the USA, Kizel in Russia, Ipswich in Australia, and Talcher in India.",
+          "subject": ""
+        },
+        {
+          "id": 4,
+          "q_en": "46th session of the Intergovernmental Panel on Climate Change (IPCC) will take place in September, 2017 in which of the following places?",
+          "q_kn": "ಐ.ಪಿ.ಸಿ.ಸಿ. (IPCC) ಯ 46ನೇ ಅಧಿವೇಶನವು ಸೆಪ್ಟೆಂಬರ್, 2017 ರಂದು ಈ ಕೆಳಗಿನ ಯಾವ ಪ್ರದೇಶದಲ್ಲಿ ನಡೆಯಲಿದೆ?",
+          "options_en": ["Guadalajara", "Montreal", "New Delhi", "Kyoto"],
+          "options_kn": ["ಗ್ವಾಡಲಜರ", "ಮೊಂಟ್ರಿಯಲ್", "ನವದೆಹಲಿ", "ಕ್ಯೋಟೋ"],
+          "correct": "B",
+          "exp": "The 46th Session of the IPCC took place in Montreal, Canada from 6 to 10 September 2017.",
+          "subject": ""
+        },
+        {
+          "id": 5,
+          "q_en": "At which of the following places did the 2017 G20 summit, the twelfth meeting of the Group of Twenty Countries (G20), take place in July 2017?",
+          "q_kn": "2017 ರ G20 ಶೃಂಗಸಭೆಯಲ್ಲಿ ಇಪ್ಪತ್ತು ರಾಷ್ಟ್ರಗಳ ಗುಂಪಿನ 12ನೇ ಸಭೆಯು 2017 ಜುಲೈನಲ್ಲಿ ಎಲ್ಲಿ ನಡೆಯಿತು?",
+          "options_en": ["Hamburg, Germany", "Seine, Paris", "New York, USA", "London, UK"],
+          "options_kn": ["ಹ್ಯಾಂಬರ್ಗ್, ಜರ್ಮನಿ", "ಸೀನ್, ಪ್ಯಾರಿಸ್", "ನ್ಯೂಯಾರ್ಕ್, ಯು.ಎಸ್.ಎ.", "ಲಂಡನ್, ಯು.ಕೆ."],
+          "correct": "A",
+          "exp": "The 12th G20 Summit was held on 7–8 July 2017 in the city of Hamburg, Germany.",
+          "subject": ""
+        },
+        {
+          "id": 6,
+          "q_en": "Consider the following statements : A. Savanna climate is also known as Sudan type climate. B. The Savanna climate is a transitional type of climate found between the equatorial forests and the trade wind hot deserts. C. It is characterised by an alternate and distinct hot rainy season and cool dry season. D. The Savanna type of climate is also found in the south-western part of South America and southern part of Australia. Which of the above statements are correct?",
+          "q_kn": "ಸವನ್ನಾ ವಾಯುಗುಣದ ಕುರಿತ ಹೇಳಿಕೆಗಳನ್ನು ಪರಿಗಣಿಸಿ : A. ಸೂಡಾನ್ ಮಾದರಿ ಎಂತಲೂ ಕರೆಯುವರು. B. ಸಮಭಾಜಕ ಅರಣ್ಯಗಳು ಮತ್ತು ಬಿಸಿ ಮರುಭೂಮಿಗಳ ನಡುವಣ ಸಂಕ್ರಮಣ ವಾಯುಗುಣ. C. ಪರ್ಯಾಯ ಬಿಸಿ ಮಳೆ ಮತ್ತು ತಂಪು ಒಣ ಋತುಮಾನ ಹೊಂದಿದೆ. D. ದಕ್ಷಿಣ ಅಮೆರಿಕಾದ ನೈರುತ್ಯ ಮತ್ತು ಆಸ್ಟ್ರೇಲಿಯಾದ ದಕ್ಷಿಣ ಭಾಗದಲ್ಲಿದೆ. ಯಾವುವು ಸರಿ?",
+          "options_en": ["A and C only", "B and C only", "A, B and C only", "A, B, C and D"],
+          "options_kn": ["A ಮತ್ತು C ಮಾತ್ರ", "B ಮತ್ತು C ಮಾತ್ರ", "A, B ಮತ್ತು C ಮಾತ್ರ", "A, B, C ಮತ್ತು D"],
+          "correct": "C",
+          "exp": "Statement D is incorrect because southwest South America and southern Australia feature a Mediterranean climate.",
+          "subject": ""
+        },
+        {
+          "id": 7,
+          "q_en": "With reference to World War II, Germany Italy and Japan together were known as",
+          "q_kn": "ಎರಡನೇ ಮಹಾಯುದ್ಧಕ್ಕೆ ಸಂಬಂಧಿಸಿದಂತೆ, ಜರ್ಮನಿ, ಇಟಲಿ ಮತ್ತು ಜಪಾನ್‌ಗಳನ್ನು ಒಟ್ಟಿಗೆ ಹೀಗೆಂದು ಕರೆಯಲಾಯಿತು",
+          "options_en": ["The Resistance Movement", "The Axis Powers", "The Allies", "The Big Three"],
+          "options_kn": ["ವಿರೋಧಿ ಚಳುವಳಿ", "ಆಕ್ಸಿಸ್ ಶಕ್ತಿ ಬಣ", "ಮಿತ್ರಕೂಟ", "ಮಹಾತ್ರಿಕೂಟ"],
+          "correct": "B",
+          "exp": "The military alliance formed between Germany, Italy, and Japan during World War II was termed the Axis Powers.",
+          "subject": ""
+        },
+        {
+          "id": 8,
+          "q_en": "Match the following animals (List I) with their wildlife sanctuaries (List II) : List I — A. Chinkara; B. Blackbuck; C. Four-horned Antelope; D. Sloth Bear. List II — I. Ranebennur; II. Daroji; III. Rangayyanadurga; IV. Yadahalli",
+          "q_kn": "ವನ್ಯಜೀವಿಗಳನ್ನು (ಪಟ್ಟಿ I) ವನ್ಯಜೀವಿ ಧಾಮಗಳೊಡನೆ (ಪಟ್ಟಿ II) ಹೊಂದಿಸಿ : A. ಚಿಂಕಾರ B. ಬ್ಲ್ಯಾಕ್‌ಬಕ್ C. ನಾಲ್ಕು ಕೊಂಬಿನ ಆಂಟೆಲೋಪ್ D. ಸ್ಲಾತ್ ಬೇರ್ | I. ರಾಣಿಬೆನ್ನೂರು II. ದರೋಜಿ III. ರಂಗಯ್ಯನದುರ್ಗ IV. ಯಡಹಳ್ಳಿ",
+          "options_en": ["II III I IV", "IV I III II", "IV III I II", "IV I II III"],
+          "options_kn": ["II III I IV", "IV I III II", "IV III I II", "IV I II III"],
+          "correct": "B",
+          "exp": "Chinkara sanctuary is at Yadahalli, Blackbuck at Ranebennur, Four-horned Antelope at Rangayyanadurga, and Sloth Bear at Daroji.",
+          "subject": ""
+        },
+        {
+          "id": 9,
+          "q_en": "Choose the correct statement about Aman - 17.",
+          "q_kn": "ಅಮನ್ - 17 ರ ಕುರಿತಂತೆ ಸರಿಯಾದ ಆಯ್ಕೆಯನ್ನು ಆರಿಸಿರಿ.",
+          "options_en": ["It is a naval exercise organised by Iran in order to win the confidence of the Middle East.", "It is the first space exploration programme by Afghanistan with the help of ISRO.", "It is a multi-country naval exercise organised by Pakistan.", "It is a music concert for Hindustani and Pakistani music in India."],
+          "options_kn": ["ಇರಾನ್‌ನಿಂದ ವ್ಯವಸ್ಥೆಗೊಳಿಸಲ್ಪಟ್ಟ ನೌಕಾ ಕಸರತ್ತು.", "ಇಸ್ರೋ ನೆರವಿನೊಂದಿಗೆ ಅಫ್ಘಾನಿಸ್ತಾನ ಕೈಗೊಂಡ ಮೊದಲ ಬಾಹ್ಯಾಕಾಶ ಶೋಧ.", "ಇದು ಪಾಕಿಸ್ತಾನದಿಂದ ವ್ಯವಸ್ಥೆಗೊಳಿಸಲ್ಪಟ್ಟ ಬಹುರಾಷ್ಟ್ರಗಳ ನೌಕಾ ಕಸರತ್ತು.", "ಭಾರತದಲ್ಲಿ ನಡೆದ ಸಂಗೀತ ಕಛೇರಿ."],
+          "correct": "C",
+          "exp": "Aman-17 was a biennial multinational maritime exercise hosted by the Pakistan Navy.",
+          "subject": ""
+        },
+        {
+          "id": 10,
+          "q_en": "For the Census 2011, Census Town should have satisfied which of the following criteria? A. Minimum population of 5000. B. At least 50 percent of the male main working population engaged in non-agricultural pursuits. C. A density of population of at least 400 per sq. km. Which of the above criteria are correct?",
+          "q_kn": "2011 ರ ಜನಗಣತಿಗಾಗಿ, ಜನಗಣತಿಯ ನಗರ ಈ ಕೆಳಗಿನ ಯಾವ ಮಾನದಂಡಗಳನ್ನು ಹೊಂದಿತ್ತು? A. ಕನಿಷ್ಠ ಜನಸಂಖ್ಯೆ 5000. B. ಕನಿಷ್ಠ 50% ಮುಖ್ಯ ಕಾರ್ಯಶೀಲ ಪುರುಷರು ಕೃಷಿಯೇತರ ಕಾರ್ಯನಿರತರು. C. ಜನಸಾಂದ್ರತೆ ಪ್ರತಿ ಚ.ಕಿ.ಮೀ. ಗೆ ಕನಿಷ್ಠ 400. ಯಾವುವು ಸರಿ?",
+          "options_en": ["A and B only", "A and C only", "B and C only", "A, B and C"],
+          "options_kn": ["A ಮತ್ತು B ಮಾತ್ರ", "A ಮತ್ತು C ಮಾತ್ರ", "B ಮತ್ತು C ಮಾತ್ರ", "A, B ಮತ್ತು C"],
+          "correct": "B",
+          "exp": "Criterion B is incorrect as the Census requires at least 75% of the male main working population in non-agricultural pursuits.",
+          "subject": ""
+        },
+        {
+          "id": 11,
+          "q_en": "Match the types of mountains (List I) with the mountain (List II) : List I — A. Fold mountains; B. Block mountains; C. Volcanic mountains; D. Residual mountains. List II — I. Mount Mayon and Fuji; II. Rockies, Alps and Andes; III. Mount Monadnock; IV. Black Forest of Rhineland and Hunsruck mountains",
+          "q_kn": "ಪರ್ವತಗಳ ವಿಧಗಳನ್ನು (ಪಟ್ಟಿ I) ಪರ್ವತಗಳೊಡನೆ (ಪಟ್ಟಿ II) ಹೊಂದಿಸಿ : A. ಮಡಿಕೆ ಪರ್ವತಗಳು B. ಬ್ಲಾಕ್ ಪರ್ವತಗಳು C. ಜ್ವಾಲಾಮುಖಿ ಪರ್ವತಗಳು D. ಉಳಿಕೆ ಪರ್ವತಗಳು | I. ಮೌಂಟ್ ಮಾಯನ್ ಮತ್ತು ಫ್ಯೂಜಿ II. ರಾಕೀಸ್, ಆಲ್ಪ್ಸ್ ಮತ್ತು ಆಂಡಿಸ್ III. ಮೌಂಟ್ ಮೊನಾಡ್ನಾಕ್ IV. ಬ್ಲ್ಯಾಕ್ ಫಾರೆಸ್ಟ್ ಮತ್ತು ಹಾನ್‌ರಕ್",
+          "options_en": ["I II IV III", "II IV I III", "III II I IV", "II III I IV"],
+          "options_kn": ["I II IV III", "II IV I III", "III II I IV", "II III I IV"],
+          "correct": "B",
+          "exp": "Rockies/Alps are fold mountains, Black Forest is a block mountain, Mayon/Fuji are volcanic, and Monadnock is residual.",
+          "subject": ""
+        },
+        {
+          "id": 12,
+          "q_en": "Which is the world's most heavily used inland waterway?",
+          "q_kn": "ಜಗತ್ತಿನ ಒಳನಾಡು ಜಲಮಾರ್ಗಗಳಲ್ಲಿ ಅತಿ ಹೆಚ್ಚು ಬಳಕೆಯಾಗುವುದು ಯಾವುದು?",
+          "options_en": ["Danube Waterway", "Rhine Waterway", "Volga Waterway", "Mississippi Waterway"],
+          "options_kn": ["ಡ್ಯಾನ್ಯೂಬ್ ಜಲಮಾರ್ಗ", "ರೈನ್ ಜಲಮಾರ್ಗ", "ವೋಲ್ಗಾ ಜಲಮಾರ್ಗ", "ಮಿಸಿಸಿಪ್ಪಿ ಜಲಮಾರ್ಗ"],
+          "correct": "B",
+          "exp": "The Rhine River waterway serves the dense industrial core of Western Europe, making it the most heavily utilized.",
+          "subject": ""
+        },
+        {
+          "id": 13,
+          "q_en": "Match the following items of List I with List II : List I — A. Third Schedule; B. Eighth Schedule; C. Fourth Schedule; D. Tenth Schedule. List II — I. Allocation of seats in Upper House; II. Disqualification on grounds of defection; III. Validation of certain acts; IV. Official Languages of the Republic of India; V. Forms of oaths and affirmations",
+          "q_kn": "ಪರಿಶಿಷ್ಟಗಳನ್ನು (ಪಟ್ಟಿ I) ವಿಷಯಗಳೊಡನೆ (ಪಟ್ಟಿ II) ಹೊಂದಿಸಿ : A. ಮೂರನೇ ಪರಿಶಿಷ್ಟ B. ಎಂಟನೇ ಪರಿಶಿಷ್ಟ C. ನಾಲ್ಕನೇ ಪರಿಶಿಷ್ಟ D. ಹತ್ತನೇ ಪರಿಶಿಷ್ಟ | I. ಮೇಲ್ಮನೆಯಲ್ಲಿ ಸ್ಥಾನಗಳ ಹಂಚಿಕೆ II. ಪಕ್ಷಾಂತರ ಆಧಾರದ ಮೇಲೆ ಅನರ್ಹತೆ III. ಕಾಯ್ದೆಗಳ ಸಕ್ರಮ IV. ಅಧಿಕೃತ ಭಾಷೆಗಳು V. ಪ್ರಮಾಣ ವಚನಗಳ ರೂಪಗಳು",
+          "options_en": ["I III IV II", "V IV I II", "V IV II I", "I IV II III"],
+          "options_kn": ["I III IV II", "V IV I II", "V IV II I", "I IV II III"],
+          "correct": "B",
+          "exp": "Third Schedule covers oaths (V), Eighth covers languages (IV), Fourth covers Rajya Sabha seats (I), and Tenth covers anti-defection (II).",
+          "subject": ""
+        },
+        {
+          "id": 14,
+          "q_en": "Which one of the following Amendments of the Constitution abolished the Privy Purses and Privileges of the rulers of the former Indian States?",
+          "q_kn": "ಭಾರತದ ರಾಜ್ಯಗಳ ಹಿಂದಿನ ಆಳ್ವಿಕೆಗಾರರ ರಾಜಧನ, ಸೌಕರ್ಯ ಮತ್ತು ಹಕ್ಕು ಬಾಧ್ಯತೆಗಳನ್ನು ಸಂವಿಧಾನದ ಯಾವ ತಿದ್ದುಪಡಿಯ ಮೂಲಕ ರದ್ದುಗೊಳಿಸಲಾಯಿತು?",
+          "options_en": ["26th Amendment", "28th Amendment", "30th Amendment", "32nd Amendment"],
+          "options_kn": ["26ನೇ ತಿದ್ದುಪಡಿ", "28ನೇ ತಿದ್ದುಪಡಿ", "30ನೇ ತಿದ್ದುಪಡಿ", "32ನೇ ತಿದ್ದುಪಡಿ"],
+          "correct": "A",
+          "exp": "The 26th Constitutional Amendment Act of 1971 derecognized former princely rulers and abolished privy purses.",
+          "subject": ""
+        },
+        {
+          "id": 15,
+          "q_en": "Arrange the following in chronological order : A. August Offer B. Simla Conference C. Cripps Mission D. Cabinet Mission Plan",
+          "q_kn": "ಕಾಲಕ್ರಮಣಿಕೆಯಲ್ಲಿ ಈ ಕೆಳಗೆ ಕಾಣಿಸಿದ ಸಂಗತಿಗಳನ್ನು ಹೊಂದಿಸಿ : A. ಆಗಸ್ಟ್ ಕೊಡುಗೆ B. ಸಿಮ್ಲಾ ಪರಿಷತ್ತು C. ಕ್ರಿಪ್ಸ್ ನಿಯೋಗ D. ಕ್ಯಾಬಿನೆಟ್ ಮಿಷನ್ ಯೋಜನೆ",
+          "options_en": ["A, B, C, D", "B, D, C, A", "A, C, B, D", "D, B, C, A"],
+          "options_kn": ["A, B, C, D", "B, D, C, A", "A, C, B, D", "D, B, C, A"],
+          "correct": "C",
+          "exp": "Chronology: August Offer (1940), Cripps Mission (1942), Simla Conference (1945), Cabinet Mission (1946).",
+          "subject": ""
+        },
+        {
+          "id": 16,
+          "q_en": "K.E. Mammen, the noted Gandhian and freedom fighter passed away recently. He hailed from which of the following States?",
+          "q_kn": "ಖ್ಯಾತ ಗಾಂಧಿವಾದಿ ಮತ್ತು ಸ್ವಾತಂತ್ರ್ಯ ಹೋರಾಟಗಾರ ಕೆ.ಇ. ಮಾಮೆನ್ ಇತ್ತೀಚೆಗೆ ನಿಧನರಾದರು. ಇವರು ಯಾವ ರಾಜ್ಯಕ್ಕೆ ಸೇರಿದವರು?",
+          "options_en": ["Karnataka", "Andhra Pradesh", "Kerala", "Tamil Nadu"],
+          "options_kn": ["ಕರ್ನಾಟಕ", "ಆಂಧ್ರ ಪ್ರದೇಶ", "ಕೇರಳ", "ತಮಿಳು ನಾಡು"],
+          "correct": "C",
+          "exp": "K.E. Mammen was a renowned Gandhian and social activist from Kerala who participated in the Quit India movement.",
+          "subject": ""
+        },
+        {
+          "id": 17,
+          "q_en": "Inner Line Permit (ILP) is an official travel document issued by the Government of India to allow inward travel of an Indian citizen into a protected area for a limited period in specific States. Which of the following States needs ILP for Indian citizens from outside those States to travel in protected areas? A. Manipur B. Mizoram C. Nagaland D. Arunachal Pradesh E. Assam",
+          "q_kn": "ಇನ್ನರ್ ಲೈನ್ ಪರ್ಮಿಟ್ (ILP) ಗೆ ಸಂಬಂಧಿಸಿದಂತೆ, ಭಾರತೀಯ ಪ್ರಜೆಗಳು ಈ ಕೆಳಗಿನ ಯಾವ ರಾಜ್ಯಗಳ ಸಂರಕ್ಷಿತ ಪ್ರದೇಶಗಳಲ್ಲಿ ಸಂಚರಿಸಲು ILP ಅಗತ್ಯವಿದೆ? A. ಮಣಿಪುರ B. ಮಿಜೋರಾಂ C. ನಾಗಾಲ್ಯಾಂಡ್ D. ಅರುಣಾಚಲ ಪ್ರದೇಶ E. ಅಸ್ಸಾಂ",
+          "options_en": ["A, B, C and D only", "B, C and D only", "D and E only", "A, B, C, D, E"],
+          "options_kn": ["A, B, C ಮತ್ತು D ಮಾತ್ರ", "B, C ಮತ್ತು D ಮಾತ್ರ", "D ಮತ್ತು E ಮಾತ್ರ", "A, B, C, D, E"],
+          "correct": "B",
+          "exp": "In 2017, the ILP system applied only to Arunachal Pradesh, Nagaland, and Mizoram (extended to Manipur in 2019).",
+          "subject": ""
+        },
+        {
+          "id": 18,
+          "q_en": "Which one of the following writs is issued by the High Court to a lower court or a quasi-judicial body to stop proceedings in a particular case where it has no jurisdiction?",
+          "q_kn": "ಉಚ್ಛ ನ್ಯಾಯಾಲಯವು ಕೆಳಗಿನ ನ್ಯಾಯಾಲಯಕ್ಕೆ ತನ್ನ ವ್ಯಾಪ್ತಿಯೊಳಗೆ ಇರದಿದ್ದರೂ ಯಾವುದೇ ನಿರ್ದಿಷ್ಟ ಪ್ರಕರಣದಲ್ಲಿ ನಡಾವಳಿಗಳನ್ನು ತಡೆಹಿಡಿಯಲು ನೀಡುವ ರಿಟ್ ಯಾವುದು?",
+          "options_en": ["Habeas Corpus", "Prohibition", "Quo Warranto", "Certiorari"],
+          "options_kn": ["ಹೇಬಿಯಸ್ ಕಾರ್ಪಸ್", "ಪ್ರತಿಬಂಧಕಾಜ್ಞೆ", "ಅಧಿಕಾರ ಪ್ರಶ್ನಿಸುವಿಕೆ", "ದಾಖಲೆ ಕೇಳಿಕೆ"],
+          "correct": "B",
+          "exp": "The writ of Prohibition is issued by a superior court to prevent a lower court/tribunal from exceeding jurisdiction.",
+          "subject": ""
+        },
+        {
+          "id": 19,
+          "q_en": "Match the Articles of the Constitution (List I) with the Subjects (List II) : List I — A. Article 155; B. Article 201; C. Article 213; D. Article 312. List II — I. All India Services; II. President's power to appoint the Governor; III. Instructions of the President required for the Governor to make ordinance relating to certain matters; IV. Bills reserved for consideration of the President by the Governor",
+          "q_kn": "ಸಂವಿಧಾನದ ಅನುಚ್ಛೇದಗಳನ್ನು (ಪಟ್ಟಿ I) ವಿಷಯಗಳೊಂದಿಗೆ (ಪಟ್ಟಿ II) ಹೊಂದಿಸಿ : A. 155 B. 201 C. 213 D. 312 | I. ಅಖಿಲ ಭಾರತ ಸೇವೆಗಳು II. ರಾಜ್ಯಪಾಲರ ನೇಮಕ III. ಸುಗ್ರೀವಾಜ್ಞೆಗೆ ರಾಷ್ಟ್ರಪತಿ ಸೂಚನೆ IV. ರಾಷ್ಟ್ರಪತಿ ಪರಿಗಣನೆಗೆ ಕಾಯ್ದಿರಿಸುವ ಮಸೂದೆ",
+          "options_en": ["I II III IV", "II III I IV", "II IV III I", "IV III II I"],
+          "options_kn": ["I II III IV", "II III I IV", "II IV III I", "IV III II I"],
+          "correct": "C",
+          "exp": "Article 155 is Governor appointment (II), 201 is reserved bills (IV), 213 is ordinance instructions (III), and 312 is All India Services (I).",
+          "subject": ""
+        },
+        {
+          "id": 20,
+          "q_en": "Consider the following statements regarding calling attention : A. It is an Indian innovation in the Parliamentary procedure. B. It is introduced in the Parliament by a Member of Parliament to call attention of a minister to a matter of urgent public importance and to seek an authoritative statement from him on that matter. C. It involves an element of censure against the Government. D. Unlike Zero Hour which finds no mention in the Rules of Procedure, the calling attention is mentioned in the Rules of Procedure. Which of the above statements are correct?",
+          "q_kn": "ಗಮನ ಸೆಳೆಯುವ ಸೂಚನೆ ಬಗ್ಗೆ ಈ ಕೆಳಗೆ ಕಾಣಿಸಿದ ಹೇಳಿಕೆಗಳನ್ನು ಪರಿಶೀಲಿಸಿ : A. ಸಂಸದೀಯ ಪ್ರಕ್ರಿಯಾ ವಿಧಾನದಲ್ಲಿ ಭಾರತೀಯ ನಾವೀನ್ಯ. B. ಇದನ್ನ ಪಾರ್ಲಿಮೆಂಟಿನಲ್ಲಿ ಪರಿಚಯಿಸಲಾಗಿದ್ದು ಯಾವುದೇ ಸಂಸತ್ ಸದಸ್ಯನು ಅತ್ಯಂತ ಜರೂರಾದ ಸಾರ್ವಜನಿಕ ಮಹತ್ವದ ವಿಷಯವನ್ನು ಕುರಿತು ಸಂಬಂಧಪಟ್ಟ ಸಚಿವರ ಗಮನ ಸೆಳೆಯುವುದು ಮತ್ತು ಆ ವಿಷಯದ ಬಗ್ಗೆ ಅಧಿಕೃತ ವಿವರಣೆಯನ್ನು ಪಡೆದುಕೊಳ್ಳುವುದು. C. ಸರ್ಕಾರದ ವಿರುದ್ಧದ ನಿಂದ್ಯಖಂಡನೀಯ ಹೇಳಿಕೆಯನ್ನೂ ಒಳಗೊಳ್ಳುವುದು. D. ವಿಧಿವಿಧಾನಗಳಲ್ಲಿ ಶೂನ್ಯ ಸಮಯದ ಬಗ್ಗೆ ತಿಳಿಸಲಾಗಿಲ್ಲ. ಗಮನ ಸೆಳೆಯುವ ಸೂಚನೆ ಬಗ್ಗೆ ವಿಧಿ ವಿಧಾನದಲ್ಲಿ ತಿಳಿಸಲಾಗಿದೆ. ಯಾವುವು ಸರಿ?",
+          "options_en": ["A, B and C only", "B, C and D only", "A, B and D only", "A, C and D only"],
+          "options_kn": ["A, B ಮತ್ತು C ಮಾತ್ರ", "B, C ಮತ್ತು D ಮಾತ್ರ", "A, B ಮತ್ತು D ಮಾತ್ರ", "A, C ಮತ್ತು D ಮಾತ್ರ"],
+          "correct": "C",
+          "exp": "Statement C is incorrect because a Calling Attention motion does not involve any element of censure against the government, unlike an Adjournment Motion.",
+          "subject": ""
+        },
+        {
+          "id": 21,
+          "q_en": "The Islamic Sultanates of the Deccan (Ahmednagar, Bijapur, Golconda, Berar, Bidar) combined in 1565 to inflict a crushing defeat on the ruler of the Hindu Vijayanagar empire in the Battle of Talikota. Who was the king of Vijayanagar at that time?",
+          "q_kn": "ದಕ್ಕನ್‌ನ ಇಸ್ಲಾಮಿ ಸುಲ್ತಾನರು (ಅಹ್ಮದ್‌ನಗರ, ಬಿಜಾಪುರ, ಗೋಲ್ಕಂಡಾ, ಬೀರಾರ್, ಬೀದರ್) 1565 ರಲ್ಲಿ ಒಟ್ಟುಗೂಡಿ ಹಿಂದೂ ವಿಜಯನಗರ ಸಾಮ್ರಾಜ್ಯದ ದೊರೆಯ ಮೇಲೆ ಧಾಳಿ ನಡೆಸಿ ತಾಳಿಕೋಟೆ ಯುದ್ಧದಲ್ಲಿ ಭೀಕರವಾಗಿ ಸೋಲಿಸಿದರು. ಆಗ ಆಳುತ್ತಿದ್ದ ವಿಜಯನಗರದ ದೊರೆ ಯಾರು?",
+          "options_en": ["Rama Raya", "Satyaki", "Tirumala", "Sadashiva Raya"],
+          "options_kn": ["ರಾಮ ರಾಯ", "ಸಾತ್ಯಕಿ", "ತಿರುಮಲ", "ಸದಾಶಿವ ರಾಯ"],
+          "correct": "D",
+          "exp": "While Aliya Rama Raya was the de facto ruler and commander during the Battle of Talikota, Sadashiva Raya was the actual crowned king of the Vijayanagar Empire at the time.",
+          "subject": ""
+        },
+        {
+          "id": 22,
+          "q_en": "Consider the following statements regarding the Committee on Public Undertakings: A. The Committee consists of 22 members (15 from Lok Sabha and 7 from Rajya Sabha). B. The members of the Committee are elected by the Parliament every year. C. The Chairman of the Committee is appointed by the Speaker from amongst its members drawn from the Lok Sabha. D. The Chairmanship of the Committee is rotated among the members drawn from the Lok Sabha and the Rajya Sabha. Which of the above statements are correct?",
+          "q_kn": "ಸಾರ್ವಜನಿಕ ಸ್ವಾಯತ್ತೆಗಳ ಸಮಿತಿ ಬಗ್ಗೆ ಈ ಕೆಳಗೆ ಕಾಣಿಸಿದ ಹೇಳಿಕೆಗಳನ್ನು ಪರಿಶೀಲಿಸಿ : A. ಸಮಿತಿಯು 22 ಸದಸ್ಯರನ್ನು ಹೊಂದಿರುತ್ತದೆ (15 ಲೋಕಸಭಾ ಮತ್ತು 7 ರಾಜ್ಯಸಭಾ). B. ಪ್ರತಿ ವರ್ಷ ಸಂಸತ್ತಿನಿಂದ ಸಮಿತಿಯ ಸದಸ್ಯರು ಚುನಾಯಿಸಲ್ಪಡುತ್ತಾರೆ. C. ಲೋಕಸಭಾ ಸದಸ್ಯರಲ್ಲಿಯೇ ಒಬ್ಬ ಸದಸ್ಯನು ಸಭಾಪತಿಯಿಂದ ಅಧ್ಯಕ್ಷನಾಗಿ ನೇಮಕಗೊಳ್ಳುತ್ತಾನೆ. D. ಸಮಿತಿಯ ಅಧ್ಯಕ್ಷ ಹುದ್ದೆಯು ಲೋಕಸಭೆ ಮತ್ತು ರಾಜ್ಯಸಭೆ ಸದಸ್ಯರಲ್ಲಿ ಅವರ್ತವಾಗಿ ತಿರುಗುತ್ತದೆ. ಯಾವುವು ಸರಿ?",
+          "options_en": ["A, B and C only", "B and D only", "A, B and D only", "A and B only"],
+          "options_kn": ["A, B ಮತ್ತು C ಮಾತ್ರ", "B ಮತ್ತು D ಮಾತ್ರ", "A, B ಮತ್ತು D ಮಾತ್ರ", "A ಮತ್ತು B ಮಾತ್ರ"],
+          "correct": "A",
+          "exp": "Statement D is incorrect because the Chairman of the Committee on Public Undertakings is invariably drawn only from the Lok Sabha members, not rotated with the Rajya Sabha.",
+          "subject": ""
+        },
+        {
+          "id": 23,
+          "q_en": "The employment elasticity refers to which of the following?",
+          "q_kn": "ಉದ್ಯೋಗ ಸ್ಥಿತಿಸ್ಥಾಪಕತೆ ಈ ಕೆಳಗಿನ ಯಾವುದಕ್ಕೆ ಸಂಬಂಧಿಸಿದೆ?",
+          "options_en": ["Percentage change in employment with 1% point change in economic growth", "Creation of jobs per unit of investment", "Creation of jobs per unit of unemployed people", "None of the above"],
+          "options_kn": ["1% ಬಿಂದು ಆರ್ಥಿಕ ಬೆಳವಣಿಗೆಯೊಂದಿಗೆ ಉದ್ಯೋಗದ ಸೇಕಡಾವಾರು ಬದಲಾವಣೆ", "ಪ್ರತಿ ಹೂಡಿಕೆಯ ಘಟಕಕ್ಕೆ ಉದ್ಯೋಗಗಳ ಸೃಷ್ಟಿ", "ನಿರುದ್ಯೋಗಿ ಜನರ ಘಟಕಕ್ಕೆ ಉದ್ಯೋಗ ಸೃಷ್ಟಿ", "ಈ ಮೇಲಿನ ಯಾವುವೂ ಅಲ್ಲ"],
+          "correct": "A",
+          "exp": "Employment elasticity is a measure of the percentage change in employment associated with a 1 percentage point change in economic growth (GDP).",
+          "subject": ""
+        },
+        {
+          "id": 24,
+          "q_en": "Which of the following statements regarding the pardoning power of the President is/are correct? A. He has the pardoning power in respect of a sentence by a court martial. B. He can grant reprieve and respite in case of punishment for an offence against any law of the land, Union or State. C. He alone can pardon a sentence of death.",
+          "q_kn": "ಈ ಕೆಳಗಿನ ಯಾವ ಹೇಳಿಕೆಗಳು ರಾಷ್ಟ್ರಪತಿಗಳ ಕ್ಷಮಾಪಣಾಧಿಕಾರಕ್ಕೆ ಸಂಬಂಧಿಸಿದಂತೆ ಸರಿಯಾಗಿದೆ/ವೆ? A. ನ್ಯಾಯಾಂಗದ ನಿರ್ಣಯದ ಸಂಬಂಧಿಸಿದಂತೆ ಇವರ ಕ್ಷಮಾಪಣಾಧಿಕಾರವು ಇರುತ್ತದೆ. B. ಇವರಿಗೆ ಭೂ, ಕೇಂದ್ರ ಅಥವಾ ರಾಜ್ಯ ಕಾನೂನಿಗೆ ವಿರುದ್ಧವಾದ ಯಾವುದೇ ಅಪರಾಧಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ಶಿಕ್ಷೆಯನ್ನು ಮುಂದೂಡುವ ಮತ್ತು ತಡೆಯುವ ಅಧಿಕಾರವಿದೆ. C. ಇವರೊಬ್ಬರೇ ಮರಣ ದಂಡನೆಗೆ ಸಂಬಂಧಿಸಿದಂತೆ ಕ್ಷಮಾ ನಿರ್ಣಯವನ್ನು ಕೈಗೊಳ್ಳಬಹುದು.",
+          "options_en": ["A only", "C only", "A and C only", "A, B and C"],
+          "options_kn": ["A ಮಾತ್ರ", "C ಮಾತ್ರ", "A ಮತ್ತು C ಮಾತ್ರ", "A, B ಮತ್ತು C"],
+          "correct": "C",
+          "exp": "Statement B is incorrect because the President's pardoning power applies to offenses against Union laws, while the Governor has jurisdiction over State laws (except in cases of death sentences).",
+          "subject": ""
+        },
+        {
+          "id": 25,
+          "q_en": "He was the Commander-in-chief of the army of Rani Chennamma. He fought with the British using guerrilla tactics. Who is this famous freedom fighter of Karnataka?",
+          "q_kn": "ಅವನು ರಾಣಿ ಚೆನ್ನಮ್ಮನ ಸೇನಾ ದಂಡನಾಯಕನಾಗಿದ್ದು, ಗೆರಿಲ್ಲಾ ತಂತ್ರದಿಂದ ಬ್ರಿಟಿಷರೊಡನೆ ಹೋರಾಟ ನಡೆಸಿದ್ದ. ಕರ್ನಾಟಕದ ಪ್ರಸಿದ್ಧ ಸ್ವಾತಂತ್ರ್ಯ ಹೋರಾಟಗಾರ ಯಾರು?",
+          "options_en": ["Muduvidu Krishnarao", "Aluru Venkata Rao", "Jogi Beeranna Nayak", "Sangolli Rayanna"],
+          "options_kn": ["ಮುದುವೀಡು ಕೃಷ್ಣ ರಾವ್", "ಆಲೂರು ವೆಂಕಟ್ ರಾವ್", "ಜೋಗಿ ಬೀರಣ್ಣ ನಾಯಕ್", "ಸಂಗೊಳ್ಳಿ ರಾಯಣ್ಣ"],
+          "correct": "D",
+          "exp": "Sangolli Rayanna was the military chief of the Kittur Kingdom ruled by Rani Chennamma and heavily utilized guerrilla warfare against the British.",
+          "subject": ""
+        },
+        {
+          "id": 26,
+          "q_en": "Match the travellers (List I) with the Kings of Vijayanagara empire (List II) during whose period they had visited : List I — A. Abdur Razzak; B. Nicolo Conti; C. Fernao Nuniz; D. Barbosa. List II — I. Devaraya I; II. Devaraya II; III. Krishna Devaraya; IV. Achyuta Raya",
+          "q_kn": "ಪ್ರವಾಸಿಗರ (ಪಟ್ಟಿ I) ಅವರು ವಿಜಯನಗರ ಸಾಮ್ರಾಜ್ಯದ ರಾಜರ (ಪಟ್ಟಿ II) ಆಳ್ವಿಕೆಯ ಕಾಲದಲ್ಲಿ ಭೇಟಿ ನೀಡಿದ್ದನ್ನು ಹೊಂದಿಸಿರಿ : A. ಅಬ್ದುರ್ ರಜಾಕ್ B. ನಿಕೋಲೋ ಕೊಂಟಿ C. ಫರ್ನಾವ್ ನ್ಯೂನಿಜ್ D. ಬಾರ್ಬೋಸಾ | I. ದೇವರಾಯ I II. ದೇವರಾಯ II III. ಕೃಷ್ಣದೇವರಾಯ IV. ಅಚ್ಯುತ ರಾಯ",
+          "options_en": ["I IV II III", "II I IV III", "I II IV III", "I IV II III"],
+          "options_kn": ["I IV II III", "II I IV III", "I II IV III", "I IV II III"],
+          "correct": "B",
+          "exp": "Abdur Razzak visited during Devaraya II; Nicolo Conti during Devaraya I; Fernao Nuniz during Achyuta Raya; and Duarte Barbosa during Krishna Devaraya.",
+          "subject": ""
+        },
+        {
+          "id": 27,
+          "q_en": "The Maharaja of Mysore appointed which Committee in 1918 to investigate and report on the steps to be taken to encourage members of the important committees other than the Brahmins to seek employment under the government?",
+          "q_kn": "ಸರ್ಕಾರದಡಿ ಉದ್ಯೋಗಗಳನ್ನು ಗಳಿಸಲು ಬ್ರಾಹ್ಮಣರಲ್ಲದವರನ್ನು ಪ್ರೋತ್ಸಾಹಿಸಲು ಮುಖ್ಯ ಸಮಿತಿಗಳು ಕೈಗೊಳ್ಳುವ ಕ್ರಮಗಳ ಬಗ್ಗೆ ವರದಿನೀಡಲು ಮತ್ತು ವಿಚಾರಣೆ ನಡೆಸಲು ಮೈಸೂರಿನ ಮಹಾರಾಜರು 1918 ರಲ್ಲಿ ನೇಮಿಸಿದ ಸಮಿತಿ?",
+          "options_en": ["L.G. Havanur Committee", "Nagana Gowda Committee", "Mecland Committee", "Leslie Miller Committee"],
+          "options_kn": ["ಎಲ್.ಜಿ. ಹಾವನೂರು ಸಮಿತಿ", "ನಾಗನ ಗೌಡ ಸಮಿತಿ", "ಮೆಕ್‌ಲ್ಯಾಂಡ್ ಸಮಿತಿ", "ಲೆಸ್ಲಿ ಮಿಲ್ಲರ್ ಸಮಿತಿ"],
+          "correct": "D",
+          "exp": "The Miller Committee, headed by Sir Leslie Miller, was constituted by the Maharaja of Mysore in 1918 to recommend steps for adequate representation of non-Brahmins in state services.",
+          "subject": ""
+        },
+        {
+          "id": 28,
+          "q_en": "Match the Committees of the Constituent Assembly (List I) with their Chairmen (List II) : List I — A. House Committee; B. Order of Business Committee; C. Union Constitution Committee; D. Provincial Constitution Committee. List II — I. K.M. Munshi; II. Pattabhi Sitaramayya; III. Sardar Patel; IV. Jawaharlal Nehru; V. Alladi Krishnaswamy Ayyar",
+          "q_kn": "ಶಾಸನ ಸಭೆ ಸಮಿತಿಗಳೊಂದಿಗೆ (ಪಟ್ಟಿ I) ಅದರ ಅಧ್ಯಕ್ಷರನ್ನು (ಪಟ್ಟಿ II) ಹೊಂದಿಸಿರಿ : A. ಗೃಹ ಸಮಿತಿ B. ವಾಣಿಜ್ಯ ಸುವ್ಯವಸ್ಥೆ ಸಮಿತಿ C. ಕೇಂದ್ರ ಸಂವಿಧಾನ ಸಮಿತಿ D. ಪ್ರಾಂತೀಯ ಸಂವಿಧಾನ ಸಮಿತಿ | I. ಕೆ.ಎಂ. ಮುನ್ನಿ II. ಪಟ್ಟಾಭಿ ಸೀತಾರಾಮಯ್ಯ III. ಸರ್ದಾರ್ ಪಟೇಲ್ IV. ಜವಾಹರ್‌ಲಾಲ್ ನೆಹರೂ V. ಅಲ್ಲದಿ ಕೃಷ್ಣಸ್ವಾಮಿ ಅಯ್ಯರ್",
+          "options_en": ["V II IV I", "II I IV III", "V II IV III", "I II IV III"],
+          "options_kn": ["V II IV I", "II I IV III", "V II IV III", "I II IV III"],
+          "correct": "B",
+          "exp": "House Committee: B. Pattabhi Sitaramayya; Order of Business: K.M. Munshi; Union Constitution: Jawaharlal Nehru; Provincial Constitution: Sardar Patel.",
+          "subject": ""
+        },
+        {
+          "id": 29,
+          "q_en": "Recently, NASA had launched OSIRIS-REx for a mission which is the first of its kind from the USA. Choose the mission objective from the following:",
+          "q_kn": "ಇತ್ತೀಚೆಗೆ, ನಾಸಾವು OSIRIS-REx ನ್ನು ನಿಯೋಗಕ್ಕಾಗಿ ಅಮೇರಿಕಾದಿಂದ ಮೊದಲ ರೀತಿಯಂತೆ ಉಡಾವಣೆ ಮಾಡಿತು. ಕೆಳಗಿನವುಗಳಿಂದ ನಿಯೋಗದ ಉದ್ದೇಶಗಳನ್ನು ಆರಿಸಿ :",
+          "options_en": ["To find water molecules in the atmosphere of Jupiter", "To explore the moons of Jupiter", "To reach Mars' surface in search of water molecules", "To collect samples from the asteroid 101955 Bennu and to return to Earth"],
+          "options_kn": ["ಗುರುಗ್ರಹದ ವಾತಾವರಣದಲ್ಲಿರುವ ನೀರಿನ ಕಣಗಳನ್ನು ಪತ್ತೆ ಹಚ್ಚುವುದು", "ಗುರುಗ್ರಹದ ಉಪಗ್ರಹಗಳನ್ನು ಶೋಧಿಸುವುದು", "ನೀರಿನ ಕಣದ ಹುಡುಕಾಟದಲ್ಲಿ ಮಂಗಳನ ಮೇಲ್ಮೈಯನ್ನು ತಲುಪುವುದು", "101955 (Bennu) ಮಾದರಿಗಳನ್ನು ಸಂಗ್ರಹಿಸುವುದು ಮತ್ತು ಭೂಮಿಗೆ ಮರಳುವುದು"],
+          "correct": "D",
+          "exp": "OSIRIS-REx is a NASA asteroid-study and sample-return mission to the near-Earth asteroid 101955 Bennu.",
+          "subject": ""
+        },
+        {
+          "id": 30,
+          "q_en": "The Autonomous District Councils in tribal areas: A. have executive power. B. have no judicial power. C. have no legislative power. Which of the above statements is/are correct?",
+          "q_kn": "ಬುಡಕಟ್ಟು ಪ್ರದೇಶಗಳಲ್ಲಿನ ಸ್ವಾಯತ್ತ ಜಿಲ್ಲಾ ಪರಿಷತ್ತುಗಳು : A. ಕಾರ್ಯಾಂಗೀಯ ಅಧಿಕಾರವನ್ನು ಹೊಂದಿವೆ. B. ನ್ಯಾಯಾಂಗೀಯ ಅಧಿಕಾರವನ್ನು ಹೊಂದಿಲ್ಲ. C. ಶಾಸಕಾಂಗೀಯ ಅಧಿಕಾರವನ್ನು ಹೊಂದಿಲ್ಲ. ಯಾವುದು/ವು ಸರಿ?",
+          "options_en": ["A and B only", "A and C only", "A only", "C only"],
+          "options_kn": ["A ಮತ್ತು B ಮಾತ್ರ", "A ಮತ್ತು C ಮಾತ್ರ", "A ಮಾತ್ರ", "C ಮಾತ್ರ"],
+          "correct": "C",
+          "exp": "Autonomous District Councils have executive, legislative, and judicial powers within their jurisdiction under the Sixth Schedule. Thus, only statement A is correct.",
+          "subject": ""
+        },
+        {
+          "id": 31,
+          "q_en": "Which Amendment Act is known as the Anti-Defection Act?",
+          "q_kn": "ಯಾವ ಕಾಯ್ದೆಯು 'ಪಕ್ಷಾಂತರ ನಿಷೇಧ ಕಾಯ್ದೆ' ಎಂದು ಚಿರಪರಿಚಿತ?",
+          "options_en": ["Fifty-Second Amendment", "Sixty-Second Amendment", "Sixty-Ninth Amendment", "None of the above"],
+          "options_kn": ["52 ನೇ ತಿದ್ದುಪಡಿ ಕಾಯ್ದೆ", "62 ನೇ ತಿದ್ದುಪಡಿ ಕಾಯ್ದೆ", "69 ನೇ ತಿದ್ದುಪಡಿ ಕಾಯ್ದೆ", "ಮೇಲಿನ ಯಾವುದೂ ಅಲ್ಲ"],
+          "correct": "A",
+          "exp": "The 52nd Amendment to the Constitution of India in 1985 provided for the disqualification of members on the ground of defection.",
+          "subject": ""
+        },
+        {
+          "id": 32,
+          "q_en": "Chronologically arrange the following Chief Ministers of Karnataka in ascending order : A. Sri Veerendra Patil B. Sri Kadidal Manjappa C. Sri Gundu Rao",
+          "q_kn": "ಕಾಲಾನುಕ್ರಮವಾಗಿ ಏರಿಕೆಯ ಕ್ರಮದಲ್ಲಿ ಕರ್ನಾಟಕದ ಮುಖ್ಯ ಮಂತ್ರಿಗಳ ಸರಿಯಾದ ಜೋಡಣೆ ಮಾಡಿ : A. ಶ್ರೀ ವೀರೇಂದ್ರ ಪಾಟೀಲ್ B. ಶ್ರೀ ಕಡಿದಾಳ ಮಂಜಪ್ಪ C. ಶ್ರೀ ಗುಂಡೂ ರಾವ್",
+          "options_en": ["B, C, A", "B, A, C", "C, A, B", "C, B, A"],
+          "options_kn": ["B, C, A", "B, A, C", "C, A, B", "C, B, A"],
+          "correct": "B",
+          "exp": "Kadidal Manjappa was CM in 1956. Veerendra Patil served his first term from 1968 to 1971. R. Gundu Rao was CM from 1980 to 1983.",
+          "subject": ""
+        },
+        {
+          "id": 33,
+          "q_en": "Which of the following States and the year of their creation is incorrectly matched?",
+          "q_kn": "ರಾಜ್ಯ ಮತ್ತು ಅದರ ಸೃಷ್ಟಿಯಾದ ವರ್ಷಗಳಿಗೆ ಸಂಬಂಧಿಸಿದಂತೆ ಈ ಕೆಳಗಿನವುಗಳಲ್ಲಿ ಯಾವುದು ಸರಿಯಾಗಿ ಹೊಂದಿಕೆಯಾಗುತ್ತಿಲ್ಲ?",
+          "options_en": ["Andhra Pradesh - 1956", "Maharashtra - 1960", "Arunachal Pradesh - 1987", "None of the above"],
+          "options_kn": ["ಆಂಧ್ರ ಪ್ರದೇಶ - 1956", "ಮಹಾರಾಷ್ಟ್ರ - 1960", "ಅರುಣಾಚಲ ಪ್ರದೇಶ - 1987", "ಮೇಲಿನ ಯಾವುದೂ ಅಲ್ಲ"],
+          "correct": "D",
+          "exp": "All the states listed are correctly matched with their respective years of formation (AP in 1956 via States Reorganisation Act, Maharashtra 1960, Arunachal Pradesh 1987).",
+          "subject": ""
+        },
+        {
+          "id": 34,
+          "q_en": "The Delimitation Commission of India determined that the total number of Parliamentary seats allocated to Karnataka be in the following ratio : A. Out of 28 Lok Sabha seats, 05 seats should be reserved for Scheduled Castes and 02 for Scheduled Tribes. B. Out of 28 Lok Sabha seats, 07 seats should be reserved for Scheduled Castes and 05 for Scheduled Tribes. C. Out of 224 Assembly seats, 76 seats should be reserved for Scheduled Castes and 28 for Scheduled Tribes. D. Out of 224 Assembly seats, 36 seats should be reserved for Scheduled Castes and 15 for Scheduled Tribes. Which of the above statements is/are correct?",
+          "q_kn": "ಭಾರತದ ಡಿಲಿಮಿಟೇಷನ್ ಆಯೋಗವು ಒಟ್ಟು ಪಾರ್ಲಿಮೆಂಟರಿ ಸ್ಥಾನಗಳನ್ನು ಕರ್ನಾಟಕ ಕುರಿತಂತೆ ಈ ಅನುಪಾತದಲ್ಲಿ ಹಂಚಿಕೆ ಮಾಡಿದೆ : A. 28 ಲೋಕ ಸಭಾ ಸ್ಥಾನಗಳ ಪೈಕಿ 05 ಸ್ಥಾನಗಳನ್ನು ಪರಿಶಿಷ್ಟಜಾತಿ ಮತ್ತು 02 ಸ್ಥಾನಗಳನ್ನು ಪರಿಶಿಷ್ಟ ವರ್ಗಕ್ಕೆ. B. 28 ಲೋಕ ಸಭಾ ಸ್ಥಾನಗಳ ಪೈಕಿ 07 ಸ್ಥಾನಗಳನ್ನು ಪರಿಶಿಷ್ಟಜಾತಿ ಮತ್ತು 05 ಸ್ಥಾನಗಳನ್ನು ಪರಿಶಿಷ್ಟ ವರ್ಗಕ್ಕೆ. C. 224 ಅಸೆಂಬ್ಲಿ ಸ್ಥಾನಗಳ ಪೈಕಿ 76 ಸ್ಥಾನಗಳನ್ನು ಪರಿಶಿಷ್ಟಜಾತಿ ಮತ್ತು 28 ಸ್ಥಾನಗಳನ್ನು ಪರಿಶಿಷ್ಟ ವರ್ಗಕ್ಕೆ. D. 224 ಅಸೆಂಬ್ಲಿ ಸ್ಥಾನಗಳ ಪೈಕಿ 36 ಸ್ಥಾನಗಳನ್ನು ಪರಿಶಿಷ್ಟಜಾತಿ ಮತ್ತು 15 ಸ್ಥಾನಗಳನ್ನು ಪರಿಶಿಷ್ಟ ವರ್ಗಕ್ಕೆ. ಯಾವುದು/ವು ಸರಿ?",
+          "options_en": ["A and D only", "B and C only", "A only", "None of the above"],
+          "options_kn": ["A ಮತ್ತು D ಮಾತ್ರ", "B ಮತ್ತು C ಮಾತ್ರ", "A ಮಾತ್ರ", "ಮೇಲಿನ ಯಾವುದೂ ಅಲ್ಲ"],
+          "correct": "A",
+          "exp": "In Karnataka, 5 Lok Sabha seats are reserved for SC and 2 for ST. In the Legislative Assembly, 36 are for SC and 15 for ST.",
+          "subject": ""
+        },
+        {
+          "id": 35,
+          "q_en": "The Panchayati Raj Act, 1993 in Karnataka came into force on",
+          "q_kn": "ಕರ್ನಾಟಕದಲ್ಲಿ ಪಂಚಾಯತ್ ರಾಜ್ ಕಾಯ್ದೆ 1993, ಅಸ್ತಿತ್ವಕ್ಕೆ ಬಂದ ದಿನಾಂಕ",
+          "options_en": ["30th May, 1993", "30th April, 1993", "10th May, 1993", "10th April, 1993"],
+          "options_kn": ["30 ನೇ ಮೇ, 1993", "30 ನೇ ಏಪ್ರಿಲ್, 1993", "10 ನೇ ಮೇ, 1993", "10 ನೇ ಏಪ್ರಿಲ್, 1993"],
+          "correct": "C",
+          "exp": "The Karnataka Panchayat Raj Act, 1993 received the assent of the Governor on April 30, 1993, and came into force on May 10, 1993.",
+          "subject": ""
+        },
+        {
+          "id": 36,
+          "q_en": "The President of India enjoys which of the following Veto powers? A. Absolute Veto that is withholding of assent to the Bill passed by the Legislature. B. Qualified Veto which can be overridden by the Legislature with a higher Majority. C. Suspensive Veto which can be overridden by the Legislature with an ordinary Majority. D. Pocket Veto that is taking no action on the Bill passed by the Legislature.",
+          "q_kn": "ಭಾರತದ ರಾಷ್ಟ್ರಪತಿಯವರು ವೀಟೋ ಅಧಿಕಾರಕ್ಕೆ ಸಂಬಂಧಿಸಿದಂತೆ ಕೆಳಗಿನ ಯಾವ ರೀತಿಯ ವೀಟೋ ಅಧಿಕಾರಗಳನ್ನು ಹೊಂದಿರಬಹುದು? A. ನಿರಪೇಕ್ಷ ವೀಟೋ ಎಂದರೆ ಶಾಸಕಾಂಗದಿಂದ ಮಸೂದೆಗೆ ಒಪ್ಪಿಗೆ ತಡೆಹಿಡಿಯುವುದು. B. ಅರ್ಹ ವೀಟೋವನ್ನು ಶಾಸಕಾಂಗದ ಬಹುಮತದಿಂದ ರದ್ದುಗೊಳಿಸಬಹುದು. C. ನಿಲಂಬನ ವೀಟೋವನ್ನು ಶಾಸಕಾಂಗದ ಸಾಮಾನ್ಯ ಬಹುಮತದಿಂದ ರದ್ದುಗೊಳಿಸಬಹುದು. D. ಪಾಕೆಟ್ ವೀಟೋವು ಮಸೂದೆಯ ಬಗ್ಗೆ ಯಾವುದೇ ಕ್ರಮವನ್ನು ತೆಗೆದುಕೊಳ್ಳುವುದಿಲ್ಲ.",
+          "options_en": ["A and B only", "B and C only", "A, B and C only", "A, C and D only"],
+          "options_kn": ["A ಮತ್ತು B ಮಾತ್ರ", "B ಮತ್ತು C ಮಾತ್ರ", "A, B ಮತ್ತು C ಮಾತ್ರ", "A, C ಮತ್ತು D ಮಾತ್ರ"],
+          "correct": "D",
+          "exp": "The President of India has Absolute, Suspensive, and Pocket veto powers. The Qualified Veto is a feature of the American Presidency, not the Indian one.",
+          "subject": ""
+        },
+        {
+          "id": 37,
+          "q_en": "The States Reorganization Commission, 1953 was formed under the Chairmanship and the membership of",
+          "q_kn": "1953 ರಲ್ಲಿನ ರಾಜ್ಯಗಳ ಪುನರ್ರಚನಾ ಆಯೋಗವು ಇವರ ಅಧ್ಯಕ್ಷತೆ ಮತ್ತು ಸದಸ್ಯತ್ವದಲ್ಲಿ ರಚಿತವಾಯಿತು.",
+          "options_en": ["Chairman: Fazal Ali; Members: H.N. Kunzru, K.M. Panikkar", "Chairman: Jawaharlal Nehru; Members: Vallabhbhai Patel, Pattabhi Sitaramayya", "Chairman: S.K. Dhar; Members: J.N. Lal, Panna Lal", "Chairman: Dr. B.R. Ambedkar; Members: K.M. Munshi, B.N. Rau"],
+          "options_kn": ["ಅಧ್ಯಕ್ಷರು : ಫಜಲ್ ಅಲಿ | ಸದಸ್ಯರು : ಹೆಚ್.ಎನ್. ಕುಂಜ್ರು, ಕೆ.ಎಮ್. ಪಣಿಕ್ಕರ್", "ಅಧ್ಯಕ್ಷರು : ಜವಹರ್‌ಲಾಲ್ ನೆಹ್ರು | ಸದಸ್ಯರು : ವಲ್ಲಭಭಾಯಿ ಪಟೇಲ್, ಪಟ್ಟಾಭಿ ಸೀತಾರಾಮಯ್ಯ", "ಅಧ್ಯಕ್ಷರು : ಎಸ್.ಕೆ. ಧರ್ | ಸದಸ್ಯರು : ಜೆ.ಎನ್. ಲಾಲ್, ಪನ್ನಾ ಲಾಲ್", "ಅಧ್ಯಕ್ಷರು : ಡಾ. ಬಿ.ಆರ್. ಅಂಬೇಡ್ಕರ್ | ಸದಸ್ಯರು : ಕೆ.ಎಮ್. ಮುನ್ಷಿ, ಬಿ.ಎನ್. ರಾವ್"],
+          "correct": "A",
+          "exp": "The States Reorganisation Commission (SRC) constituted in 1953 was chaired by Fazal Ali, with K. M. Panikkar and H. N. Kunzru as its members.",
+          "subject": ""
+        },
+        {
+          "id": 38,
+          "q_en": "Match the following Committees (List I) with their Chairmen (List II) : List I — A. Committee on Civil Service Reforms; B. Committee on Police Reforms; C. Committee on Status of Muslims; D. Committee on Corporate Governance. List II — I. P.C. Hota; II. Rajinder Sachar; III. Naresh Chandra; IV. Soli Sorabjee",
+          "q_kn": "ಈ ಕೆಳಗಿನ ಸಮಿತಿಗಳನ್ನು (ಪಟ್ಟಿ I) ಮತ್ತು ಅದರ ಅಧ್ಯಕ್ಷರನ್ನು (ಪಟ್ಟಿ II) ಹೊಂದಿಸಿ ಬರೆಯಿರಿ : A. ನಾಗರಿಕ ಸೇವಾ ಸುಧಾರಣಾ ಸಮಿತಿ B. ಪೊಲೀಸು ಸುಧಾರಣಾ ಸಮಿತಿ C. ಮುಸಲ್ಮಾನ ಸ್ಥಾನಮಾನ ಸಮಿತಿ D. ಕಾರ್ಪೊರೇಟ್ ಆಳ್ವಿಕೆ ಸಮಿತಿ | I. ಪಿ.ಸಿ. ಹೊಟಾ II. ರಾಜಿಂದರ್ ಸಚಾರ್ III. ನರೇಶ್ ಚಂದ್ರ IV. ಸೋಲಿ ಸೊರಬ್ಜಿ",
+          "options_en": ["I IV II III", "II IV I III", "III I IV II", "I II III IV"],
+          "options_kn": ["I IV II III", "II IV I III", "III I IV II", "I II III IV"],
+          "correct": "A",
+          "exp": "P.C. Hota headed Civil Services reforms, Soli Sorabjee drafted Police Reforms, Rajinder Sachar reported on the Status of Muslims, and Naresh Chandra worked on Corporate Governance.",
+          "subject": ""
+        },
+        {
+          "id": 39,
+          "q_en": "'It shall be the duty of the Union to protect every State against external aggression and internal disturbance and ensure that the Government of every State is carried on in accordance with the provisions of this Constitution.' Which among the following Articles of the Indian Constitution deals with the above statement?",
+          "q_kn": "'ಕೇಂದ್ರ ಸರ್ಕಾರದ ಕರ್ತವ್ಯವು ಯಾವುದೇ ರಾಜ್ಯದ ಮೇಲೆ ಬಾಹ್ಯ ದಾಳಿ ಆಗದಂತೆ ಮತ್ತು ಆಂತರಿಕ ಕ್ಷೋಭೆ ಇಲ್ಲದಂತೆ ಸಂವಿಧಾನಾತ್ಮಕವಾಗಿ ಆಳ್ವಿಕೆ ನಡೆಸಿಕೊಂಡು ಹೋಗುವುದು.' ಈ ಹೇಳಿಕೆಗೆ ಸಂಬಂಧಿಸಿದಂತೆ ಭಾರತದ ಸಂವಿಧಾನದ ಯಾವ ಕಲಮು ವ್ಯವಹರಿಸುತ್ತದೆ?",
+          "options_en": ["Article 355", "Article 356", "Article 352", "Article 358"],
+          "options_kn": ["ಅನುಚ್ಛೇದ 355", "ಅನುಚ್ಛೇದ 356", "ಅನುಚ್ಛೇದ 352", "ಅನುಚ್ಛೇದ 358"],
+          "correct": "A",
+          "exp": "Article 355 imposes a duty on the Union to protect states against external aggression and internal disturbance to ensure constitutional governance.",
+          "subject": ""
+        },
+        {
+          "id": 40,
+          "q_en": "Which one of the following pairs is not correctly matched?",
+          "q_kn": "ಕೆಳಗಿನವುಗಳಲ್ಲಿ ಯಾವ ಜೋಡಿ ಸರಿಯಾಗಿ ಹೊಂದಾಣಿಕೆಯಾಗುವುದಿಲ್ಲ?",
+          "options_en": ["Goram Ghat - Rajasthan", "Harischandra Mountain Range - Maharashtra", "Panchamalai - Kerala", "Arma-Konda - Andhra Pradesh"],
+          "options_kn": ["ಗೊರಮ್ ಘಾಟ್ - ರಾಜಸ್ಥಾನ", "ಹರಿಶ್ಚಂದ್ರ ಪರ್ವತ ಶ್ರೇಣಿ - ಮಹಾರಾಷ್ಟ್ರ", "ಪಂಚಮಲೈ - ಕೇರಳ", "ಅರ್ಮಾ-ಕೊಂಡಾ - ಆಂಧ್ರ ಪ್ರದೇಶ"],
+          "correct": "C",
+          "exp": "Panchamalai Hills (Pachaimalai Hills) are a mountain range situated in the Eastern Ghats in Tamil Nadu, not Kerala.",
+          "subject": ""
+        },
+        {
+          "id": 41,
+          "q_en": "Arrange the following peaks of Karnataka in descending order of heights: A. Mullayanagiri B. Baba Budangiri C. Brahmagiri D. Kodachadri E. Pushpagiri",
+          "q_kn": "ಕರ್ನಾಟಕದ ಕೆಳಗಿನ ಶಿಖರಗಳನ್ನು ಅವುಗಳ ಎತ್ತರಗಳ ಇಳಿಕೆಯ ಕ್ರಮದಲ್ಲಿ ಜೋಡಿಸಿ : A. ಮುಳ್ಳಯ್ಯನಗಿರಿ B. ಬಾಬಾ ಬುಡನ್‌ಗಿರಿ C. ಬ್ರಹ್ಮಗಿರಿ D. ಕೊಡಚಾದ್ರಿ E. ಪುಷ್ಪಗಿರಿ",
+          "options_en": ["A, B, C, D, E", "A, B, C, E, D", "A, B, E, C, D", "A, E, B, C, D"],
+          "options_kn": ["A, B, C, D, E", "A, B, C, E, D", "A, B, E, C, D", "A, E, B, C, D"],
+          "correct": "C",
+          "exp": "Mullayanagiri (1930m) > Baba Budangiri (1895m) > Pushpagiri (1712m) > Brahmagiri (1608m) > Kodachadri (1343m).",
+          "subject": ""
+        },
+        {
+          "id": 42,
+          "q_en": "Which one of the following tribes resides in Tamil Nadu?",
+          "q_kn": "ಈ ಕೆಳಗಿನ ಯಾವ ಬುಡಕಟ್ಟು ಜನಾಂಗದವರು ತಮಿಳು ನಾಡಿನಲ್ಲಿ ನೆಲೆಸಿದ್ದಾರೆ?",
+          "options_en": ["Gonds", "Bhils", "Todas", "Santhals"],
+          "options_kn": ["ಗೊಂಡರು", "ಭಿಲ್ಲರು", "ತೋಡರು", "ಸಂತಾಲರು"],
+          "correct": "C",
+          "exp": "The Toda people are a Dravidian ethnic group who live in the Nilgiri Mountains of Tamil Nadu.",
+          "subject": ""
+        },
+        {
+          "id": 43,
+          "q_en": "Match the Mountain Passes (List I) with the States (List II) in which they are located: List I — A. Dihang; B. Khardung La; C. Jelep La; D. Debsa. List II — I. Sikkim; II. Jammu and Kashmir; III. Himachal Pradesh; IV. Arunachal Pradesh",
+          "q_kn": "ಪರ್ವತ ಕಣಿವೆ ಮಾರ್ಗಗಳು (ಪಟ್ಟಿ I) ಮತ್ತು ರಾಜ್ಯಗಳನ್ನು (ಪಟ್ಟಿ II) ಹೊಂದಿಸಿ : A. ದಿಹಾಂಗ್ B. ಖರ್ಡುಂಗ್ ಲಾ C. ಜೆಲೆಪ್ ಲಾ D. ದಿಬ್ಬಾ | I. ಸಿಕ್ಕಿಂ II. ಜಮ್ಮು ಮತ್ತು ಕಾಶ್ಮೀರ III. ಹಿಮಾಚಲ ಪ್ರದೇಶ IV. ಅರುಣಾಚಲ ಪ್ರದೇಶ",
+          "options_en": ["II IV I III", "II III IV I", "IV II I III", "IV II III I"],
+          "options_kn": ["II IV I III", "II III IV I", "IV II I III", "IV II III I"],
+          "correct": "C",
+          "exp": "Dihang is in Arunachal Pradesh, Khardung La in J&K, Jelep La in Sikkim, and Debsa in Himachal Pradesh.",
+          "subject": ""
+        },
+        {
+          "id": 44,
+          "q_en": "Which one of the following States of India is the leading producer of Soybean?",
+          "q_kn": "ಕೆಳಗಿನವುಗಳಲ್ಲಿ ಭಾರತದ ಯಾವ ರಾಜ್ಯವು ಅತೀ ಹೆಚ್ಚು ಸೋಯಬೀನನ್ನು ಉತ್ಪಾದಿಸುತ್ತದೆ?",
+          "options_en": ["Maharashtra", "Madhya Pradesh", "Rajasthan", "Chhattisgarh"],
+          "options_kn": ["ಮಹಾರಾಷ್ಟ್ರ", "ಮಧ್ಯ ಪ್ರದೇಶ", "ರಾಜಸ್ಥಾನ", "ಛತ್ತೀಸಗಡ"],
+          "correct": "B",
+          "exp": "Madhya Pradesh is historically the leading producer of soybean in India.",
+          "subject": ""
+        },
+        {
+          "id": 45,
+          "q_en": "Consider the following statements: A. Jharkhand is the leading producer of bauxite. B. Andhra Pradesh is the leading producer of mica. C. Karnataka is the leading producer of iron ore. Which of the above statements is/are correct?",
+          "q_kn": "ಈ ಕೆಳಗಿನ ಹೇಳಿಕೆಗಳನ್ನು ಪರಿಗಣಿಸಿ : A. ಜಾರ್ಖಂಡವು ಬಾಕ್ಸೈಟ್‌ನ್ನು ಉತ್ಪಾದಿಸುವ ಪ್ರಮುಖ ರಾಜ್ಯವಾಗಿದೆ. B. ಆಂಧ್ರ ಪ್ರದೇಶವು ಅಭ್ರಕವನ್ನು ಉತ್ಪಾದಿಸುವ ಪ್ರಮುಖ ರಾಜ್ಯವಾಗಿದೆ. C. ಕರ್ನಾಟಕವು ಕಬ್ಬಿಣ ಅದಿರನ್ನು ಉತ್ಪಾದಿಸುವ ಪ್ರಮುಖ ರಾಜ್ಯವಾಗಿದೆ. ಯಾವುದು/ವು ಸರಿ?",
+          "options_en": ["A only", "B only", "A and B only", "C only"],
+          "options_kn": ["A ಮಾತ್ರ", "B ಮಾತ್ರ", "A ಮತ್ತು B ಮಾತ್ರ", "C ಮಾತ್ರ"],
+          "correct": "B",
+          "exp": "Odisha is the leading producer of bauxite and iron ore, making statements A and C incorrect. Andhra Pradesh is the leading producer of mica.",
+          "subject": ""
+        },
+        {
+          "id": 46,
+          "q_en": "Which one among the following is an appropriate description of deflation?",
+          "q_kn": "ಹಣದುಬ್ಬರವಿಳಿತದ ಸೂಕ್ತವಾದ ವರ್ಣನೆಯು ಕೆಳಗಿನವುಗಳಲ್ಲಿ ಯಾವುದಾಗಿದೆ?",
+          "options_en": ["It is a sudden fall in the value of a currency against other popular currencies of the world.", "It is a persistent recession in the economy for some considerable time period.", "It is a persistent fall in the general price level of goods and services.", "It is fall in the rate of inflation over a period of time."],
+          "options_kn": ["ಒಂದು ಕರೆನ್ಸಿಯ ಮೌಲ್ಯದಲ್ಲಿ ಆಕಸ್ಮಾತ್ ಕುಸಿತವಾಗುವುದು.", "ಆರ್ಥಿಕತೆಯಲ್ಲಿನ ಒಂದು ಸ್ಥಿರ ಹಿಂಜರಿತವಾಗುವುದು.", "ಸರಕುಗಳು ಮತ್ತು ಸೇವೆಗಳ ಸಾಮಾನ್ಯ ಬೆಲೆಯ ಮಟ್ಟದಲ್ಲಿ ಸ್ಥಿರ ಕುಸಿತವಾಗುವುದು.", "ಹಣ ದುಬ್ಬರದ ದರದಲ್ಲಿ ಕುಸಿತವಾಗುವುದು."],
+          "correct": "C",
+          "exp": "Deflation is defined in economics as a general decline in prices for goods and services, typically associated with a contraction in the supply of money and credit.",
+          "subject": ""
+        },
+        {
+          "id": 47,
+          "q_en": "During which of the following Mughal emperor's time did Nadir Shah attack and loot Delhi and take the Peacock Throne with himself?",
+          "q_kn": "ಕೆಳಗಿನ ಯಾವ ಮುಘಲರ ದೊರೆಯ ಅವಧಿಯಲ್ಲಿ ನಾದಿರ್ ಷಾನು ದೆಹಲಿಯ ಮೇಲೆ ಧಾಳಿ ಮಾಡಿ ಲೂಟಿ ಮಾಡಿದನು ಮತ್ತು ನವಿಲು ಸಿಂಹಾಸನವನ್ನು ತನ್ನೊಂದಿಗೆ ಒಯ್ದನು?",
+          "options_en": ["Ahmed Shah", "Mohammad Shah", "Jahandar Shah", "Shah Alam"],
+          "options_kn": ["ಅಹ್ಮದ್ ಷಾ", "ಮೊಹಮದ್ ಷಾ", "ಜಹಾಂದಾರ್ ಷಾ", "ಷಾ ಆಲಂ"],
+          "correct": "B",
+          "exp": "Nadir Shah invaded the Mughal Empire and sacked Delhi in 1739 during the reign of Emperor Muhammad Shah.",
+          "subject": ""
+        },
+        {
+          "id": 48,
+          "q_en": "Consider the following statements : A. The World Wetlands Day is observed every year on 2nd February to raise awareness about the value of wetlands for humanity and the planet. B. The theme of World Wetlands Day for 2017 is 'Wetlands for our Future: Sustainable Livelihoods'. C. World Wetlands Day, 2017 was celebrated in Chilika Lake. Which of the above statements is/are correct?",
+          "q_kn": "ಕೆಳಗಿನ ಹೇಳಿಕೆಗಳನ್ನು ಪರಿಗಣಿಸಿ : A. ಪ್ರತಿ ವರ್ಷ 2ನೇ ಫೆಬ್ರುವರಿಯಂದು ವಿಶ್ವ ಚೌಗು ಭೂಮಿ ದಿನವನ್ನು ಆಚರಿಸಲಾಗುತ್ತದೆ. B. 2017 ರ ಆಶಯ 'ಚೌಗುನೆಲಗಳು ನಮ್ಮ ಮುಂದಿನ ಭವಿಷ್ಯಕ್ಕಾಗಿ: ಸುಸ್ಥಿರ ಜೀವನೋಪಾಯಗಳು'. C. 2017 ರ ದಿನವನ್ನು ಚಿಲ್ಕಾ ಸರೋವರದಲ್ಲಿ ಆಚರಿಸಲಾಯಿತು. ಯಾವುದು/ವು ಸರಿ?",
+          "options_en": ["A only", "A and B only", "A and C only", "A, B and C"],
+          "options_kn": ["A ಮಾತ್ರ", "A ಮತ್ತು B ಮಾತ್ರ", "A ಮತ್ತು C ಮಾತ್ರ", "A, B ಮತ್ತು C"],
+          "correct": "A",
+          "exp": "Statement B is incorrect (2017 theme was 'Wetlands for Disaster Risk Reduction'). Statement C is incorrect (national celebration in India was held at Bhoj Wetlands, Bhopal).",
+          "subject": ""
+        },
+        {
+          "id": 49,
+          "q_en": "Who among the following from Karnataka participated in Gandhi's Dandi March (Salt Satyagraha)?",
+          "q_kn": "ಕರ್ನಾಟಕದ ಈ ಕೆಳಗಿನ ಯಾರು ಗಾಂಧೀಜಿಯವರ ಉಪ್ಪಿನ ಸತ್ಯಾಗ್ರಹದ ದಂಡಿ ಜಾಥಾದಲ್ಲಿ ಪಾಲ್ಗೊಂಡಿದ್ದರು?",
+          "options_en": ["M.P. Nadkarni", "K.T. Bhashyam", "Mailara Mahadevappa", "T. Siddalingaiah"],
+          "options_kn": ["ಎಮ್.ಪಿ. ನಾಡಕರ್ಣಿ", "ಕೆ.ಟಿ. ಭಾಷ್ಯಂ", "ಮೈಲಾರ ಮಹದೇವಪ್ಪ", "ಟಿ. ಸಿದ್ದಲಿಂಗಯ್ಯ"],
+          "correct": "C",
+          "exp": "Mailara Mahadevappa, a young freedom fighter from Haveri district in Karnataka, was one of the 78 marchers who accompanied Gandhi on the Dandi March.",
+          "subject": ""
+        },
+        {
+          "id": 50,
+          "q_en": "Recently, Majuli Island was declared as the world's largest river island. Consider the following statements regarding the island: A. Majuli is the nerve centre of Assamese neo-Vaishnavite culture initiated by Saint-reformer Sankardeva in the 15th century. B. The island is formed by river Brahmaputra only. C. It is the first island district of the country. Which of the above statements are correct?",
+          "q_kn": "ಇತ್ತೀಚೆಗೆ ಮಾಜುಲಿ ದ್ವೀಪವನ್ನು ವಿಶ್ವದ ಅತ್ಯಂತ ದೊಡ್ಡ ನದಿ ದ್ವೀಪವೆಂದು ಘೋಷಿಸಲಾಗಿದೆ. ಹೇಳಿಕೆಗಳನ್ನು ಪರಿಗಣಿಸಿ : A. 15 ನೇ ಶತಮಾನದಲ್ಲಿ ಶಂಕರದೇವರಿಂದ ಪ್ರಾರಂಭಿತವಾದ ನವೀನ ವೈಷ್ಣವ ಸಂಸ್ಕೃತಿಯ ಪ್ರಮುಖ ಕೇಂದ್ರ. B. ಈ ದ್ವೀಪವು ಬ್ರಹ್ಮಪುತ್ರ ನದಿಯಿಂದ ರೂಪು ತಳೆಯಿತು. C. ಇದು ರಾಷ್ಟ್ರದ ಮೊದಲ ಜಿಲ್ಲಾ ದ್ವೀಪವಾಗಿತ್ತು. ಯಾವುವು ಸರಿ?",
+          "options_en": ["A and B only", "B and C only", "A and C only", "A, B and C"],
+          "options_kn": ["A ಮತ್ತು B ಮಾತ್ರ", "B ಮತ್ತು C ಮಾತ್ರ", "A ಮತ್ತು C ಮಾತ್ರ", "A, B ಮತ್ತು C"],
+          "correct": "C",
+          "exp": "Statement B is incorrect as Majuli is formed by the Brahmaputra River in the south and the Kherkutia Xuti, an anabranch of the Brahmaputra, joined by the Subansiri River in the north.",
+          "subject": ""
+        },
+        {
+          "id": 51,
+          "q_en": "Which was the first Christian missionary to start a school in Mysore?",
+          "q_kn": "ಮೈಸೂರಿನಲ್ಲಿ ಶಾಲೆಯನ್ನು ಯಾವ ಮೊದಲ ಕ್ರೈಸ್ತ ಮಿಷನರಿಯು ಪ್ರಾರಂಭಿಸಿತು ?",
+          "options_en": ["Sewell Missionary", "Mysore Missionary", "Wesleyan Missionary", "Basil Missionary"],
+          "options_kn": ["ಸಿವೇಲ್ ಮಿಷನರಿ", "ಮೈಸೂರು ಮಿಷನರಿ", "ವೆಸ್ಲಿಯನ್ ಮಿಷನರಿ", "ಬೇಸಿಲ್ ಮಿಷನರಿ"],
+          "correct": "C",
+          "exp": "The Wesleyan Missionaries were the pioneers of English education in the Mysore region, starting their first school around 1832.",
+          "subject": ""
+        },
+        {
+          "id": 52,
+          "q_en": "Which of the following has launched India's first 'Agricultural Marketing and Farmer-friendly Reform Index'?",
+          "q_kn": "ಭಾರತದ ಮೊದಲ 'ಕೃಷಿ ಮಾರುಕಟ್ಟೆ ಮತ್ತು ರೈತ ಸ್ನೇಹಿ ಸುಧಾರಣಾ ಸೂಚ್ಯಂಕ' ಪ್ರಾರಂಭಿಸಿದವರು ಈ ಕೆಳಗಿನವರಲ್ಲಿ ಯಾರು ?",
+          "options_en": ["Ministry of Agriculture", "NITI Aayog", "Ministry of Rural Development", "Ministry of Science and Technology"],
+          "options_kn": ["ಕೃಷಿ ಸಚಿವಾಲಯ", "ನೀತಿ ಆಯೋಗ", "ಗ್ರಾಮೀಣ ಅಭಿವೃದ್ಧಿ ಸಚಿವಾಲಯ", "ವಿಜ್ಞಾನ ಮತ್ತು ತಂತ್ರಜ್ಞಾನ ಸಚಿವಾಲಯ"],
+          "correct": "B",
+          "exp": "NITI Aayog launched the Agricultural Marketing and Farmer Friendly Reforms Index (AMFFRI) in 2016.",
+          "subject": ""
+        },
+        {
+          "id": 53,
+          "q_en": "Which of the following is/are true with respect to the Sovereign Gold Bond Scheme (GBS)? A. Minimum investment is 1 gram of physical gold and maximum is capped at 1 kilogram. B. The maximum tenure for the SGBS is 10 years. C. These bonds are available in DEMAT and paper form. It is tradable in stock exchange and can be used as a collateral for loans.",
+          "q_kn": "ಸಾರ್ವಭೌಮ ಸುವರ್ಣ ಬಾಂಡ್ ಯೋಜನೆಯನ್ನು ಕುರಿತಂತೆ ಕೆಳಗಿನವುಗಳಲ್ಲಿ ಯಾವುದು/ವು ಸರಿಯಾಗಿದೆ ? A. ಕನಿಷ್ಠ ಹೂಡಿಕೆಯು 1 ಗ್ರಾಂನ ಭೌತಿಕ ಚಿನ್ನ ಮತ್ತು ಗರಿಷ್ಠ 1 ಕಿ.ಗ್ರಾಂ. ವರೆಗಿನ ಧಾರಣೆ. B. ಸಾರ್ವಭೌಮ ಸುವರ್ಣ ಬಾಂಡ್ ಯೋಜನೆಯ ಗರಿಷ್ಠ ಕಾಲಾವಧಿಯು 10 ವರ್ಷಗಳು. C. ಈ ಬಾಂಡ್‌ಗಳು ಡಿಮ್ಯಾಟ್ ಮತ್ತು ಕಾಗದದ ರೂಪದಲ್ಲಿ ದೊರೆಯುವುದು, ಸ್ಟಾಕ್ ವಿನಿಮಯದಲ್ಲಿ ಮಾರಾಟವಾಗತಕ್ಕವು ಮತ್ತು ಸಾಲಗಳಿಗೆ ಮೇಲಾಧಾರವಾಗಿ ಉಪಯೋಗಿಸಲ್ಪಡುವಂತಹವು.",
+          "options_en": ["A and C only", "B and C only", "C only", "A, B and C"],
+          "options_kn": ["A ಮತ್ತು C ಮಾತ್ರ", "B ಮತ್ತು C ಮಾತ್ರ", "C ಮಾತ್ರ", "A, B ಮತ್ತು C"],
+          "correct": "C",
+          "exp": "Only C is correct. The maximum tenure of the bond is 8 years (with exit options from 5th year). At the time of this exam, the maximum limit was 500g (later revised to 4kg for individuals), making statement A incorrect.",
+          "subject": ""
+        },
+        {
+          "id": 54,
+          "q_en": "Which of the following ladies wrote a historical account Humanyunama during the Mughal Period?",
+          "q_kn": "ಮೊಘಲರ ಅವಧಿಯಲ್ಲಿ ಐತಿಹಾಸಿಕ ವಿವರಣೆಯ ಹುಮಾಯೂನ್‌ನಾಮವನ್ನು ಕೆಳಗಿನ ಸ್ತ್ರೀಯರಲ್ಲಿ ಯಾರು ಬರೆದರು ?",
+          "options_en": ["Gulbadan Begum", "Noor Begum", "Zebunnissah Begum", "Jahanara"],
+          "options_kn": ["ಗುಲ್ಬದನ್ ಬೇಗಂ", "ನೂರ್ ಬೇಗಂ", "ಝೇಬುನ್ನೀಸಾ ಬೇಗಂ", "ಜಹಾನಾರಾ"],
+          "correct": "A",
+          "exp": "Gulbadan Begum, the daughter of Emperor Babur and half-sister of Emperor Humayun, wrote the Humayun-Nama.",
+          "subject": ""
+        },
+        {
+          "id": 55,
+          "q_en": "Indian Railways strike of 1974 is a saga of heroism of ordinary railway workers and the biggest strike in the history of Indian Railways. The President of the All India Railwaymen's Federation (AIRF) and the main leader of the strike was",
+          "q_kn": "ಭಾರತೀಯ ರೇಲ್ವೆಯ ಮುಷ್ಕರ (1974) ಭಾರತೀಯ ರೇಲ್ವೆ ಇತಿಹಾಸದಲ್ಲಿಯೇ ಸಾಮಾನ್ಯ ರೇಲ್ವೆ ಕೆಲಸಗಾರರು ಕೈಗೊಂಡ ಅತಿದೊಡ್ಡ ಮುಷ್ಕರ. ಮುಷ್ಕರದ ಮುಂಚೂಣಿ ಯಲ್ಲಿದ್ದ ಹಾಗೂ ಅಖಿಲ ಭಾರತ ರೇಲ್ವೆ ಫೆಡರೇಷನ್ನಿನ ಅಧ್ಯಕ್ಷರಾಗಿದ್ದವರು",
+          "options_en": ["Jayaprakash Narayan", "George Fernandes", "Jagjivan Ram", "Narendra Desai"],
+          "options_kn": ["ಜಯಪ್ರಕಾಶ ನಾರಾಯಣ", "ಜಾರ್ಜ್ ಫರ್ನಾಂಡಿಸ್", "ಜಗಜೀವನ ರಾಮ್", "ನರೇಂದ್ರ ದೇಸಾಯಿ"],
+          "correct": "B",
+          "exp": "George Fernandes was the President of the All India Railwaymen's Federation and led the historic 1974 railway strike.",
+          "subject": ""
+        },
+        {
+          "id": 56,
+          "q_en": "What is 'Synlight'?",
+          "q_kn": "'ಸಿನ್‌ಲೈಟ್' ಎಂದರೇನು ?",
+          "options_en": ["A recently discovered place by NASA which produces light on its own through a combination of various physical and chemical reactions.", "It is a developing project dedicated for an ICBM (Inter-Continental Ballistic Missile) aimed at achieving one-tenth the speed of light.", "It is a project to simulate sunlight by producing an artificial sun.", "It is a powerful treatment of cancer using the photons of light energy."],
+          "options_kn": ["ಇತ್ತೀಚೆಗೆ ನಾಸಾದಿಂದ ಸಂಶೋಧಿಸಲ್ಪಟ್ಟ ಸ್ಥಳವಾಗಿದ್ದು ವಿವಿಧ ಭೌತಿಕ ಮತ್ತು ರಾಸಾಯನಿಕ ಕ್ರಿಯೆಗಳ ಸಂಯೋಜನೆಯ ಮೂಲಕ ಬೆಳಕನ್ನು ತನ್ನಂತೇ ಉತ್ಪಾದಿಸುವುದು.", "ಇದು ICBM ನ್ನು ಅಭಿವೃದ್ಧಿಗೊಳಿಸಲು ಸಮರ್ಪಿತವಾದ ಯೋಜನೆ ಮತ್ತು ಬೆಳಕಿನ ವೇಗವನ್ನು ಹತ್ತನೇ ಒಂದರಷ್ಟು ಸಾಧಿಸುವ ಗುರಿಯನ್ನು ಹೊಂದಿದೆ.", "ಕೃತಕ ಸೂರ್ಯನಿಂದ ಸೌರಬೆಳಕನ್ನು ಉತ್ಪಾದಿಸುವ ಅನುಕರಣೆಯ ಒಂದು ಯೋಜನೆಯಾಗಿದೆ.", "ಇದು ಕ್ಯಾನ್ಸರ್‌ನ ಒಂದು ಪ್ರಬಲ ಚಿಕಿತ್ಸೆಯಾಗಿದ್ದು, ಬೆಳಕಿನ ಶಕ್ತಿಯ ಫೋಟಾನ್‌ಗಳನ್ನು ಬಳಕೆ ಮಾಡುತ್ತದೆ."],
+          "correct": "C",
+          "exp": "Synlight is a large-scale artificial sun experiment in Jülich, Germany, used to simulate sunlight for research purposes.",
+          "subject": ""
+        },
+        {
+          "id": 57,
+          "q_en": "India and United Nations Office of Disaster Risk Reduction signed a Statement of Cooperation (SoC) of the Sendai Framework of Disaster Risk Reduction in New Delhi. SFDRR is an International Treaty approved by UN member States in Sendai. Where is Sendai ?",
+          "q_kn": "ಭಾರತ ಮತ್ತು ವಿಶ್ವ ಸಂಸ್ಥೆ ಪ್ರಕೋಪ ಹಾವಳಿತಗ್ಗಿಕೆ ಕಛೇರಿಗಳು ಕೋ ಆಪರೇಷನ್ ಆಫ್ ದಿ ಸೆಂಡೈ ಫ್ರೇಮ್ ವರ್ಕ್ ಆಫ್ ಡಿಸಾಸ್ಟರ್ ರಿಡಕ್ಷನ್‌ನ ಒಂದು ಹೇಳಿಕೆಗೆ ನವದೆಹಲಿಯಲ್ಲಿ ಸಹಿಯನ್ನು ಹಾಕಿದವು. ಎಸ್.ಎಫ್.ಡಿ.ಆರ್.ಆರ್.ವು ಅಂತರರಾಷ್ಟ್ರೀಯ ಒಪ್ಪಂದ ವಾಗಿದ್ದು, ಅದನ್ನು ಸೆಂಡೈನಲ್ಲಿ ವಿಶ್ವ ಸಂಸ್ಥೆ ಸದಸ್ಯ ರಾಷ್ಟ್ರಗಳು ಅನುಮೋದಿಸಿವೆ. ಸೆಂಡೈ ಎಲ್ಲಿದೆ ?",
+          "options_en": ["Japan", "China", "Indonesia", "Malaysia"],
+          "options_kn": ["ಜಪಾನ್", "ಚೀನಾ", "ಇಂಡೋನೇಷ್ಯಾ", "ಮಲೇಷಿಯಾ"],
+          "correct": "A",
+          "exp": "Sendai is the capital city of Miyagi Prefecture, Japan, where the framework was adopted in 2015.",
+          "subject": ""
+        },
+        {
+          "id": 58,
+          "q_en": "Consider the following statements: A. Barren Island is the only confirmed active volcano in South Asia along a chain of volcanoes from Sumatra to Myanmar. B. Barren Island is a part of Andaman Islands. Which of the above statements is/are correct?",
+          "q_kn": "ಕೆಳಗಿನ ಹೇಳಿಕೆಗಳನ್ನು ಪರಿಗಣಿಸಿ : A. ಬೇರನ್ ದ್ವೀಪವು ದಕ್ಷಿಣ ಏಷ್ಯಾದ ಏಕೈಕ ಸಕ್ರಿಯಾ ಜ್ವಾಲಾಮುಖಿಯಾಗಿದ್ದು, ಸುಮಾತ್ರಾದಿಂದ ಮಯನ್‌ಮಾರ್ ವರೆಗಿನ ಒಂದು ಜ್ವಾಲಾಮುಖಿಗಳ ಸರಪಣಿಯಾಗಿದೆ. B. ಬೇರನ್ ದ್ವೀಪವು ಅಂಡಮಾನ್ ದ್ವೀಪದ ಒಂದು ಭಾಗವಾಗಿದೆ. ಯಾವುದು/ವು ಸರಿ ?",
+          "options_en": ["A only", "B only", "Both A and B", "Neither A nor B"],
+          "options_kn": ["A ಮಾತ್ರ", "B ಮಾತ್ರ", "A ಮತ್ತು B ಎರಡೂ", "A ಆಗಲೀ ಅಥವಾ B ಆಗಲೀ ಅಲ್ಲ"],
+          "correct": "C",
+          "exp": "Both statements are factually correct. Barren Island is an active volcano located in the Andaman Sea and is part of the Andaman Islands.",
+          "subject": ""
+        },
+        {
+          "id": 59,
+          "q_en": "Consider the following measures: A. Repo Rate B. Cash Reserve Ratio (CRR) C. Reverse Repo Rate. Which of the above given measures is/are used in Liquidity Adjustment Facility (LAF)?",
+          "q_kn": "ಕೆಳಗಿನ ಪರಿಹಾರ ಕ್ರಮಗಳನ್ನು ಪರಿಗಣಿಸಿ : A. ರೆಪೊ ದರ B. ನಗದು ಕಾಯ್ದಿರಿಸುವಿಕೆ ಅನುಪಾತ (CRR) C. ವ್ಯತ್ಯಸ್ತ ರೆಪೊ ದರ. ಮೇಲಿನ ಪರಿಹಾರ ಕ್ರಮಗಳಲ್ಲಿ ಯಾವುದು ದ್ರವ್ಯ ಹೊಂದಾಣಿಕೆ ಸೌಲಭ್ಯದಲ್ಲಿ (LAF) ಬಳಕೆಯಾಗುತ್ತದೆ ?",
+          "options_en": ["A and B only", "B and C only", "A and C only", "A only"],
+          "options_kn": ["A ಮತ್ತು B ಮಾತ್ರ", "B ಮತ್ತು C ಮಾತ್ರ", "A ಮತ್ತು C ಮಾತ್ರ", "A ಮಾತ್ರ"],
+          "correct": "C",
+          "exp": "The Liquidity Adjustment Facility (LAF) is an RBI monetary policy tool that includes both Repo operations and Reverse Repo operations. CRR is a reserve requirement, not part of LAF.",
+          "subject": ""
+        },
+        {
+          "id": 60,
+          "q_en": "Consider the following statements regarding the Indus Water Treaty : A. According to the treaty, Beas, Ravi and Sutlej are to be fully controlled by Pakistan, while Indus, Chenab and Jhelum are to be fully controlled by India. B. Initially this treaty was brokered by the Asian Development Bank. C. China is also a party to the agreement as Indus originates from Tibet, China. D. It was signed by the Prime Minister Jawaharlal Nehru and the President of Pakistan Ayub Khan in Karachi on September 19, 1960. Which of the above statements is/are correct?",
+          "q_kn": "ಸಿಂಧು ನದಿ ನೀರಿನ ಒಪ್ಪಂದದ ಬಗ್ಗೆ ಕೆಳಗಿನ ಹೇಳಿಕೆಗಳನ್ನು ಪರಿಗಣಿಸಿ : A. ಒಪ್ಪಂದದ ಅನುಸಾರ ಬಿಯಾಸ್, ರಾವಿ ಮತ್ತು ಸಟ್ಲೇಜ್ ಅನ್ನು ಪಾಕಿಸ್ತಾನ ಪೂರ್ಣ ನಿಯಂತ್ರಣಕ್ಕೆ ಹಾಗೂ ಸಿಂಧು, ಚೀನಾಬ್ ಮತ್ತು ಜೀಲಮ್ ಅನ್ನು ಭಾರತ ಪೂರ್ಣ ನಿಯಂತ್ರಣಕ್ಕೆ ಪಡೆದಿವೆ. B. ಆರಂಭದಲ್ಲಿ ಈ ಒಪ್ಪಂದದ ಮಧ್ಯಸ್ಥಿಕೆಯನ್ನು ಏಷಿಯನ್ ಡೆವಲಪ್‌ಮೆಂಟ್ ಬ್ಯಾಂಕ್ ವಹಿಸಿತ್ತು. C. ಸಿಂಧು ನದಿಯು ಚೀನಾದ ಟಿಬೆಟ್‌ನಲ್ಲಿ ಹುಟ್ಟುವುದರಿಂದ ಈ ಒಪ್ಪಂದದಲ್ಲಿ ಚೀನಾ ಸಹ ಭಾಗಿಯಾಗಿದೆ. D. ಈ ಒಪ್ಪಂದವನ್ನು ಪ್ರಧಾನ ಮಂತ್ರಿಗಳಾದ ಜವಹರ್‌ಲಾಲ್ ನೆಹ್ರು ಮತ್ತು ಪಾಕಿಸ್ತಾನದ ರಾಷ್ಟ್ರಪತಿಯಾದ ಅಯೂಬ್ ಖಾನ್ ರವರು, ಕರಾಚಿಯಲ್ಲಿ 19ನೇ ಸೆಪ್ಟೆಂಬರ್, 1960 ರಂದು ಸಹಿ ಮಾಡಿದರು. ಯಾವುದು/ವು ಸರಿ?",
+          "options_en": ["A and B only", "B and C only", "C and D only", "D only"],
+          "options_kn": ["A ಮತ್ತು B ಮಾತ್ರ", "B ಮತ್ತು C ಮಾತ್ರ", "C ಮತ್ತು D ಮಾತ್ರ", "D ಮಾತ್ರ"],
+          "correct": "D",
+          "exp": "Statement D is true. A is incorrect (India controls Eastern rivers Beas, Ravi, Sutlej; Pakistan controls Western rivers Indus, Chenab, Jhelum). B is incorrect (Brokered by the World Bank). C is incorrect (China is not a party).",
+          "subject": ""
+        }
+      ]
+    }
+  ],
+  "initialStudentDirectory": [
+    {
+      "email": "student@gmail.com",
+      "utr": "UPI1234567890",
+      "status": "active",
+      "allowedExams": [
+        "kas_mock_01"
+      ],
+      "allowedPages": [
+        "p_1",
+        "p_current_affairs"
+      ],
+      "allowedPdfs": [
+        "doc_1"
+      ],
+      "passes": []
+    }
+  ]
+}   
