@@ -323,22 +323,22 @@
   <!-- ================= VIEW 1: HOME ================= -->
   <main id="view-home" class="flex-1">
     <div id="home-announcements" class="hidden bg-slate-100 border-b border-slate-200"><div class="max-w-6xl mx-auto px-4 py-3 space-y-2" id="home-announcements-list"></div></div>
-    <section class="bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white py-16 px-4">
+    <section id="home-hero" class="bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white py-16 px-4">
       <div class="max-w-4xl mx-auto text-center space-y-5">
-        <span class="inline-block px-3 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full text-xs font-semibold uppercase tracking-wider">
+        <span id="home-hero-badge" class="inline-block px-3 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full text-xs font-semibold uppercase tracking-wider">
           Deep Roots. Higher Tomorrows.
         </span>
-        <h2 class="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">
+        <h2 id="home-hero-heading" class="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">
           <span class="text-white">GRIT</span><span class="text-amber-400">-PRO</span> <span class="block text-2xl md:text-3xl font-bold text-slate-300 mt-2">Test. Prepare. Challenge.</span>
         </h2>
-        <p class="text-slate-300 text-base md:text-lg max-w-2xl mx-auto">
+        <p id="home-hero-desc" class="text-slate-300 text-base md:text-lg max-w-2xl mx-auto">
           Bilingual OMR mocks, hand-crafted planners and study rooms for KPSC KAS, Karnataka PSI, FDA/SDA and UPSC CSE — under one login.
         </p>
         <div class="flex flex-wrap justify-center gap-4 pt-4">
-          <button onclick="navigate('tests')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-6 py-3 rounded-lg font-bold transition shadow-lg">
+          <button id="home-hero-cta1" onclick="handleHeroCta(1)" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-6 py-3 rounded-lg font-bold transition shadow-lg">
             Explore Exam Categories
           </button>
-          <button onclick="renderDynamicCustomPage('p_current_affairs')" class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold transition">
+          <button id="home-hero-cta2" onclick="handleHeroCta(2)" class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold transition">
             Current Affairs & Notes
           </button>
         </div>
@@ -348,17 +348,17 @@
     <!-- Study sections: pages ticked "Show as a tile on the home page" -->
     <section id="home-sections" class="max-w-6xl mx-auto px-4 pt-12 hidden">
       <div class="text-center mb-6">
-        <h3 class="text-2xl font-black text-slate-900">Study Rooms</h3>
-        <p class="text-xs text-slate-500 mt-1">Notes, strategy and reference sections. Open one to see everything inside.</p>
+        <h3 id="home-sections-title" class="text-2xl font-black text-slate-900">Study Rooms</h3>
+        <p id="home-sections-sub" class="text-xs text-slate-500 mt-1">Notes, strategy and reference sections. Open one to see everything inside.</p>
       </div>
       <div id="home-sections-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
     </section>
 
     <!-- Pricing Summary Section on Home -->
-    <section class="max-w-6xl mx-auto px-4 py-12">
+    <section id="home-passes" class="max-w-6xl mx-auto px-4 py-12">
       <div class="text-center mb-8">
-        <h3 class="text-2xl font-black text-slate-900">Flexible Enrollment Passes</h3>
-        <p class="text-xs text-slate-500 mt-1">Pay only for the exams you prepare for, or unlock complete access across all batches.</p>
+        <h3 id="home-passes-title" class="text-2xl font-black text-slate-900">Flexible Enrollment Passes</h3>
+        <p id="home-passes-sub" class="text-xs text-slate-500 mt-1">Pay only for the exams you prepare for, or unlock complete access across all batches.</p>
       </div>
 
       <div id="home-bundles" class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -678,9 +678,9 @@
 
     <div class="flex flex-col lg:flex-row gap-6 items-start">
       <!-- Task menu -->
-      <aside class="hidden lg:block w-56 shrink-0 sticky top-20 bg-white border border-slate-200 rounded-2xl p-3 text-xs max-h-[calc(100vh-6rem)] overflow-y-auto" aria-label="Dev Console sections"><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Overview</div><button type="button" data-panel-link="overview" onclick="showAdminPanel('overview')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🏠</span><span class="flex-1">Overview</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Payments</div><button type="button" data-panel-link="payments" onclick="showAdminPanel('payments')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🧾</span><span class="flex-1">Verify payments</span><span class="admin-pending-badge hidden min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-black flex items-center justify-center"></span></button><button type="button" data-panel-link="revenue" onclick="showAdminPanel('revenue')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📈</span><span class="flex-1">Revenue & reports</span></button><button type="button" data-panel-link="upi" onclick="showAdminPanel('upi')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">💳</span><span class="flex-1">UPI details</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Website</div><button type="button" data-panel-link="home" onclick="showAdminPanel('home')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🏠</span><span class="flex-1">Home page</span></button><button type="button" data-panel-link="pages" onclick="showAdminPanel('pages')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📝</span><span class="flex-1">Pages</span></button><button type="button" data-panel-link="menus" onclick="showAdminPanel('menus')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🧭</span><span class="flex-1">Menus</span></button><button type="button" data-panel-link="announcements" onclick="showAdminPanel('announcements')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📣</span><span class="flex-1">Announcements</span></button><button type="button" data-panel-link="pdfs" onclick="showAdminPanel('pdfs')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📄</span><span class="flex-1">PDF vault</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Tests & planners</div><button type="button" data-panel-link="tests" onclick="showAdminPanel('tests')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🗂️</span><span class="flex-1">Test papers</span></button><button type="button" data-panel-link="planners" onclick="showAdminPanel('planners')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">✅</span><span class="flex-1">Study planners</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Products & access</div><button type="button" data-panel-link="bundles" onclick="showAdminPanel('bundles')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📦</span><span class="flex-1">Bundles & passes</span></button><button type="button" data-panel-link="access" onclick="showAdminPanel('access')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🎚️</span><span class="flex-1">Dashboard access</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Students</div><button type="button" data-panel-link="students" onclick="showAdminPanel('students')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🎓</span><span class="flex-1">Student directory</span></button><button type="button" data-panel-link="entitlements" onclick="showAdminPanel('entitlements')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🔑</span><span class="flex-1">Access desk</span></button><button type="button" data-panel-link="login" onclick="showAdminPanel('login')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🔐</span><span class="flex-1">Login & OTP</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Settings</div><button type="button" data-panel-link="account" onclick="showAdminPanel('account')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🛡️</span><span class="flex-1">Admin account</span></button><button type="button" data-panel-link="backup" onclick="showAdminPanel('backup')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">💾</span><span class="flex-1">Backup & restore</span></button></div></aside>
+      <aside class="hidden lg:block w-56 shrink-0 sticky top-20 bg-white border border-slate-200 rounded-2xl p-3 text-xs max-h-[calc(100vh-6rem)] overflow-y-auto" aria-label="Dev Console sections"><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Overview</div><button type="button" data-panel-link="overview" onclick="showAdminPanel('overview')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🏠</span><span class="flex-1">Overview</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Payments</div><button type="button" data-panel-link="payments" onclick="showAdminPanel('payments')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🧾</span><span class="flex-1">Verify payments</span><span class="admin-pending-badge hidden min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-black flex items-center justify-center"></span></button><button type="button" data-panel-link="revenue" onclick="showAdminPanel('revenue')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📈</span><span class="flex-1">Revenue & reports</span></button><button type="button" data-panel-link="upi" onclick="showAdminPanel('upi')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">💳</span><span class="flex-1">UPI details</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Website</div><button type="button" data-panel-link="home" onclick="showAdminPanel('home')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🏠</span><span class="flex-1">Home page</span></button><button type="button" data-panel-link="pages" onclick="showAdminPanel('pages')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📝</span><span class="flex-1">Pages</span></button><button type="button" data-panel-link="menus" onclick="showAdminPanel('menus')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🧭</span><span class="flex-1">Menus</span></button><button type="button" data-panel-link="announcements" onclick="showAdminPanel('announcements')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📣</span><span class="flex-1">Announcements</span></button><button type="button" data-panel-link="pdfs" onclick="showAdminPanel('pdfs')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📄</span><span class="flex-1">PDF vault</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Tests & planners</div><button type="button" data-panel-link="tests" onclick="showAdminPanel('tests')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🗂️</span><span class="flex-1">Test papers</span></button><button type="button" data-panel-link="planners" onclick="showAdminPanel('planners')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">✅</span><span class="flex-1">Study planners</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Products & access</div><button type="button" data-panel-link="bundles" onclick="showAdminPanel('bundles')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📦</span><span class="flex-1">Bundles & passes</span></button><button type="button" data-panel-link="access" onclick="showAdminPanel('access')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🎚️</span><span class="flex-1">Dashboard access</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Students</div><button type="button" data-panel-link="students" onclick="showAdminPanel('students')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🎓</span><span class="flex-1">Student directory</span></button><button type="button" data-panel-link="entitlements" onclick="showAdminPanel('entitlements')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🔑</span><span class="flex-1">Access desk</span></button><button type="button" data-panel-link="login" onclick="showAdminPanel('login')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🔐</span><span class="flex-1">Login & OTP</span></button><button type="button" data-panel-link="email" onclick="showAdminPanel('email')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📧</span><span class="flex-1">Email tools</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Settings</div><button type="button" data-panel-link="account" onclick="showAdminPanel('account')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🛡️</span><span class="flex-1">Admin account</span></button><button type="button" data-panel-link="backup" onclick="showAdminPanel('backup')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">💾</span><span class="flex-1">Backup & restore</span></button></div></aside>
       <label class="lg:hidden w-full text-xs font-bold text-slate-700">Go to
-        <select id="admin-panel-select" onchange="showAdminPanel(this.value)" class="mt-1 w-full px-3 py-2 border rounded-lg bg-white text-sm"><optgroup label="Overview"><option value="overview">Overview</option></optgroup><optgroup label="Payments"><option value="payments">Verify payments</option><option value="revenue">Revenue & reports</option><option value="upi">UPI details</option></optgroup><optgroup label="Website"><option value="home">Home page</option><option value="pages">Pages</option><option value="menus">Menus</option><option value="announcements">Announcements</option><option value="pdfs">PDF vault</option></optgroup><optgroup label="Tests & planners"><option value="tests">Test papers</option><option value="planners">Study planners</option></optgroup><optgroup label="Products & access"><option value="bundles">Bundles & passes</option><option value="access">Dashboard access</option></optgroup><optgroup label="Students"><option value="students">Student directory</option><option value="entitlements">Access desk</option><option value="login">Login & OTP</option></optgroup><optgroup label="Settings"><option value="account">Admin account</option><option value="backup">Backup & restore</option></optgroup></select>
+        <select id="admin-panel-select" onchange="showAdminPanel(this.value)" class="mt-1 w-full px-3 py-2 border rounded-lg bg-white text-sm"><optgroup label="Overview"><option value="overview">Overview</option></optgroup><optgroup label="Payments"><option value="payments">Verify payments</option><option value="revenue">Revenue & reports</option><option value="upi">UPI details</option></optgroup><optgroup label="Website"><option value="home">Home page</option><option value="pages">Pages</option><option value="menus">Menus</option><option value="announcements">Announcements</option><option value="pdfs">PDF vault</option></optgroup><optgroup label="Tests & planners"><option value="tests">Test papers</option><option value="planners">Study planners</option></optgroup><optgroup label="Products & access"><option value="bundles">Bundles & passes</option><option value="access">Dashboard access</option></optgroup><optgroup label="Students"><option value="students">Student directory</option><option value="entitlements">Access desk</option><option value="login">Login & OTP</option><option value="email">Email tools</option></optgroup><optgroup label="Settings"><option value="account">Admin account</option><option value="backup">Backup & restore</option></optgroup></select>
       </label>
 
       <div id="admin-panels" class="flex-1 min-w-0 w-full space-y-6">
@@ -1191,16 +1191,44 @@
           <div class="p-4 bg-slate-50 rounded-xl border space-y-3">
             <div>
               <label class="block font-semibold text-slate-700 mb-1">OTP delivery</label>
-              <select id="cfg-otp-mode" onchange="toggleEmailjsFields()" class="w-full px-2.5 py-1.5 border rounded-lg bg-white outline-none">
+              <select id="cfg-otp-mode" onchange="toggleDeliveryFields()" class="w-full px-2.5 py-1.5 border rounded-lg bg-white outline-none">
                 <option value="demo">Demo: show the code on screen (testing only)</option>
-                <option value="emailjs">Email via EmailJS</option>
+                <option value="brevo">Brevo via Supabase (recommended)</option>
+                <option value="emailjs">Email via EmailJS (legacy)</option>
               </select>
             </div>
             <label class="flex items-center space-x-2 cursor-pointer">
               <input type="checkbox" id="cfg-allow-signup" class="rounded text-amber-500" />
               <span class="text-slate-700 font-medium">Let students create their own accounts</span>
             </label>
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input type="checkbox" id="cfg-show-otp-login" class="rounded text-amber-500" />
+              <span class="text-slate-700 font-medium">Show "Log in with OTP" as an alternative</span>
+            </label>
+            <p class="text-[10px] text-slate-500 pl-6 -mt-1">Off by default. Turn on only if you want students to log in with an emailed code instead of a password.</p>
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input type="checkbox" id="cfg-require-signup-otp" class="rounded text-amber-500" />
+              <span class="text-slate-700 font-medium">Require email verification (OTP) on sign-up</span>
+            </label>
+            <p class="text-[10px] text-slate-500 pl-6 -mt-1">Recommended. Turn off to skip the OTP step at sign-up — accounts are created instantly (saves emails, but anyone can enter any address).</p>
             <p class="text-[10px] text-slate-500">In demo mode anyone can read the code on screen, so switch to email before going live.</p>
+          </div>
+          <div class="p-4 bg-slate-50 rounded-xl border space-y-2" id="cfg-brevo-box">
+            <p class="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Brevo (via Supabase Edge Function)</p>
+            <div>
+              <label class="block text-[10px] font-semibold text-slate-600">Sender email <span class="text-rose-500">*</span></label>
+              <input type="email" id="cfg-brevo-sender-email" placeholder="noreply@yourdomain.com" class="w-full px-2 py-1 border rounded bg-white" />
+              <p class="text-[10px] text-slate-500 mt-0.5">Must be verified in your Brevo account (Senders &amp; IP → Senders).</p>
+            </div>
+            <div>
+              <label class="block text-[10px] font-semibold text-slate-600">Sender name</label>
+              <input type="text" id="cfg-brevo-sender-name" placeholder="GRIT-PRO" class="w-full px-2 py-1 border rounded bg-white" />
+            </div>
+            <div>
+              <label class="block text-[10px] font-semibold text-slate-600">Reply-to (optional)</label>
+              <input type="email" id="cfg-brevo-reply-to" placeholder="support@yourdomain.com" class="w-full px-2 py-1 border rounded bg-white" />
+            </div>
+            <p class="text-[10px] text-slate-500 pt-1">The Brevo API key lives server-side as a Supabase secret. See the setup guide in the docs bundle.</p>
           </div>
           <div class="p-4 bg-slate-50 rounded-xl border space-y-2" id="cfg-emailjs-box">
             <div>
@@ -1222,6 +1250,51 @@
               <input type="email" id="cfg-test-email" placeholder="your@email.com" class="flex-1 min-w-0 px-2 py-1 border rounded bg-white" />
               <button type="button" onclick="sendTestOtpEmail()" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded font-bold whitespace-nowrap">Send test code</button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 2B-2: EMAIL TOOLS (templates + send log) -->
+      <div data-panel="email" class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 lg:col-span-2">
+        <div class="border-b pb-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="font-bold text-base text-slate-900">📧 Email tools</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Edit the templates that get emailed to students. See what has actually been sent (and what failed) in the Send log.</p>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <button onclick="setEmailTab('templates')" id="email-tab-templates-btn" class="px-3 py-1.5 rounded-lg font-bold border">Templates</button>
+            <button onclick="setEmailTab('log')" id="email-tab-log-btn" class="px-3 py-1.5 rounded-lg font-bold border">Send log</button>
+          </div>
+        </div>
+
+        <div id="email-tab-templates">
+          <div id="email-templates-list" class="space-y-2 text-xs"></div>
+        </div>
+
+        <div id="email-tab-log" class="hidden">
+          <div class="flex items-center gap-3 mb-3 text-xs">
+            <select id="email-log-filter" onchange="renderEmailLog()" class="px-2 py-1 border rounded-lg bg-white">
+              <option value="">All statuses</option>
+              <option value="sent">Sent only</option>
+              <option value="failed">Failed only</option>
+            </select>
+            <input type="search" id="email-log-search" oninput="renderEmailLog()" placeholder="Search recipient…" class="px-2 py-1 border rounded-lg flex-1 min-w-0 max-w-xs" />
+            <button onclick="fetchEmailLog()" class="px-3 py-1.5 rounded-lg font-bold border hover:bg-slate-50">Refresh</button>
+            <span id="email-log-status" class="text-slate-400"></span>
+          </div>
+          <div class="overflow-x-auto border rounded-xl">
+            <table class="w-full text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] tracking-wider">
+                <tr>
+                  <th class="text-left px-3 py-2">Sent</th>
+                  <th class="text-left px-3 py-2">Recipient</th>
+                  <th class="text-left px-3 py-2">Template</th>
+                  <th class="text-left px-3 py-2">Subject</th>
+                  <th class="text-left px-3 py-2">Status</th>
+                </tr>
+              </thead>
+              <tbody id="email-log-tbody"></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -1816,10 +1889,12 @@
           </div>
           <button type="submit" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg transition disabled:opacity-60">Log In</button>
         </form>
-        <div class="flex items-center gap-2 my-4 text-[10px] text-slate-400"><span class="flex-1 border-t"></span>or<span class="flex-1 border-t"></span></div>
-        <button type="button" onclick="startOtpFlow('login')" class="w-full py-2.5 border border-slate-300 hover:bg-slate-50 font-bold rounded-lg text-xs text-slate-800">
-          Log in with a one-time code (OTP)
-        </button>
+        <div id="otp-login-alt-wrap" class="hidden">
+          <div class="flex items-center gap-2 my-4 text-[10px] text-slate-400"><span class="flex-1 border-t"></span>or<span class="flex-1 border-t"></span></div>
+          <button type="button" onclick="startOtpFlow('login')" class="w-full py-2.5 border border-slate-300 hover:bg-slate-50 font-bold rounded-lg text-xs text-slate-800">
+            Log in with a one-time code (OTP)
+          </button>
+        </div>
         <p id="auth-signup-link" class="text-center text-xs text-slate-500 mt-4">New here? <button type="button" onclick="showAuthPanel('signup')" class="text-amber-600 font-bold hover:underline">Create an account</button></p>
       </div>
 
@@ -2005,7 +2080,46 @@
     </div>
   </div>
 
-  <!-- ================= MODAL: RESOURCE CARD (image + text bundled with a PDF or page link) ================= -->
+  <!-- ================= MODAL: EMAIL TEMPLATE EDITOR ================= -->
+  <div id="email-template-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl space-y-3 text-xs max-h-[92vh] overflow-y-auto">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h3 class="text-lg font-bold text-slate-900" id="email-tpl-title">Edit template</h3>
+          <p class="text-slate-500 mt-0.5" id="email-tpl-when"></p>
+        </div>
+        <span id="email-tpl-key" class="font-mono text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 px-2 py-1 rounded"></span>
+      </div>
+
+      <div class="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-[11px] text-amber-900">
+        <b>Placeholders available:</b> <span id="email-tpl-vars" class="font-mono"></span>
+      </div>
+
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">Subject</label>
+        <input type="text" id="email-tpl-subject" class="w-full px-2.5 py-1.5 border rounded-lg outline-none" />
+      </div>
+
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">HTML body <span class="font-normal text-slate-400">(inline styles work best)</span></label>
+        <textarea id="email-tpl-html" rows="10" class="w-full px-2.5 py-1.5 border rounded-lg outline-none font-mono text-[11px]"></textarea>
+      </div>
+
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">Plain-text body <span class="font-normal text-slate-400">(fallback for clients that don't show HTML)</span></label>
+        <textarea id="email-tpl-text" rows="4" class="w-full px-2.5 py-1.5 border rounded-lg outline-none font-mono text-[11px]"></textarea>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t">
+        <button onclick="resetTemplateToDefault()" class="px-3 py-2 text-slate-600 hover:text-rose-600 font-bold">Reset to default</button>
+        <div class="flex gap-2">
+          <button onclick="previewTemplate()" class="px-3 py-2 border border-slate-300 hover:bg-slate-50 font-bold rounded-lg">Preview</button>
+          <button onclick="closeModal('email-template-modal')" class="px-3 py-2 border border-slate-300 hover:bg-slate-50 font-bold rounded-lg">Cancel</button>
+          <button onclick="saveTemplateFromModal()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg">Save to cloud</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <div id="resource-card-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-3 text-xs max-h-[90vh] overflow-y-auto">
       <h3 class="text-lg font-bold text-slate-900">📚 Insert Resource card</h3>
@@ -2629,6 +2743,7 @@ window.onload = async function() {
       renderHomeBundles();
       renderHomePage();          // NEW: paint homeConfig sections from local cache immediately
       fetchCloudHomeConfig();    // NEW: then overwrite with cloud copy and repaint
+      fetchCloudEmailTemplates();// NEW: pull custom email templates so any sends use the latest wording
       updateCategoryBundleButton();
       renderFeatureAccessAdmin();
       renderPlannersAdmin();
@@ -2734,7 +2849,21 @@ window.onload = async function() {
   // Fetch tests
   const { data: tests } = await supabaseClient.from('tests_catalog').select('*');
   if (tests && tests.length > 0) {
-    testsCatalog = tests.map(t => ({ id: t.id, category: t.category, title: t.title, price: t.price, scheme: t.scheme, questions: t.questions }));
+    testsCatalog = tests.map(t => {
+      // Defensive: Supabase may return jsonb columns as parsed objects, but if the
+      // columns were created as `text` (or the DB returned a stringified value),
+      // scheme/questions arrive as strings. Parse them so the exam engine works
+      // either way instead of throwing a silent "OMR won't open" error.
+      let scheme = t.scheme, questions = t.questions;
+      if (typeof scheme === 'string') {
+        try { scheme = JSON.parse(scheme); } catch (_) { scheme = null; }
+      }
+      if (typeof questions === 'string') {
+        try { questions = JSON.parse(questions); } catch (_) { questions = null; }
+      }
+      if (!Array.isArray(questions)) questions = [];
+      return { id: t.id, category: t.category, title: t.title, price: t.price, scheme, questions };
+    });
   }
 
   // Fetch pages
@@ -2921,6 +3050,7 @@ window.onload = async function() {
       if (id === 'payments') renderPaymentOrders();
       if (id === 'students') renderStudentDirectoryTable();
       if (id === 'home') renderHomeConfigAdmin();
+      if (id === 'email') { renderEmailTemplatesAdmin(); setEmailTab('templates'); }
       const view = document.getElementById('view-admin');
       if (view && !view.classList.contains('hidden')) window.scrollTo(0, 0);
     }
@@ -3159,12 +3289,50 @@ window.onload = async function() {
             <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">${b.validityDays > 0 ? b.validityDays + ' days' : 'No expiry'}</span>
             <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">${holders(b.id)} student(s)</span>
           </div>
-          <div class="flex gap-3 mt-2">
+          <div class="flex gap-3 mt-2 items-center flex-wrap">
             <button onclick="editBundle('${b.id}')" class="text-blue-600 font-bold hover:underline">Edit</button>
             <button onclick="duplicateBundle('${b.id}')" class="text-slate-600 font-bold hover:underline">Duplicate</button>
             <button onclick="deleteBundle('${b.id}')" class="text-rose-600 font-bold hover:underline">Delete</button>
+            <span class="text-slate-300">|</span>
+            <label class="flex items-center gap-1 cursor-pointer text-[11px]" title="Whether this bundle can be purchased right now">
+              <input type="checkbox" ${b.active ? 'checked' : ''} onchange="toggleBundleFlag('${b.id}', 'active', this.checked)" class="rounded" />
+              <span class="font-medium text-slate-700">On sale</span>
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer text-[11px]" title="Whether this bundle appears in the passes strip on the home page">
+              <input type="checkbox" ${b.showOnHome ? 'checked' : ''} onchange="toggleBundleFlag('${b.id}', 'showOnHome', this.checked)" class="rounded" />
+              <span class="font-medium text-slate-700">Show on home</span>
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer text-[11px]" title="Highlights this bundle as Popular">
+              <input type="checkbox" ${b.featured ? 'checked' : ''} onchange="toggleBundleFlag('${b.id}', 'featured', this.checked)" class="rounded" />
+              <span class="font-medium text-slate-700">Popular</span>
+            </label>
           </div>
         </div>`).join('') || '<p class="text-slate-400">No bundles yet.</p>';
+    }
+
+    // One-click bundle flag toggle from the admin list (mirrors what the bundle editor does)
+    async function toggleBundleFlag(bundleId, flag, value) {
+      const b = bundles.find(x => x.id === bundleId);
+      if (!b) return;
+      b[flag] = !!value;
+      saveBundles();
+      // Cloud upsert of just this bundle (same shape saveBundle uses)
+      try {
+        const { error } = await supabaseClient.from('bundles').upsert({
+          id: b.id, name: b.name, tagline: b.tagline || '', price: b.price,
+          validity_days: b.validityDays, highlights: b.highlights || [], active: b.active,
+          show_on_home: b.showOnHome, featured: b.featured, style: b.style || 'light',
+          order_num: b.order || 0, all_access: b.allAccess, categories: b.categories || [],
+          papers: b.papers || [], pages: b.pages || [], pdfs: b.pdfs || [],
+          planners: b.planners || [], features: b.features || []
+        });
+        if (error) throw error;
+      } catch (err) {
+        console.error('Failed to sync bundle toggle to cloud:', err);
+        alert('Toggle saved locally, but cloud sync failed: ' + err.message);
+      }
+      renderBundlesAdmin();
+      renderHomeBundles();
     }
 
     function checkboxList(containerId, items, selected, cls) {
@@ -5831,6 +5999,35 @@ async function handleBundleAndUploadPaper() {
         return;
       }
 
+      // Defensive: heal any paper whose scheme/questions arrived from the cloud as strings
+      // or that ended up with a missing scheme (older uploads, direct DB inserts, etc.)
+      if (typeof activeTest.scheme === 'string') {
+        try { activeTest.scheme = JSON.parse(activeTest.scheme); } catch (_) { activeTest.scheme = null; }
+      }
+      if (typeof activeTest.questions === 'string') {
+        try { activeTest.questions = JSON.parse(activeTest.questions); } catch (_) { activeTest.questions = null; }
+      }
+      if (!Array.isArray(activeTest.questions) || activeTest.questions.length === 0) {
+        alert(`This paper has no questions attached. It may not have been uploaded correctly.\n\nAsk the admin to re-upload the CSV for "${activeTest.title}".`);
+        return;
+      }
+      if (!activeTest.scheme || typeof activeTest.scheme !== 'object') {
+        // Fall back to the category's default scheme so the paper still opens
+        const fallback = EXAM_CATEGORIES[activeTest.category]?.defaultScheme;
+        if (fallback) activeTest.scheme = { ...fallback };
+        else {
+          alert(`This paper has no marking scheme. Ask the admin to re-upload "${activeTest.title}" so the scheme is attached.`);
+          return;
+        }
+      }
+      // Final safety: fill in any missing scheme field
+      const s = activeTest.scheme;
+      if (typeof s.duration !== 'number' || s.duration <= 0) s.duration = 120;
+      if (typeof s.marksCorrect !== 'number') s.marksCorrect = 2;
+      if (typeof s.marksWrong !== 'number') s.marksWrong = 0.5;
+      if (typeof s.cutoff !== 'number') s.cutoff = 0;
+      if (!s.examBadge) s.examBadge = 'EXAM';
+
       userSelections = {};
       examEndsAt = Date.now() + activeTest.scheme.duration * 60 * 1000;
       openExamEngine();
@@ -8028,11 +8225,342 @@ async function evaluateOMRSubmission() {
        12. AUTHENTICATION & EXPORT
     ----------------------------------------------------- */
     // ---- Settings ----
-    const initialAuthSettings = { otpMode: 'demo', allowSignup: true, emailjs: { serviceId: '', templateId: '', publicKey: '' } };
+    const initialAuthSettings = {
+      otpMode: 'demo',
+      allowSignup: true,
+      showOtpLogin: false,
+      requireSignupOtp: true,
+      emailjs: { serviceId: '', templateId: '', publicKey: '' },
+      brevo: { senderEmail: '', senderName: 'GRIT-PRO', replyTo: '' }
+    };
     let authSettings = (() => {
       const saved = JSON.parse(localStorage.getItem('kas_auth_settings')) || {};
-      return { ...initialAuthSettings, ...saved, emailjs: { ...initialAuthSettings.emailjs, ...(saved.emailjs || {}) } };
+      return {
+        ...initialAuthSettings, ...saved,
+        emailjs: { ...initialAuthSettings.emailjs, ...(saved.emailjs || {}) },
+        brevo:   { ...initialAuthSettings.brevo,   ...(saved.brevo   || {}) }
+      };
     })();
+
+
+    /* ----------------------------------------------------
+       EMAIL: templates, delivery routing (Demo / EmailJS / Brevo via Supabase), and send log
+    ----------------------------------------------------- */
+
+    // Sensible defaults so email works before the admin edits anything.
+    // Placeholders: {{otp_code}} {{expiry_minutes}} {{portal_name}} {{name}} {{email}}
+    //               {{item_title}} {{amount}} {{receipt_no}} {{reject_reason}}
+    const EMAIL_TEMPLATE_DEFAULTS = {
+      otp_login: {
+        subject: 'Your {{portal_name}} login code',
+        html_body: '<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a"><h2 style="margin:0 0 12px">{{portal_name}} login code</h2><p style="margin:0 0 8px;color:#475569">Use this code to sign in:</p><p style="font-size:32px;font-weight:800;letter-spacing:4px;background:#fef3c7;color:#78350f;padding:14px 20px;border-radius:12px;text-align:center;margin:16px 0">{{otp_code}}</p><p style="margin:8px 0;color:#64748b;font-size:13px">Expires in {{expiry_minutes}} minutes. If you didn\'t try to sign in, you can safely ignore this email.</p><p style="color:#94a3b8;font-size:12px;margin-top:24px">— {{portal_name}} team</p></div>',
+        text_body: '{{portal_name}} login code: {{otp_code}}\nExpires in {{expiry_minutes}} minutes.'
+      },
+      otp_signup: {
+        subject: 'Verify your email for {{portal_name}}',
+        html_body: '<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a"><h2 style="margin:0 0 12px">Verify your email</h2><p style="margin:0 0 8px;color:#475569">Hi {{name}},</p><p style="margin:0 0 8px;color:#475569">Welcome to {{portal_name}}. Enter this code to finish creating your account:</p><p style="font-size:32px;font-weight:800;letter-spacing:4px;background:#fef3c7;color:#78350f;padding:14px 20px;border-radius:12px;text-align:center;margin:16px 0">{{otp_code}}</p><p style="margin:8px 0;color:#64748b;font-size:13px">Expires in {{expiry_minutes}} minutes.</p></div>',
+        text_body: 'Hi {{name}},\nWelcome to {{portal_name}}. Verify with code: {{otp_code}}\nExpires in {{expiry_minutes}} minutes.'
+      },
+      otp_reset: {
+        subject: 'Reset your {{portal_name}} password',
+        html_body: '<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a"><h2 style="margin:0 0 12px">Reset your password</h2><p style="margin:0 0 8px;color:#475569">Use this code to set a new password:</p><p style="font-size:32px;font-weight:800;letter-spacing:4px;background:#fef3c7;color:#78350f;padding:14px 20px;border-radius:12px;text-align:center;margin:16px 0">{{otp_code}}</p><p style="margin:8px 0;color:#64748b;font-size:13px">Expires in {{expiry_minutes}} minutes. If you didn\'t request this, you can safely ignore this email.</p></div>',
+        text_body: 'Reset code: {{otp_code}}\nExpires in {{expiry_minutes}} minutes.'
+      },
+      welcome: {
+        subject: 'Welcome to {{portal_name}}',
+        html_body: '<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a"><h2 style="margin:0 0 12px">Welcome, {{name}} 👋</h2><p style="margin:0 0 12px;color:#475569">Your {{portal_name}} account is ready. Log in any time to see your test series, planners and study notes.</p><p style="margin:0 0 12px;color:#475569">If you have any questions, just hit reply — we\'re here to help.</p><p style="color:#94a3b8;font-size:12px;margin-top:24px">— {{portal_name}} team</p></div>',
+        text_body: 'Hi {{name}},\nYour {{portal_name}} account is ready. Log in any time.'
+      },
+      payment_approved: {
+        subject: 'Payment verified — {{item_title}} unlocked',
+        html_body: '<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a"><h2 style="margin:0 0 12px">Payment verified ✓</h2><p style="margin:0 0 8px;color:#475569">Hi {{name}},</p><p style="margin:0 0 8px;color:#475569">Your payment of <b>₹{{amount}}</b> for <b>{{item_title}}</b> is verified and access has been unlocked in your dashboard.</p><p style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px 16px;border-radius:8px;font-family:ui-monospace,monospace;font-size:13px;margin:16px 0">Receipt no: <b>{{receipt_no}}</b></p><p style="color:#94a3b8;font-size:12px;margin-top:24px">— {{portal_name}} team</p></div>',
+        text_body: 'Hi {{name}},\nYour payment of ₹{{amount}} for {{item_title}} is verified.\nReceipt no: {{receipt_no}}'
+      },
+      payment_rejected: {
+        subject: 'Payment issue — {{item_title}}',
+        html_body: '<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a"><h2 style="margin:0 0 12px">We couldn\'t verify your payment</h2><p style="margin:0 0 8px;color:#475569">Hi {{name}},</p><p style="margin:0 0 8px;color:#475569">Your payment for <b>{{item_title}}</b> couldn\'t be verified.</p><p style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:12px 16px;border-radius:8px;margin:16px 0"><b>Reason:</b> {{reject_reason}}</p><p style="margin:0 0 8px;color:#475569">Please check the details and try again, or reply to this email and we\'ll help sort it out.</p></div>',
+        text_body: 'Hi {{name}},\nWe couldn\'t verify your payment for {{item_title}}.\nReason: {{reject_reason}}'
+      },
+      access_granted: {
+        subject: 'New access on {{portal_name}}',
+        html_body: '<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a"><h2 style="margin:0 0 12px">You have new access</h2><p style="margin:0 0 8px;color:#475569">Hi {{name}},</p><p style="margin:0 0 8px;color:#475569"><b>{{item_title}}</b> has been unlocked on your dashboard.</p><p style="margin:0 0 8px;color:#475569">Log in to start using it right away.</p></div>',
+        text_body: 'Hi {{name}},\n{{item_title}} has been unlocked on your dashboard.'
+      }
+    };
+
+    // Descriptions shown next to each template in the editor
+    const EMAIL_TEMPLATE_META = {
+      otp_login:        { title: 'Login OTP',           when: 'When a student signs in with a one-time code.' },
+      otp_signup:       { title: 'Sign-up verification', when: 'When a new student registers and email verification is on.' },
+      otp_reset:        { title: 'Password reset',      when: 'When a student clicks "Forgot password?".' },
+      welcome:          { title: 'Welcome',             when: 'Sent right after a student\'s account is created. (Wired in Round 2.)' },
+      payment_approved: { title: 'Payment approved',    when: 'Sent when you approve a payment claim. (Wired in Round 2.)' },
+      payment_rejected: { title: 'Payment rejected',    when: 'Sent when you reject a payment claim. (Wired in Round 2.)' },
+      access_granted:   { title: 'Access granted',      when: 'Sent when you manually grant access from the Access desk. (Wired in Round 2.)' }
+    };
+
+    let emailTemplates = JSON.parse(JSON.stringify(EMAIL_TEMPLATE_DEFAULTS));
+
+    // Simple {{key}} → value substitution. Missing keys become empty strings.
+    function renderTemplate(str, vars) {
+      if (!str) return '';
+      return String(str).replace(/\{\{\s*([a-z_][a-z0-9_]*)\s*\}\}/gi, (_, k) => (vars[k] != null ? String(vars[k]) : ''));
+    }
+
+    async function fetchCloudEmailTemplates() {
+      try {
+        const { data, error } = await supabaseClient.from('email_templates').select('*');
+        if (error) throw error;
+        if (data && data.length) {
+          for (const row of data) {
+            if (row.template_key) {
+              emailTemplates[row.template_key] = {
+                subject:   row.subject   || (EMAIL_TEMPLATE_DEFAULTS[row.template_key]?.subject   || ''),
+                html_body: row.html_body || (EMAIL_TEMPLATE_DEFAULTS[row.template_key]?.html_body || ''),
+                text_body: row.text_body || (EMAIL_TEMPLATE_DEFAULTS[row.template_key]?.text_body || '')
+              };
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch email templates:', err);
+      }
+    }
+
+    async function saveEmailTemplate(key, template) {
+      emailTemplates[key] = { ...template };
+      const { error } = await supabaseClient.from('email_templates').upsert({
+        template_key: key,
+        subject: template.subject,
+        html_body: template.html_body,
+        text_body: template.text_body || '',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'template_key' });
+      if (error) throw error;
+    }
+
+    // Send a template through the currently-selected delivery mode.
+    // Returns { success, error }.
+    async function sendTemplatedEmail(templateKey, toEmail, vars) {
+      const tpl = emailTemplates[templateKey] || EMAIL_TEMPLATE_DEFAULTS[templateKey];
+      if (!tpl) return { success: false, error: `Unknown template: ${templateKey}` };
+
+      const mergedVars = { portal_name: 'GRIT-PRO', expiry_minutes: 10, ...vars };
+      const subject   = renderTemplate(tpl.subject, mergedVars);
+      const htmlBody  = renderTemplate(tpl.html_body, mergedVars);
+      const textBody  = renderTemplate(tpl.text_body || '', mergedVars);
+
+      const mode = authSettings.otpMode;
+
+      if (mode === 'demo') {
+        alert(`DEMO EMAIL (${templateKey})\nTo: ${toEmail}\nSubject: ${subject}\n\n${textBody || 'HTML-only body'}`);
+        return { success: true };
+      }
+
+      if (mode === 'emailjs') {
+        // Legacy path — only for OTP templates that already have EmailJS templates configured
+        if (!templateKey.startsWith('otp_')) {
+          return { success: false, error: 'EmailJS mode only supports OTP emails. Switch to Brevo for other templates.' };
+        }
+        try {
+          const cfg = authSettings.emailjs;
+          const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              service_id: cfg.serviceId,
+              template_id: cfg.templateId,
+              user_id: cfg.publicKey,
+              template_params: { to_email: toEmail, otp_code: mergedVars.otp_code, expiry_minutes: mergedVars.expiry_minutes, portal_name: mergedVars.portal_name }
+            })
+          });
+          if (!res.ok) throw new Error(await res.text());
+          return { success: true };
+        } catch (err) {
+          return { success: false, error: err.message || String(err) };
+        }
+      }
+
+      if (mode === 'brevo') {
+        try {
+          const { data, error } = await supabaseClient.functions.invoke('send-email', {
+            body: {
+              to_email: toEmail,
+              subject,
+              html_body: htmlBody,
+              text_body: textBody,
+              template_key: templateKey,
+              sender_email: authSettings.brevo.senderEmail,
+              sender_name:  authSettings.brevo.senderName,
+              reply_to:     authSettings.brevo.replyTo
+            }
+          });
+          if (error) throw new Error(error.message || 'Edge Function call failed');
+          if (data && data.success === false) throw new Error(data.error || 'Brevo rejected the message');
+          return { success: true, message_id: data?.message_id };
+        } catch (err) {
+          return { success: false, error: err.message || String(err) };
+        }
+      }
+
+      return { success: false, error: `Unknown delivery mode: ${mode}` };
+    }
+
+    // ---------- Email admin: tabs, template editor, send log ----------
+    let currentEditingTemplateKey = null;
+
+    function setEmailTab(tab) {
+      const showTemplates = tab === 'templates';
+      document.getElementById('email-tab-templates').classList.toggle('hidden', !showTemplates);
+      document.getElementById('email-tab-log').classList.toggle('hidden', showTemplates);
+      document.getElementById('email-tab-templates-btn').classList.toggle('bg-slate-900', showTemplates);
+      document.getElementById('email-tab-templates-btn').classList.toggle('text-white', showTemplates);
+      document.getElementById('email-tab-log-btn').classList.toggle('bg-slate-900', !showTemplates);
+      document.getElementById('email-tab-log-btn').classList.toggle('text-white', !showTemplates);
+      if (tab === 'log') fetchEmailLog();
+    }
+
+    function renderEmailTemplatesAdmin() {
+      const root = document.getElementById('email-templates-list');
+      if (!root) return;
+      root.innerHTML = Object.keys(EMAIL_TEMPLATE_DEFAULTS).map(key => {
+        const meta = EMAIL_TEMPLATE_META[key] || { title: key, when: '' };
+        const tpl = emailTemplates[key] || {};
+        const isCustom = JSON.stringify(tpl) !== JSON.stringify(EMAIL_TEMPLATE_DEFAULTS[key]);
+        return `<div class="border border-slate-200 rounded-xl p-3 flex items-start justify-between gap-3 bg-white hover:border-amber-400 transition">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <b class="text-slate-900">${escapeHtml(meta.title)}</b>
+              <span class="font-mono text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2 py-0.5 rounded">${escapeHtml(key)}</span>
+              ${isCustom ? '<span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">Custom</span>' : '<span class="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 px-2 py-0.5 rounded">Default</span>'}
+            </div>
+            <p class="text-slate-500 text-[11px] mt-1">${escapeHtml(meta.when)}</p>
+            <p class="text-slate-700 text-[11px] mt-1 truncate">Subject: <span class="font-mono">${escapeHtml(tpl.subject || '(empty)')}</span></p>
+          </div>
+          <button onclick="openTemplateEditor('${key}')" class="shrink-0 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg">Edit</button>
+        </div>`;
+      }).join('');
+    }
+
+    function openTemplateEditor(key) {
+      const tpl = emailTemplates[key] || EMAIL_TEMPLATE_DEFAULTS[key];
+      const meta = EMAIL_TEMPLATE_META[key] || { title: key, when: '' };
+      currentEditingTemplateKey = key;
+      document.getElementById('email-tpl-key').innerText = key;
+      document.getElementById('email-tpl-title').innerText = meta.title;
+      document.getElementById('email-tpl-when').innerText = meta.when;
+      // Show placeholders relevant to this template
+      const placeholderSet = {
+        otp_login:        ['otp_code', 'expiry_minutes', 'portal_name', 'name', 'email'],
+        otp_signup:       ['otp_code', 'expiry_minutes', 'portal_name', 'name', 'email'],
+        otp_reset:        ['otp_code', 'expiry_minutes', 'portal_name', 'name', 'email'],
+        welcome:          ['portal_name', 'name', 'email'],
+        payment_approved: ['portal_name', 'name', 'email', 'item_title', 'amount', 'receipt_no'],
+        payment_rejected: ['portal_name', 'name', 'email', 'item_title', 'reject_reason'],
+        access_granted:   ['portal_name', 'name', 'email', 'item_title']
+      };
+      const vars = (placeholderSet[key] || []).map(v => `{{${v}}}`).join(' ');
+      document.getElementById('email-tpl-vars').innerText = vars;
+      document.getElementById('email-tpl-subject').value = tpl.subject || '';
+      document.getElementById('email-tpl-html').value = tpl.html_body || '';
+      document.getElementById('email-tpl-text').value = tpl.text_body || '';
+      openModal('email-template-modal');
+    }
+
+    async function saveTemplateFromModal() {
+      const key = currentEditingTemplateKey;
+      if (!key) return;
+      const tpl = {
+        subject:   document.getElementById('email-tpl-subject').value,
+        html_body: document.getElementById('email-tpl-html').value,
+        text_body: document.getElementById('email-tpl-text').value
+      };
+      if (!tpl.subject || !tpl.html_body) return alert('Subject and HTML body are required.');
+      try {
+        await saveEmailTemplate(key, tpl);
+        closeModal('email-template-modal');
+        renderEmailTemplatesAdmin();
+        alert('Template saved to cloud.');
+      } catch (err) {
+        alert('Save failed: ' + err.message);
+      }
+    }
+
+    function resetTemplateToDefault() {
+      const key = currentEditingTemplateKey;
+      if (!key || !EMAIL_TEMPLATE_DEFAULTS[key]) return;
+      if (!confirm('Reset this template to the built-in default? Your custom version will be lost after Save.')) return;
+      const d = EMAIL_TEMPLATE_DEFAULTS[key];
+      document.getElementById('email-tpl-subject').value = d.subject;
+      document.getElementById('email-tpl-html').value = d.html_body;
+      document.getElementById('email-tpl-text').value = d.text_body;
+    }
+
+    function previewTemplate() {
+      const subj = document.getElementById('email-tpl-subject').value;
+      const html = document.getElementById('email-tpl-html').value;
+      const sampleVars = {
+        otp_code: '482915', expiry_minutes: 10, portal_name: 'GRIT-PRO',
+        name: 'Aparna', email: 'aparna@example.com',
+        item_title: 'KAS Prelims Full Series', amount: '999', receipt_no: 'RCP-2026-0042',
+        reject_reason: 'The UTR provided could not be found on our end.'
+      };
+      const renderedSubject = renderTemplate(subj, sampleVars);
+      const renderedHtml = renderTemplate(html, sampleVars);
+      const w = window.open('', '_blank', 'width=640,height=800');
+      w.document.write(`<title>Preview: ${renderedSubject}</title><body style="font-family:system-ui,sans-serif;background:#f1f5f9;margin:0;padding:20px"><div style="background:#fff;padding:14px 18px;border-bottom:1px solid #e2e8f0"><small style="color:#94a3b8">Subject:</small><br><b>${renderedSubject}</b></div><div style="background:#fff;margin-top:1px">${renderedHtml}</div></body>`);
+    }
+
+    // ---- Send log ----
+    let emailLogCache = [];
+
+    async function fetchEmailLog() {
+      const status = document.getElementById('email-log-status');
+      if (status) status.innerText = 'Loading…';
+      try {
+        const { data, error } = await supabaseClient
+          .from('email_log')
+          .select('*')
+          .order('sent_at', { ascending: false })
+          .limit(200);
+        if (error) throw error;
+        emailLogCache = data || [];
+        renderEmailLog();
+        if (status) status.innerText = `${emailLogCache.length} recent send${emailLogCache.length === 1 ? '' : 's'}`;
+      } catch (err) {
+        emailLogCache = [];
+        if (status) status.innerText = 'Failed: ' + err.message;
+        document.getElementById('email-log-tbody').innerHTML = `<tr><td colspan="5" class="px-3 py-6 text-center text-slate-400">Couldn't load the log — the <code class="font-mono">email_log</code> table may not exist yet. Run the SQL migration.</td></tr>`;
+      }
+    }
+
+    function renderEmailLog() {
+      const tbody = document.getElementById('email-log-tbody');
+      if (!tbody) return;
+      const filter = (document.getElementById('email-log-filter') || {}).value || '';
+      const search = ((document.getElementById('email-log-search') || {}).value || '').toLowerCase().trim();
+      const rows = emailLogCache.filter(r =>
+        (!filter || r.status === filter) &&
+        (!search || (r.recipient || '').toLowerCase().includes(search))
+      );
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="px-3 py-6 text-center text-slate-400">No sends match.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = rows.map(r => {
+        const when = r.sent_at ? new Date(r.sent_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+        const statusClass = r.status === 'sent' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800';
+        const errTip = r.error ? ` title="${escapeHtml(r.error).replace(/"/g,'&quot;')}"` : '';
+        return `<tr class="border-t hover:bg-slate-50">
+          <td class="px-3 py-2 text-slate-500 whitespace-nowrap">${escapeHtml(when)}</td>
+          <td class="px-3 py-2 font-mono text-[11px]">${escapeHtml(r.recipient || '')}</td>
+          <td class="px-3 py-2"><span class="font-mono text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">${escapeHtml(r.template_key || '—')}</span></td>
+          <td class="px-3 py-2 text-slate-700 truncate max-w-[280px]">${escapeHtml(r.subject || '')}</td>
+          <td class="px-3 py-2"><span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${statusClass}"${errTip}>${escapeHtml(r.status || '')}</span></td>
+        </tr>`;
+      }).join('');
+    }
+
 
     const OTP_TTL_MS = 10 * 60 * 1000;      // codes expire after 10 minutes
     const OTP_MAX_TRIES = 5;                // wrong guesses allowed per code
@@ -8050,51 +8578,91 @@ async function evaluateOMRSubmission() {
     function renderAuthSettings() {
       document.getElementById('cfg-otp-mode').value = authSettings.otpMode;
       document.getElementById('cfg-allow-signup').checked = !!authSettings.allowSignup;
+      document.getElementById('cfg-show-otp-login').checked = !!authSettings.showOtpLogin;
+      document.getElementById('cfg-require-signup-otp').checked = !!authSettings.requireSignupOtp;
       document.getElementById('cfg-emailjs-service').value = authSettings.emailjs.serviceId;
       document.getElementById('cfg-emailjs-template').value = authSettings.emailjs.templateId;
       document.getElementById('cfg-emailjs-key').value = authSettings.emailjs.publicKey;
-      toggleEmailjsFields();
+      document.getElementById('cfg-brevo-sender-email').value = authSettings.brevo.senderEmail;
+      document.getElementById('cfg-brevo-sender-name').value  = authSettings.brevo.senderName;
+      document.getElementById('cfg-brevo-reply-to').value     = authSettings.brevo.replyTo;
+      toggleDeliveryFields();
+      applyAuthModeToLoginModal();  // reflect changes immediately in the modal
     }
 
     function readAuthSettingsForm() {
       return {
         otpMode: document.getElementById('cfg-otp-mode').value,
         allowSignup: document.getElementById('cfg-allow-signup').checked,
+        showOtpLogin: document.getElementById('cfg-show-otp-login').checked,
+        requireSignupOtp: document.getElementById('cfg-require-signup-otp').checked,
         emailjs: {
           serviceId: document.getElementById('cfg-emailjs-service').value.trim(),
           templateId: document.getElementById('cfg-emailjs-template').value.trim(),
           publicKey: document.getElementById('cfg-emailjs-key').value.trim()
+        },
+        brevo: {
+          senderEmail: document.getElementById('cfg-brevo-sender-email').value.trim(),
+          senderName:  document.getElementById('cfg-brevo-sender-name').value.trim() || 'GRIT-PRO',
+          replyTo:     document.getElementById('cfg-brevo-reply-to').value.trim()
         }
       };
     }
 
-    function toggleEmailjsFields() {
-      const on = document.getElementById('cfg-otp-mode').value === 'emailjs';
-      document.getElementById('cfg-emailjs-box').classList.toggle('opacity-50', !on);
-      document.querySelectorAll('#cfg-emailjs-box input').forEach(i => i.disabled = !on);
+    // Show only the provider config box that matches the selected delivery mode
+    function toggleDeliveryFields() {
+      const mode = document.getElementById('cfg-otp-mode').value;
+      document.getElementById('cfg-emailjs-box').style.display = (mode === 'emailjs') ? '' : 'none';
+      document.getElementById('cfg-brevo-box').style.display   = (mode === 'brevo')   ? '' : 'none';
+    }
+    // Legacy alias in case anything still calls it
+    const toggleEmailjsFields = toggleDeliveryFields;
+
+    // Show/hide OTP-related bits of the login modal per admin settings
+    function applyAuthModeToLoginModal() {
+      const otpAlt = document.getElementById('otp-login-alt-wrap');
+      if (otpAlt) otpAlt.classList.toggle('hidden', !authSettings.showOtpLogin);
     }
 
     function saveAuthSettings() {
       const next = readAuthSettingsForm();
-      const cfg = next.emailjs;
-      if (next.otpMode === 'emailjs' && (!cfg.serviceId || !cfg.templateId || !cfg.publicKey)) {
-        return alert('Fill in the EmailJS Service ID, Template ID and Public Key, or switch OTP delivery back to Demo.');
+      if (next.otpMode === 'emailjs') {
+        const cfg = next.emailjs;
+        if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey)
+          return alert('Fill in the EmailJS Service ID, Template ID and Public Key, or switch OTP delivery to another mode.');
+      }
+      if (next.otpMode === 'brevo') {
+        if (!next.brevo.senderEmail)
+          return alert('Enter a verified sender email for Brevo (or switch OTP delivery back to Demo).');
       }
       authSettings = next;
       localStorage.setItem('kas_auth_settings', JSON.stringify(authSettings));
+      applyAuthModeToLoginModal();
       alert('Login settings saved.');
     }
 
     async function sendTestOtpEmail() {
       const to = normalizeEmail(document.getElementById('cfg-test-email').value);
       if (!to) return alert('Enter an email address to send the test code to.');
-      const settings = readAuthSettingsForm();
-      if (settings.otpMode !== 'emailjs') return alert('Switch OTP delivery to "Email via EmailJS" first.');
+
+      // The test uses whatever's on the form right now, so the admin can try new settings before saving.
+      const savedSettings = authSettings;
+      authSettings = readAuthSettingsForm();
+      // Merge the sub-objects properly so we don't lose defaults
+      authSettings.emailjs = { ...savedSettings.emailjs, ...authSettings.emailjs };
+      authSettings.brevo   = { ...savedSettings.brevo,   ...authSettings.brevo };
+
+      if (authSettings.otpMode === 'demo') {
+        authSettings = savedSettings;
+        return alert('Switch OTP delivery to Brevo or EmailJS first.');
+      }
       try {
-        await deliverOtp(to, '123456', settings);
+        await deliverOtp(to, '123456', { purpose: 'login' });
         alert(`Test code 123456 sent to ${to}. Check the inbox (and spam folder).`);
       } catch (err) {
         alert(`The email could not be sent: ${err.message}`);
+      } finally {
+        authSettings = savedSettings; // don't persist the transient form values
       }
     }
 
@@ -8178,6 +8746,7 @@ async function evaluateOMRSubmission() {
     function openLoginModal(message, afterLogin) {
       postLoginAction = afterLogin || null;
       document.getElementById('auth-signup-link').classList.toggle('hidden', !authSettings.allowSignup);
+      applyAuthModeToLoginModal();
       showAuthPanel('login');
       if (message) showAuthMessage(message, 'info');
       openModal('student-login-modal');
@@ -8245,21 +8814,19 @@ async function evaluateOMRSubmission() {
       setBusy('auth-send-otp-btn', false);
     }
 
-    async function deliverOtp(email, code, settings = authSettings) {
-      if (settings.otpMode !== 'emailjs') return; // demo mode: the code is shown on screen instead
-      const { serviceId, templateId, publicKey } = settings.emailjs;
-      if (!serviceId || !templateId || !publicKey) throw new Error('email delivery is not fully set up.');
-      const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          service_id: serviceId,
-          template_id: templateId,
-          user_id: publicKey,
-          template_params: { to_email: email, otp_code: code, expiry_minutes: 10, portal_name: "GRIT-PRO" }
-        })
-      });
-      if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
+    // deliverOtp is now a thin wrapper: it picks the right template for the OTP purpose
+    // and routes through sendTemplatedEmail, which handles Demo / EmailJS / Brevo modes.
+    async function deliverOtp(email, code, opts = {}) {
+      const purpose = opts.purpose || 'login';
+      const templateKey = purpose === 'signup' ? 'otp_signup' : (purpose === 'reset' ? 'otp_reset' : 'otp_login');
+      const vars = {
+        otp_code: code,
+        expiry_minutes: Math.round(OTP_TTL_MS / 60000),
+        name: opts.name || (email ? email.split('@')[0] : 'there'),
+        email
+      };
+      const result = await sendTemplatedEmail(templateKey, email, vars);
+      if (!result.success) throw new Error(result.error || 'delivery failed');
     }
 
     async function sendOtp(email, purpose, pending = null) {
@@ -8278,7 +8845,7 @@ async function evaluateOMRSubmission() {
         resendAt: Date.now() + OTP_RESEND_MS
       };
       try {
-        await deliverOtp(email, code);
+        await deliverOtp(email, code, { purpose, name: pending && pending.name });
       } catch (err) {
         showAuthMessage(`We couldn't send the code (${err.message}). Please try again or contact the academy.`);
         return false;
@@ -8356,26 +8923,31 @@ async function evaluateOMRSubmission() {
         document.getElementById('auth-new-pass2').value = '';
         showAuthPanel('set-password');
       } else if (purpose === 'signup') {
-        let student = getStudentRecord(email);
-        if (student && student.passwordHash) {
-          showAuthPanel('login');
-          return showAuthMessage('An account with this email already exists. Log in, or use "Forgot password?".');
-        }
-        if (!student) {
-          // Brand-new student: empty access until they buy or the academy grants it
-          student = { email, utr: 'SELF_SIGNUP', status: 'active', allowedExams: [], allowedPages: [], allowedPdfs: [], passes: [], createdAt: new Date().toISOString() };
-          studentDirectory.push(student);
-        }
-        // Existing record created by the academy: keep its access, just add the login details
-        student.name = pending.name;
-        student.passwordSalt = pending.passwordSalt;
-        student.passwordHash = pending.passwordHash;
-        student.emailVerified = true;
-        if (!student.createdAt) student.createdAt = new Date().toISOString();
-        localStorage.setItem('kas_student_directory', JSON.stringify(studentDirectory));
-        renderStudentEntitlementsDesk();
-        loginStudent(student);
+        await completeSignup(email, pending.name, pending.passwordSalt, pending.passwordHash, true);
       }
+    }
+
+    // Extracted so signup can also happen without OTP verification when the admin disables that step
+    async function completeSignup(email, name, passwordSalt, passwordHash, emailVerified) {
+      let student = getStudentRecord(email);
+      if (student && student.passwordHash) {
+        showAuthPanel('login');
+        return showAuthMessage('An account with this email already exists. Log in, or use "Forgot password?".');
+      }
+      if (!student) {
+        // Brand-new student: empty access until they buy or the academy grants it
+        student = { email, utr: 'SELF_SIGNUP', status: 'active', allowedExams: [], allowedPages: [], allowedPdfs: [], passes: [], createdAt: new Date().toISOString() };
+        studentDirectory.push(student);
+      }
+      // Existing record created by the academy: keep its access, just add the login details
+      student.name = name;
+      student.passwordSalt = passwordSalt;
+      student.passwordHash = passwordHash;
+      student.emailVerified = !!emailVerified;
+      if (!student.createdAt) student.createdAt = new Date().toISOString();
+      localStorage.setItem('kas_student_directory', JSON.stringify(studentDirectory));
+      renderStudentEntitlementsDesk();
+      loginStudent(student);
     }
 
     async function handleSetPassword(event) {
@@ -8420,6 +8992,15 @@ async function evaluateOMRSubmission() {
 
       const passwordSalt = randomHex(16);
       const passwordHash = await hashPassword(p1, passwordSalt);
+
+      // If the admin turned off email verification, create the account directly and skip the OTP round trip.
+      if (!authSettings.requireSignupOtp) {
+        setBusy('auth-signup-btn', true, 'Creating account…');
+        await completeSignup(email, name, passwordSalt, passwordHash, false);
+        setBusy('auth-signup-btn', false);
+        return;
+      }
+
       setBusy('auth-signup-btn', true, 'Sending code…');
       await sendOtp(email, 'signup', { name, passwordSalt, passwordHash });
       setBusy('auth-signup-btn', false);
@@ -8599,10 +9180,11 @@ async function evaluateOMRSubmission() {
       const el = document.getElementById('admin-recovery-status');
       if (!el) return;
       const auth = getAdminAuth();
-      const emailOk = authSettings.otpMode === 'emailjs' && authSettings.emailjs.serviceId && authSettings.emailjs.templateId && authSettings.emailjs.publicKey;
+      const emailOk = (authSettings.otpMode === 'brevo'   && !!authSettings.brevo.senderEmail)
+                   || (authSettings.otpMode === 'emailjs' && authSettings.emailjs.serviceId && authSettings.emailjs.templateId && authSettings.emailjs.publicKey);
       el.innerText = [
         auth && auth.recoveryHash ? `Recovery code created ${fmtDate(auth.recoveryCreatedAt)}.` : 'No recovery code yet. Create one now.',
-        emailOk ? `Reset codes can also be emailed to ${auth ? auth.email : 'the admin email'}.` : 'Emailed reset codes need EmailJS set up under Login & OTP.'
+        emailOk ? `Reset codes can also be emailed to ${auth ? auth.email : 'the admin email'}.` : 'Emailed reset codes need email delivery set up under Login & OTP (Brevo or EmailJS).'
       ].join(' ');
     }
     async function regenerateRecoveryCode() {
@@ -8641,7 +9223,8 @@ async function evaluateOMRSubmission() {
       document.getElementById('admin-login-form').classList.add('hidden');
       document.getElementById('admin-forgot-panel').classList.remove('hidden');
       document.getElementById('admin-code-entry').classList.add('hidden');
-      const emailOk = authSettings.otpMode === 'emailjs' && authSettings.emailjs.serviceId && authSettings.emailjs.templateId && authSettings.emailjs.publicKey;
+      const emailOk = (authSettings.otpMode === 'brevo'   && !!authSettings.brevo.senderEmail)
+                   || (authSettings.otpMode === 'emailjs' && authSettings.emailjs.serviceId && authSettings.emailjs.templateId && authSettings.emailjs.publicKey);
       document.getElementById('admin-forgot-email-box').classList.toggle('hidden', !emailOk);
       const masked = auth.email.replace(/^(.{2})[^@]*/, (m, a) => a + '•••');
       document.getElementById('admin-send-code-btn').innerText = `Email a reset code to ${masked}`;
@@ -8653,7 +9236,7 @@ async function evaluateOMRSubmission() {
       const code = generateOtp();
       const salt = randomHex(8);
       try {
-        await deliverOtp(auth.email, code);
+        await deliverOtp(auth.email, code, { purpose: 'reset' });
       } catch (err) {
         return showAdminMessage(`The code couldn't be emailed: ${err.message}`);
       }
@@ -8759,6 +9342,27 @@ async function evaluateOMRSubmission() {
        12b. HOME PAGE CONFIGURATION (sections, ticker, stats, news, toppers, why, faq, cta)
     ----------------------------------------------------- */
     const HOME_CONFIG_DEFAULT = {
+      hero: {
+        enabled: true,
+        badge: 'Deep Roots. Higher Tomorrows.',
+        headingMain: 'GRIT-PRO',
+        headingSub: 'Test. Prepare. Challenge.',
+        description: 'Bilingual OMR mocks, hand-crafted planners and study rooms for KPSC KAS, Karnataka PSI, FDA/SDA and UPSC CSE — under one login.',
+        cta1Label: 'Explore Exam Categories',
+        cta1Action: 'tests',            // 'tests' | 'signup' | 'dashboard' | 'home' | 'page:<id>' | 'url:<...>'
+        cta2Label: 'Current Affairs & Notes',
+        cta2Action: 'page:p_current_affairs'
+      },
+      studyrooms: {
+        enabled: true,
+        title: 'Study Rooms',
+        subtitle: 'Notes, strategy and reference sections. Open one to see everything inside.'
+      },
+      passes: {
+        enabled: true,
+        title: 'Flexible Enrollment Passes',
+        subtitle: 'Pay only for the exams you prepare for, or unlock complete access across all batches.'
+      },
       ticker: {
         enabled: true,
         items: [
@@ -8896,6 +9500,9 @@ async function evaluateOMRSubmission() {
 
     // ---------- Renderers ----------
     function renderHomePage() {
+      renderHomeHero();
+      renderHomeStudyRooms();
+      renderHomePasses();
       renderHomeTicker();
       renderHomeStats();
       renderHomeWhatsNew();
@@ -8904,6 +9511,68 @@ async function evaluateOMRSubmission() {
       renderHomeToppers();
       renderHomeFaq();
       renderHomeCta();
+    }
+
+    // Resolves a stored CTA "action" string into a real navigation call
+    function runHomeAction(action) {
+      if (!action) return;
+      if (action.startsWith('page:')) return renderDynamicCustomPage(action.slice(5));
+      if (action.startsWith('url:')) { window.open(action.slice(4), '_blank', 'noopener'); return; }
+      if (action === 'signup') { openLoginModal && openLoginModal(); return; }
+      navigate(action);
+    }
+
+    function handleHeroCta(which) {
+      const c = homeConfig.hero || {};
+      runHomeAction(which === 2 ? c.cta2Action : c.cta1Action);
+    }
+
+    function renderHomeHero() {
+      const c = homeConfig.hero || {};
+      toggleSection('home-hero', !!c.enabled);
+      if (!c.enabled) return;
+      const badge = document.getElementById('home-hero-badge');
+      const heading = document.getElementById('home-hero-heading');
+      const desc = document.getElementById('home-hero-desc');
+      const cta1 = document.getElementById('home-hero-cta1');
+      const cta2 = document.getElementById('home-hero-cta2');
+      if (badge) badge.innerText = c.badge || '';
+      if (heading) {
+        // Preserve the two-tone GRIT / -PRO style only when the heading contains the token "GRIT-PRO"
+        const main = c.headingMain || 'GRIT-PRO';
+        const sub  = c.headingSub  || '';
+        const mainHtml = main === 'GRIT-PRO'
+          ? '<span class="text-white">GRIT</span><span class="text-amber-400">-PRO</span>'
+          : escapeHtml(main);
+        heading.innerHTML = `${mainHtml}${sub ? ` <span class="block text-2xl md:text-3xl font-bold text-slate-300 mt-2">${escapeHtml(sub)}</span>` : ''}`;
+      }
+      if (desc) desc.innerText = c.description || '';
+      if (cta1) { cta1.innerText = c.cta1Label || ''; cta1.classList.toggle('hidden', !c.cta1Label); }
+      if (cta2) { cta2.innerText = c.cta2Label || ''; cta2.classList.toggle('hidden', !c.cta2Label); }
+    }
+
+    function renderHomeStudyRooms() {
+      const c = homeConfig.studyrooms || {};
+      const el = document.getElementById('home-sections');
+      if (!el) return;
+      // The existing renderHomeSections() already hides the block when no home-tiles exist.
+      // Here we additionally respect the admin toggle: if disabled, force-hide.
+      if (!c.enabled) { el.classList.add('hidden'); return; }
+      // renderHomeSections() decides whether to unhide based on content; we just refresh the text.
+      const t = document.getElementById('home-sections-title');
+      const s = document.getElementById('home-sections-sub');
+      if (t) t.innerText = c.title || 'Study Rooms';
+      if (s) s.innerText = c.subtitle || '';
+    }
+
+    function renderHomePasses() {
+      const c = homeConfig.passes || {};
+      toggleSection('home-passes', !!c.enabled);
+      if (!c.enabled) return;
+      const t = document.getElementById('home-passes-title');
+      const s = document.getElementById('home-passes-sub');
+      if (t) t.innerText = c.title || 'Flexible Enrollment Passes';
+      if (s) s.innerText = c.subtitle || '';
     }
 
     function toggleSection(id, show) {
@@ -9063,6 +9732,28 @@ async function evaluateOMRSubmission() {
       const root = document.getElementById('home-config-admin');
       if (!root) return;
       root.innerHTML = `
+        ${sectionShell('hero', 'Hero (main banner at the top of home)',
+          hcTextField('hero', 'badge', 'Small badge above the heading') +
+          hcTextField('hero', 'headingMain', 'Main heading (keep as "GRIT-PRO" for the two-tone style)') +
+          hcTextField('hero', 'headingSub', 'Sub-heading (shown below the main heading)') +
+          hcTextareaField('hero', 'description', 'Description paragraph') +
+          `<div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t">
+             ${hcTextField('hero', 'cta1Label', 'Primary button label (leave blank to hide)')}
+             ${hcActionField('hero', 'cta1Action', 'Primary button goes to')}
+             ${hcTextField('hero', 'cta2Label', 'Secondary button label (leave blank to hide)')}
+             ${hcActionField('hero', 'cta2Action', 'Secondary button goes to')}
+           </div>`
+        )}
+        ${sectionShell('studyrooms', 'Study Rooms strip (auto-populated from your pages)',
+          hcTextField('studyrooms', 'title', 'Section title') +
+          hcTextField('studyrooms', 'subtitle', 'Subtitle') +
+          `<p class="text-[11px] text-slate-500 pl-1">Which tiles appear here comes from Pages — tick "Show as a tile on the home page" on any page.</p>`
+        )}
+        ${sectionShell('passes', 'Enrollment Passes strip (bundle catalog)',
+          hcTextField('passes', 'title', 'Section title') +
+          hcTextField('passes', 'subtitle', 'Subtitle') +
+          `<p class="text-[11px] text-slate-500 pl-1">Which bundle cards appear here is controlled per-bundle in <b>Bundles &amp; passes</b> (the "Show on home" toggle on each row).</p>`
+        )}
         ${sectionShell('ticker', 'Ticker (scrolling news bar)', hcListEditor('ticker', 'items', [
           { key: '_', label: 'Message', type: 'text', full: true }
         ], { rowLabel: 'Message' }))}
@@ -9128,7 +9819,7 @@ async function evaluateOMRSubmission() {
            </div>`
         )}
       `;
-      // Populate all field values
+      // Populate all simple field values
       root.querySelectorAll('[data-hc-field]').forEach(el => {
         const [sec, field] = el.dataset.hcField.split('.');
         const val = (homeConfig[sec] && homeConfig[sec][field]);
@@ -9136,6 +9827,37 @@ async function evaluateOMRSubmission() {
         if (el.type === 'checkbox') el.checked = !!val;
         else el.value = val;
       });
+      // Populate the little enabled-dots
+      root.querySelectorAll('[data-hc-dot]').forEach(dot => {
+        const sec = dot.dataset.hcDot;
+        const on = !!(homeConfig[sec] && homeConfig[sec].enabled);
+        dot.classList.toggle('bg-slate-300', !on);
+        dot.classList.toggle('bg-emerald-500', on);
+      });
+    }
+
+    // A dropdown of common navigation targets, plus a text input for free-form page:/url:
+    function hcActionField(sec, field, label) {
+      const current = (homeConfig[sec] && homeConfig[sec][field]) || '';
+      const pageOpts = (customPages || []).map(p => `<option value="page:${p.id}">Page: ${escapeHtml(p.title)}</option>`).join('');
+      return `<div class="mb-2">
+        <label class="block font-bold text-slate-700 mb-1 text-xs">${escapeHtml(label)}</label>
+        <select data-hc-field="${sec}.${field}" onchange="hcFieldChange(this)" class="w-full px-2.5 py-1.5 border rounded-lg bg-white outline-none text-xs">
+          <option value="home">Home (scroll to top)</option>
+          <option value="tests">Exam Hub</option>
+          <option value="dashboard">Dashboard</option>
+          <option value="signup">Open login/sign-up modal</option>
+          ${pageOpts}
+        </select>
+        <input type="text" data-hc-field="${sec}.${field}" oninput="hcFieldChange(this)" value="${escapeHtml(current)}" placeholder="…or paste an action like page:p_abc or url:https://…" class="w-full px-2.5 py-1.5 border rounded-lg outline-none text-xs mt-1 font-mono" />
+      </div>`;
+    }
+
+    function hcTextareaField(sec, field, label) {
+      return `<div class="mb-2">
+        <label class="block font-bold text-slate-700 mb-1 text-xs">${escapeHtml(label)}</label>
+        <textarea data-hc-field="${sec}.${field}" oninput="hcFieldChange(this)" rows="2" class="w-full px-2.5 py-1.5 border rounded-lg outline-none text-xs"></textarea>
+      </div>`;
     }
 
     function sectionShell(sec, title, inner) {
