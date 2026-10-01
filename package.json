@@ -1,0 +1,13 @@
+{
+  "name": "evolve-plus",
+  "version": "1.0.0",
+  "description": "Evolve+ exam-prep platform — regression test tooling (see /tests)",
+  "scripts": {
+    "build-harness": "python3 tests/harness/build_test_visual.py",
+    "test": "node tests/run.js"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "playwright": "^1.63.0"
+  }
+}
