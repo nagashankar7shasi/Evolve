@@ -8,6 +8,19 @@
       refunded: 'bg-slate-200 text-slate-700'
     };
     const ORDER_STATUS_LABEL = { pending: 'Being verified', approved: 'Approved', rejected: 'Rejected', refunded: 'Refunded' };
+
+    // Flags a UPI reference (UTR) that appears on more than one order (any status, excluding this
+    // one) -- a sign it may have been reused/guessed rather than actually paid with, since nothing
+    // about this manual-verification flow otherwise stops two orders from claiming the same
+    // reference. Warn-only, by design: a genuine accidental double-submit (e.g. a double-click)
+    // should never be silently blocked, so this surfaces the collision for a human to judge --
+    // same warn-don't-block pattern Studio uses for near-duplicate questions -- rather than
+    // rejecting it outright.
+    function utrDuplicateOrders(order) {
+      if (!order || !order.utr) return [];
+      return paymentOrders.filter(o => o.id !== order.id && o.utr === order.utr);
+    }
+
     // Money actually kept from an order: full amount, minus anything refunded back (0 for a fully
     // refunded order, since its status has already moved off 'approved' by then — see refundOrder()).
     function orderNetAmount(o) {
@@ -190,7 +203,14 @@ async function approveOrder(orderId) {
   // "Collected" everywhere (see renderOverview/renderRevenue) instead of silently inflating real revenue.
   const complimentary = !!document.getElementById(`comp-${orderId}`)?.checked;
 
-  if (!confirm(`${complimentary ? 'Approve as COMPLIMENTARY (no payment received)' : `Approve ₹${order.amount}`} from ${order.email}?\n\nUPI ref: ${order.utr}\nUnlocks: ${order.title}${complimentary ? '' : '\n\nOnly approve after you\'ve seen this reference in your bank statement.'}`)) return;
+  // Surfaced in the confirm itself, right before the irreversible click -- the table badge (see
+  // renderPaymentOrders) is easy to skim past, but this can't be missed without actively dismissing it.
+  const dups = utrDuplicateOrders(order);
+  const dupWarning = dups.length
+    ? `\n\n⚠️ WARNING: this UPI reference also appears on ${dups.length} other order${dups.length > 1 ? 's' : ''} (${dups.slice(0, 3).map(d => `${d.email} — ${ORDER_STATUS_LABEL[d.status] || d.status}`).join('; ')}${dups.length > 3 ? '; …' : ''}).\nDouble-check this isn't a reused or guessed reference before approving.`
+    : '';
+
+  if (!confirm(`${complimentary ? 'Approve as COMPLIMENTARY (no payment received)' : `Approve ₹${order.amount}`} from ${order.email}?\n\nUPI ref: ${order.utr}\nUnlocks: ${order.title}${complimentary ? '' : '\n\nOnly approve after you\'ve seen this reference in your bank statement.'}${dupWarning}`)) return;
 
   const decidedAt = new Date().toISOString();
   const receiptNo = nextReceiptNo();
