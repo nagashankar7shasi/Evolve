@@ -2818,6 +2818,24 @@
             <p class="text-[11px] text-slate-500 mb-2">Randomly samples from every question already uploaded and tagged to <b id="studio-bank-category-name">this category</b> (its own papers, plus anything tagged to feed this category's bank) — set how many questions you want from each subject, then generate. This creates a fixed, one-time set you review and can hand-edit before publishing; it won't change again on its own.</p>
             <button onclick="studioScanQuestionBank()" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg">🔍 Scan bank</button>
             <span id="studio-bank-scan-status" class="text-[11px] text-slate-500 ml-2"></span>
+
+            <div id="studio-bank-suggest-row" class="hidden mt-3 flex flex-wrap items-end gap-3 text-[11px] bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+              <div>
+                <label class="block font-bold text-slate-600 mb-1">Target total (optional)</label>
+                <input type="number" min="0" id="studio-bank-target-total" placeholder="e.g. 100" class="w-24 px-2 py-1 border rounded-lg font-mono" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-600 mb-1">Current affairs mix</label>
+                <div class="flex items-center gap-1"><input type="number" min="0" max="100" value="0" id="studio-bank-ca-mix" class="w-16 px-2 py-1 border rounded-lg font-mono" /><span>%</span></div>
+              </div>
+              <label class="flex items-center gap-1.5 cursor-pointer pb-1.5">
+                <input type="checkbox" id="studio-bank-prioritize-pyq" checked class="rounded" />
+                <span class="font-bold text-slate-600">Prioritize "asked before" questions first</span>
+              </label>
+              <button onclick="studioSuggestBankCounts()" class="px-2.5 py-1.5 border border-slate-300 hover:bg-slate-100 font-bold rounded-lg">↻ Suggest counts</button>
+              <span class="text-slate-400 w-full">Suggested counts are weighted by each subject's importance (set in Exam Categories admin → Subjects) — hand-edit any number below before generating.</span>
+            </div>
+
             <div id="studio-bank-subject-rows" class="mt-3 space-y-1.5"></div>
             <div id="studio-bank-generate-row" class="hidden mt-3 flex items-center gap-3">
               <span class="text-xs font-bold text-slate-700">Total selected: <span id="studio-bank-total">0</span></span>
@@ -2920,9 +2938,39 @@
         </div>
       </div>
 
-      <div>
-        <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Explanation</label>
-        <textarea id="edit-exp" rows="2" placeholder="Why this is the correct answer" class="w-full px-2 py-1.5 border rounded-lg outline-none"></textarea>
+      <div class="grid grid-cols-4 gap-3">
+        <div class="col-span-2">
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Type</label>
+          <div class="inline-flex rounded-lg border overflow-hidden w-full">
+            <button type="button" id="edit-type-static" onclick="editSetContentType('static')" class="flex-1 px-2 py-1.5 text-xs font-bold">📖 Static</button>
+            <button type="button" id="edit-type-ca" onclick="editSetContentType('ca')" class="flex-1 px-2 py-1.5 text-xs font-bold border-l">📰 Current Affairs</button>
+          </div>
+        </div>
+        <div class="col-span-2" id="edit-relevant-period-wrap">
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Relevant period <span class="normal-case font-normal text-slate-400">— e.g. "Sep 2026"</span></label>
+          <input type="text" id="edit-relevant-period" placeholder="Sep 2026" class="w-full px-2 py-1.5 border rounded-lg outline-none" />
+        </div>
+      </div>
+
+      <div class="flex items-end gap-3">
+        <div class="flex-1">
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Asked before, in (years) <span class="normal-case font-normal text-slate-400">— optional, comma-separated, e.g. "2018, 2021, 2023"</span></label>
+          <input type="text" id="edit-asked-years" placeholder="2018, 2021, 2023" class="w-full px-2 py-1.5 border rounded-lg outline-none font-mono text-xs" />
+        </div>
+        <label class="flex items-center gap-1.5 pb-2 cursor-pointer text-xs" title="Excluded from the question bank, Topic Builder, and Generate-from-Bank sampling — stays in this paper as-is">
+          <input type="checkbox" id="edit-retired" class="rounded" /> Retired
+        </label>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Explanation (English)</label>
+          <textarea id="edit-exp" rows="2" placeholder="Why this is the correct answer" class="w-full px-2 py-1.5 border rounded-lg outline-none"></textarea>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Explanation (Kannada) <span class="normal-case font-normal text-slate-400">— optional</span></label>
+          <textarea id="edit-exp-kn" rows="2" placeholder="ಈ ಉತ್ತರ ಏಕೆ ಸರಿ" class="w-full px-2 py-1.5 border rounded-lg outline-none" style="font-family:'Noto Sans Kannada',sans-serif"></textarea>
+        </div>
       </div>
 
       <div>
@@ -3505,16 +3553,28 @@
     // uploads, case/whitespace variants) onto the registry automatically, and the admin cleanup tool
     // (subjectCleanupScan/applySubjectMerge) handles anything that slipped through as a real duplicate.
     let examSubjects = JSON.parse(localStorage.getItem('kas_exam_subjects') || 'null') || {};
+    // Per-category, per-subject importance weight (1-5, default 3/"Medium") — e.g. "Fundamental Rights"
+    // can be weighted higher than a minor topic so Generate-from-Bank suggests pulling more of it,
+    // without needing a separate Topic entity: the existing Subject registry already lets an admin be
+    // as granular as they like (nothing stops "Fundamental Rights" from being its own Subject rather
+    // than lumped under "Polity"), so weight just rides on top of whatever granularity is already there.
+    // Stored as { [categoryId]: { [subjectName]: 1-5 } }; a subject with no entry here defaults to 3.
+    let examSubjectWeights = JSON.parse(localStorage.getItem('kas_exam_subject_weights') || 'null') || {};
 
     async function fetchCloudExamSubjects() {
       try {
         const { data, error } = await supabaseClient.from('exam_subjects').select('*');
         if (error) throw error;
         if (data && data.length) {
-          const next = {};
-          data.forEach(r => { next[r.category_id] = Array.isArray(r.subjects) ? r.subjects : []; });
+          const next = {}, nextWeights = {};
+          data.forEach(r => {
+            next[r.category_id] = Array.isArray(r.subjects) ? r.subjects : [];
+            nextWeights[r.category_id] = (r.weights && typeof r.weights === 'object') ? r.weights : {};
+          });
           examSubjects = next;
+          examSubjectWeights = nextWeights;
           localStorage.setItem('kas_exam_subjects', JSON.stringify(examSubjects));
+          localStorage.setItem('kas_exam_subject_weights', JSON.stringify(examSubjectWeights));
         }
       } catch (err) {
         console.error('fetchCloudExamSubjects failed:', fmtErr(err));
@@ -3526,7 +3586,7 @@
       localStorage.setItem('kas_exam_subjects', JSON.stringify(examSubjects));
       try {
         const { error } = await supabaseClient.from('exam_subjects').upsert(
-          { category_id: categoryId, subjects: list, updated_at: new Date().toISOString() },
+          { category_id: categoryId, subjects: list, weights: examSubjectWeights[categoryId] || {}, updated_at: new Date().toISOString() },
           { onConflict: 'category_id' }
         );
         if (error) throw error;
@@ -3535,6 +3595,20 @@
         alert('Saved locally, but cloud sync failed: ' + err.message);
         return false;
       }
+    }
+
+    // Returns 1-5; a subject with no explicit weight set defaults to 3 ("Medium") rather than being
+    // treated as 0/unimportant — an admin who never touches weights should see plain, even sampling.
+    function subjectWeight(categoryId, subjectName) {
+      const w = (examSubjectWeights[categoryId] || {})[subjectName];
+      return (Number.isInteger(w) && w >= 1 && w <= 5) ? w : 3;
+    }
+
+    function setSubjectWeight(categoryId, subjectName, weight) {
+      examSubjectWeights[categoryId] = examSubjectWeights[categoryId] || {};
+      examSubjectWeights[categoryId][subjectName] = weight;
+      localStorage.setItem('kas_exam_subject_weights', JSON.stringify(examSubjectWeights));
+      saveExamSubjects(categoryId, examSubjects[categoryId] || []); // re-upserts subjects+weights together
     }
 
     // Case/whitespace-insensitive match against a category's registry. Returns the CANONICAL spelling
@@ -7057,7 +7131,22 @@ async function refundOrder(orderId) {
     // State: studioState holds the paper being built/edited.
     //   { mode: 'new'|'edit'|'duplicate', originalId, questions:[…], … }
     // Questions use the same shape the exam engine already renders:
-    //   { id, q_en, q_kn, options_en:[4], options_kn:[4], correct, exp, subject, image_url }
+    //   { id, q_en, q_kn, options_en:[4], options_kn:[4], correct, exp, exp_kn, subject, image_url,
+    //     contentType, relevantPeriod, askedInYears, retired, sourceQuestionId }
+    // exp_kn (Kannada explanation) is optional and independent of exp (English) — a paper can have
+    // English-only explanations, Kannada-only, both, or neither, same as q_en/q_kn.
+    // contentType ('static' | 'ca') separates a question's SHELF LIFE from its Subject — "Fundamental
+    // Rights" (Polity, static) and "Budget 2026 allocations" (also Polity, but current-affairs and
+    // time-bound) stay under the same Subject but are tagged differently, rather than forking Subject
+    // into "Polity" / "Polity CA" pairs (which would fragment the registry we built the cleanup tool
+    // for). Unset/missing === 'static', so every question from before this field existed needs no
+    // migration. relevantPeriod is a free-text period ("Sep 2026") used only for 'ca' questions, shown
+    // in the Current Affairs review tool (see renderCoverageAndCaReview) to help decide what's stale.
+    // askedInYears is an admin-entered list of years this question (or a close variant) appeared in a
+    // real exam — used to show students "asked before" and to prioritize sampling in Generate-from-
+    // Bank. retired excludes a question from the question bank / Topic Builder / Generate-from-Bank
+    // entirely (without deleting it or touching the paper it lives in) — the mechanism the CA review
+    // tool uses to retire a stale current-affairs question.
     let studioState = null;
     let studioLangMode = 'en';      // 'en' | 'kn' | 'both'
     let studioInputMode = 'csv';    // 'csv' | 'paste' | 'manual' | 'bank'
@@ -7084,14 +7173,24 @@ async function refundOrder(orderId) {
       'optdkn': 'd_kn', 'dkn': 'd_kn', 'optiondkn': 'd_kn',
       // Correct
       'correct': 'correct', 'answer': 'correct', 'ans': 'correct', 'correctanswer': 'correct', 'key': 'correct',
-      // Explanation
+      // Explanation (English)
       'explanation': 'exp', 'explain': 'exp', 'solution': 'exp', 'sol': 'exp', 'reason': 'exp',
+      'explanationen': 'exp', 'explanationenglish': 'exp',
+      // Explanation (Kannada)
+      'explanationkn': 'exp_kn', 'expkn': 'exp_kn', 'explanationkannada': 'exp_kn', 'solutionkn': 'exp_kn', 'reasonkn': 'exp_kn',
       // Subject
       'subject': 'subject', 'topic': 'subject', 'category': 'subject', 'tag': 'subject',
       // Difficulty
       'difficulty': 'difficulty', 'level': 'difficulty', 'diff': 'difficulty', 'difficultylevel': 'difficulty',
       // Image
-      'image': 'image_url', 'imageurl': 'image_url', 'diagram': 'image_url', 'graph': 'image_url', 'graphurl': 'image_url', 'img': 'image_url'
+      'image': 'image_url', 'imageurl': 'image_url', 'diagram': 'image_url', 'graph': 'image_url', 'graphurl': 'image_url', 'img': 'image_url',
+      // Content type (Static syllabus vs Current Affairs) — see studioQuestionProblem/getQuestionBank
+      // comments near contentType for why this is a field of its own rather than folded into Subject.
+      'contenttype': 'contentType', 'type': 'contentType', 'nature': 'contentType', 'static': 'contentType',
+      // Relevant period — only meaningful for Current Affairs rows; ignored for Static ones
+      'relevantperiod': 'relevantPeriod', 'period': 'relevantPeriod', 'caperiod': 'relevantPeriod', 'month': 'relevantPeriod',
+      // Asked in (years) — comma/space separated list of years this exact question appeared in a real exam
+      'askedinyears': 'askedInYears', 'askedyears': 'askedInYears', 'pyq': 'askedInYears', 'previouslyasked': 'askedInYears', 'years': 'askedInYears'
     };
     const STUDIO_FIELD_LABELS = {
       q_en: 'Question (English)',      q_kn: 'Question (Kannada)',
@@ -7099,9 +7198,12 @@ async function refundOrder(orderId) {
       b_en: 'Option B (English)',      b_kn: 'Option B (Kannada)',
       c_en: 'Option C (English)',      c_kn: 'Option C (Kannada)',
       d_en: 'Option D (English)',      d_kn: 'Option D (Kannada)',
-      correct: 'Correct Answer',       exp: 'Explanation',
+      correct: 'Correct Answer',       exp: 'Explanation (English)',
+      exp_kn: 'Explanation (Kannada)',
       subject: 'Subject / Topic Tag',  image_url: 'Image URL',
       difficulty: 'Difficulty (1-5)',
+      contentType: 'Type (Static/Current Affairs)', relevantPeriod: 'Relevant Period (CA only)',
+      askedInYears: 'Asked In (years)',
       _ignore: '— Ignore this column —'
     };
 
@@ -7137,6 +7239,18 @@ async function refundOrder(orderId) {
 
     function studioSaveDraft() {
       if (!studioState) return;
+      // BUG FIX: the draft slot is a single global "unpublished new paper in progress" slot — openStudio()
+      // only ever offers to resume it `if (!paperId)`, i.e. for a brand-new paper. But this button had no
+      // mode check, so saving a draft while EDITING or DUPLICATING an already-published paper silently
+      // overwrote that same slot with the in-progress edit. If the admin then published (mode !== 'new'),
+      // studioPublish() correctly left that slot alone — leaving a stale "edit" draft behind — and the next
+      // time Studio opened for a genuinely new paper, it resurfaced that leftover and offered to resume it.
+      // That's the "I saved a draft and published, but Studio keeps taking me back to that draft" bug.
+      // Editing/duplicating never needed draft-saving in the first place (Publish already saves the real
+      // thing) — same day-one-comment for the discard side. Now this is a no-op outside 'new' mode.
+      if (studioState.mode !== 'new') {
+        return alert('Save draft only applies to a brand-new, not-yet-published paper.\n\nYou\'re editing/duplicating an existing one — just Publish when ready; there\'s nothing separate to save as a draft.');
+      }
       const draft = studioSerializeDraft();
       if (!draft.title && !draft.questions.length) {
         return alert('Nothing to save yet — add a title or at least one question first.');
@@ -7257,8 +7371,16 @@ async function refundOrder(orderId) {
             options_en: Array.isArray(q.options_en) ? q.options_en.slice(0, 4) : ['', '', '', ''],
             options_kn: Array.isArray(q.options_kn) ? q.options_kn.slice(0, 4) : ['', '', '', ''],
             correct: (q.correct || 'A').toUpperCase(),
-            exp: q.exp || '', subject: q.subject || '',
-            image_url: q.image_url || ''
+            exp: q.exp || '', exp_kn: q.exp_kn || '', subject: q.subject || '',
+            image_url: q.image_url || '',
+            contentType: q.contentType === 'ca' ? 'ca' : 'static',
+            relevantPeriod: q.relevantPeriod || '',
+            askedInYears: Array.isArray(q.askedInYears) ? q.askedInYears : [],
+            retired: !!q.retired,
+            // Carry forward the bank-generation lineage tag, if any (see studioGenerateFromBank) — without
+            // this, simply opening a generated paper to fix a typo and republishing would silently drop
+            // the tag and let the duplicate resurface in the Topic Builder.
+            ...(q.sourceQuestionId ? { sourceQuestionId: q.sourceQuestionId } : {})
           }));
         }
       }
@@ -7338,45 +7460,88 @@ async function refundOrder(orderId) {
     }
 
     // ---- Generate from Question Bank (static, one-time sample by subject) ----
-    // Scans every ACTIVE paper that feeds this category's question bank (its own papers, plus
-    // anything cross-tagged via extraCategories — the same scope getQuestionBank() uses for the
-    // student-facing Topic Builder, just without the entitlement/unlock filtering since this is an
-    // admin authoring tool working from everything that exists, not just one student's access).
+    // Scans every paper that feeds this category's question bank (its own papers, plus anything
+    // cross-tagged via extraCategories) — the same scope getQuestionBank() uses for the
+    // student-facing Topic Builder, but WITHOUT its student-only filters: isTestUnlockedForUser
+    // (entitlement) and active status. This is an admin authoring tool: an inactive/draft paper is
+    // exactly where an admin stages questions before ever publishing them, and requiring the source
+    // paper to already be live would defeat that (previously this scan DID require active !== false,
+    // which is the bug behind "I tagged an inactive paper for the bank and its questions didn't show
+    // up until I made it live" — fixed by dropping that check here). Retired questions (see
+    // retireQuestion) ARE excluded — a stale current-affairs question shouldn't get re-sampled into a
+    // brand new paper any more than it should surface in the live Topic Builder.
     async function studioScanQuestionBank() {
       const cat = document.getElementById('studio-category').value;
       const status = document.getElementById('studio-bank-scan-status');
       status.innerText = 'Scanning…';
-      const candidatePapers = testsCatalog.filter(p => p.active !== false &&
+      const candidatePapers = testsCatalog.filter(p =>
         (p.category === cat || (p.extraCategories || []).includes(cat)));
       await Promise.all(candidatePapers.map(ensurePaperQuestionsLoaded));
       studioBankPool = [];
       candidatePapers.forEach(p => {
         (p.questions || []).forEach(q => {
-          studioBankPool.push({ paperId: p.id, paperTitle: p.title, q, subject: subjectOf(q) });
+          if (q.retired) return;
+          studioBankPool.push({
+            paperId: p.id, paperTitle: p.title, q, subject: subjectOf(q),
+            contentType: q.contentType === 'ca' ? 'ca' : 'static',
+            isPyq: Array.isArray(q.askedInYears) && q.askedInYears.length > 0
+          });
         });
       });
       status.innerText = `${studioBankPool.length} question${studioBankPool.length === 1 ? '' : 's'} found across ${candidatePapers.length} paper(s).`;
       renderStudioBankSubjectRows();
     }
 
+    // Groups the last scan's pool by subject, then by Static/CA within each subject — the shape both
+    // renderStudioBankSubjectRows and studioGenerateFromBank build on.
+    function studioBankBySubjectAndType() {
+      const bySubject = {};
+      studioBankPool.forEach(b => {
+        const row = bySubject[b.subject] = bySubject[b.subject] || { static: [], ca: [] };
+        row[b.contentType].push(b);
+      });
+      return bySubject;
+    }
+
     function renderStudioBankSubjectRows() {
       const root = document.getElementById('studio-bank-subject-rows');
       const genRow = document.getElementById('studio-bank-generate-row');
+      const suggestRow = document.getElementById('studio-bank-suggest-row');
       if (!studioBankPool.length) {
         root.innerHTML = '<p class="text-[11px] text-slate-400">No questions found yet — tag some papers to feed this category\'s bank (the "Feeds the question bank of" field in this sidebar), or upload directly into this category, then scan again.</p>';
         genRow.classList.add('hidden');
+        suggestRow.classList.add('hidden');
         return;
       }
-      const bySubject = {};
-      studioBankPool.forEach(b => { (bySubject[b.subject] = bySubject[b.subject] || []).push(b); });
+      const cat = document.getElementById('studio-category').value;
+      const bySubject = studioBankBySubjectAndType();
       const subjects = Object.keys(bySubject).sort((a, b) => a.localeCompare(b));
-      root.innerHTML = subjects.map(s => `
-        <div class="flex items-center gap-2 text-xs">
-          <span class="flex-1 font-bold text-slate-700">${escapeHtml(s)}</span>
-          <span class="text-slate-400">${bySubject[s].length} available</span>
-          <input type="number" min="0" max="${bySubject[s].length}" value="0" data-bank-subject="${escapeHtml(s)}" oninput="studioUpdateBankTotal()" class="w-16 px-2 py-1 border rounded-lg font-mono text-right" />
-        </div>`).join('');
+      root.innerHTML = subjects.map(s => {
+        const { static: staticPool, ca: caPool } = bySubject[s];
+        const staticPyq = staticPool.filter(b => b.isPyq).length;
+        const caPyq = caPool.filter(b => b.isPyq).length;
+        return `
+        <div class="border border-slate-200 rounded-lg p-2" data-bank-subject-row="${escapeHtml(s)}">
+          <div class="flex items-center gap-2 text-xs mb-1.5">
+            <span class="flex-1 font-bold text-slate-700">${escapeHtml(s)}</span>
+            <span class="text-slate-400" title="Importance weight — set per-subject in Exam Categories admin → Subjects">Weight ${subjectWeight(cat, s)}/5</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <label class="flex items-center gap-1.5">
+              <span class="w-16 text-slate-500 shrink-0">📖 Static</span>
+              <span class="text-slate-400 shrink-0">(${staticPool.length}${staticPyq ? `, ⭐${staticPyq}` : ''})</span>
+              <input type="number" min="0" max="${staticPool.length}" value="0" data-bank-subject="${escapeHtml(s)}" data-bank-type="static" oninput="studioUpdateBankTotal()" class="w-16 px-2 py-1 border rounded-lg font-mono text-right" />
+            </label>
+            <label class="flex items-center gap-1.5">
+              <span class="w-16 text-slate-500 shrink-0">📰 CA</span>
+              <span class="text-slate-400 shrink-0">(${caPool.length}${caPyq ? `, ⭐${caPyq}` : ''})</span>
+              <input type="number" min="0" max="${caPool.length}" value="0" data-bank-subject="${escapeHtml(s)}" data-bank-type="ca" oninput="studioUpdateBankTotal()" class="w-16 px-2 py-1 border rounded-lg font-mono text-right" />
+            </label>
+          </div>
+        </div>`;
+      }).join('');
       genRow.classList.remove('hidden');
+      suggestRow.classList.remove('hidden');
       studioUpdateBankTotal();
     }
 
@@ -7385,33 +7550,98 @@ async function refundOrder(orderId) {
       document.getElementById('studio-bank-total').innerText = total;
     }
 
+    // Splits a desired `total` between two capped buckets (Static/CA) roughly according to `bRatio`
+    // (0-1, the share that should go to bucket B), then tops each bucket up from the other's spare
+    // capacity if one runs out — so the requested total is still hit whenever the combined pool allows
+    // it, rather than silently under-filling just because the mix ratio didn't fit one bucket exactly.
+    function splitWithCaps(total, aAvail, bAvail, bRatio) {
+      let b = Math.min(Math.round(total * bRatio), bAvail);
+      let a = Math.min(total - b, aAvail);
+      const shortfall = (total - a - b);
+      if (shortfall > 0) {
+        const moreB = Math.min(shortfall, bAvail - b);
+        b += moreB;
+        const stillShort = shortfall - moreB;
+        if (stillShort > 0) a = Math.min(a + stillShort, aAvail);
+      }
+      return { a, b };
+    }
+
+    // Pre-fills every subject's Static/CA count inputs proportional to (a) how much of the target
+    // total that subject's importance weight earns it relative to every other subject with any
+    // availability, and (b) the requested Current Affairs mix %. Purely a starting point — every
+    // number is a plain input the admin can still hand-edit before generating, same as before this
+    // existed (leaving Target total blank/0 leaves every count at 0, exactly like the original version
+    // of this tool).
+    function studioSuggestBankCounts() {
+      const target = parseInt(document.getElementById('studio-bank-target-total').value, 10) || 0;
+      const caMix = Math.max(0, Math.min(100, parseInt(document.getElementById('studio-bank-ca-mix').value, 10) || 0)) / 100;
+      if (!target) return;
+      const cat = document.getElementById('studio-category').value;
+      const bySubject = studioBankBySubjectAndType();
+      const subjects = Object.keys(bySubject);
+      const totalWeight = subjects.reduce((sum, s) => {
+        const avail = bySubject[s].static.length + bySubject[s].ca.length;
+        return sum + (avail > 0 ? subjectWeight(cat, s) : 0);
+      }, 0);
+      if (!totalWeight) return;
+      subjects.forEach(s => {
+        const { static: staticPool, ca: caPool } = bySubject[s];
+        const avail = staticPool.length + caPool.length;
+        if (!avail) return;
+        const share = Math.min(Math.round(target * subjectWeight(cat, s) / totalWeight), avail);
+        const { a: staticCount, b: caCount } = splitWithCaps(share, staticPool.length, caPool.length, caMix);
+        const staticInput = [...document.querySelectorAll('[data-bank-subject][data-bank-type="static"]')].find(el => el.dataset.bankSubject === s);
+        const caInput = [...document.querySelectorAll('[data-bank-subject][data-bank-type="ca"]')].find(el => el.dataset.bankSubject === s);
+        if (staticInput) staticInput.value = staticCount;
+        if (caInput) caInput.value = caCount;
+      });
+      studioUpdateBankTotal();
+    }
+
     function studioGenerateFromBank() {
+      const bySubject = studioBankBySubjectAndType();
+      const prioritizePyq = document.getElementById('studio-bank-prioritize-pyq').checked;
       const rows = [...document.querySelectorAll('[data-bank-subject]')];
-      const bySubject = {};
-      studioBankPool.forEach(b => { (bySubject[b.subject] = bySubject[b.subject] || []).push(b); });
       let added = 0;
+      const difficultyCounts = {}, typeCounts = { static: 0, ca: 0 };
       rows.forEach(el => {
-        const subject = el.dataset.bankSubject;
+        const subject = el.dataset.bankSubject, type = el.dataset.bankType;
         const want = parseInt(el.value, 10) || 0;
         if (!want) return;
-        const pool = (bySubject[subject] || []).slice();
-        // Fisher-Yates shuffle, then take the front — sampling without replacement so a generation
-        // never picks the same source question twice.
-        for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
-        pool.slice(0, Math.min(want, pool.length)).forEach(b => {
+        const pool = ((bySubject[subject] || {})[type] || []).slice();
+        // Sampling without replacement, PYQ-first when requested: shuffle the "asked before" and
+        // "never asked" questions separately, then take PYQ ones first up to `want` before falling
+        // back to the rest — so a generation that asks for fewer questions than are PYQ-tagged still
+        // fills entirely from proven, previously-asked content.
+        const ordered = prioritizePyq
+          ? [...shuffle(pool.filter(b => b.isPyq)), ...shuffle(pool.filter(b => !b.isPyq))]
+          : shuffle(pool);
+        ordered.slice(0, Math.min(want, ordered.length)).forEach(b => {
           // Deep clone: this generated paper's copy is now independent of the source paper — editing
           // or deleting the source later never silently changes an already-generated paper.
           const q = JSON.parse(JSON.stringify(b.q));
           q.id = studioState.questions.length + 1;
+          // Tag this copy with where it originally came from, so getQuestionBank() can tell it's the
+          // SAME underlying question as its source rather than new content, and not show both to a
+          // student in the same category's Topic Builder (see getQuestionBank() for the dedupe logic).
+          // If the source question was itself already a bank-generated copy (chained generation), carry
+          // its ORIGINAL root id forward rather than pointing at the intermediate copy, so the lineage
+          // always resolves back to one true origin no matter how many times it's been re-sampled.
+          q.sourceQuestionId = b.q.sourceQuestionId || `${b.paperId}::${b.q.id}`;
           studioState.questions.push(q);
           added++;
+          typeCounts[type]++;
+          const d = Number.isInteger(q.difficulty) ? q.difficulty : 'unrated';
+          difficultyCounts[d] = (difficultyCounts[d] || 0) + 1;
         });
       });
       if (!added) return alert('Set a count greater than 0 for at least one subject first.');
       studioRenumber();
       studioRenderList();
       studioSetInputMode('manual'); // switch to reviewing the generated list, same as any other add path
-      alert(`${added} question${added === 1 ? '' : 's'} generated from the bank. Review them below — you can edit or delete any of them — then Publish when ready.`);
+      const diffSummary = Object.keys(difficultyCounts).sort().map(d => `${d === 'unrated' ? 'Unrated' : 'Lvl ' + d}: ${difficultyCounts[d]}`).join(', ');
+      alert(`${added} question${added === 1 ? '' : 's'} generated from the bank (Static: ${typeCounts.static}, Current Affairs: ${typeCounts.ca}).\nDifficulty mix — ${diffSummary}.\n\nReview them below — you can edit or delete any of them — then Publish when ready.`);
     }
 
     function studioSetLangMode(mode) {
@@ -7487,13 +7717,66 @@ async function refundOrder(orderId) {
       document.getElementById('studio-mapping-panel').classList.add('hidden');
     }
 
+    // ---- Near-duplicate detection at ingestion (warns, never blocks) ----
+    // A cheap, dependency-free proxy for "this is probably the same question reworded": word-set
+    // Jaccard overlap on the English question text. Good enough to flag for a human glance; a false
+    // positive costs a second of reading, a false negative loses nothing this feature didn't already
+    // not have. Only ever surfaced as a warning alongside the normal "N questions added" message —
+    // it never removes a row or stops an upload, matching how `retired` and the coverage dashboard
+    // elsewhere in Studio flag things for the admin to judge rather than deciding for them.
+    const STUDIO_DUP_THRESHOLD = 0.6;
+    const STUDIO_DUP_MIN_WORDS = 5; // shorter questions collide on word overlap by chance too often to be useful
+    function studioSimilarityTokens(text) {
+      return new Set(String(text || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 2));
+    }
+    function studioJaccard(setA, setB) {
+      if (!setA.size || !setB.size) return 0;
+      let inter = 0;
+      setA.forEach(w => { if (setB.has(w)) inter++; });
+      return inter / (setA.size + setB.size - inter);
+    }
+    // Compares each newly-added row against: (a) questions already in this paper's draft, (b) the
+    // existing question bank for this category (best-effort — only papers already loaded into
+    // testsCatalog are visible to getQuestionBank(), same limitation the live bank itself has), and
+    // (c) earlier rows in this same upload, so an accidentally duplicated CSV row is caught too.
+    function studioFindNearDuplicates(newlyAdded, preExisting, bankPool) {
+      const candidates = [
+        ...preExisting.map(q => ({ text: q.q_en, source: 'already in this paper' })),
+        ...bankPool.map(b => ({ text: b.q.q_en, source: `question bank (${b.subject || 'no subject'})` }))
+      ].filter(c => c.text && c.text.trim()).map(c => ({ ...c, tokens: studioSimilarityTokens(c.text) }));
+      const warnings = [];
+      newlyAdded.forEach((q, idx) => {
+        if (!q.q_en || !q.q_en.trim()) return;
+        const tokens = studioSimilarityTokens(q.q_en);
+        if (tokens.size < STUDIO_DUP_MIN_WORDS) return;
+        let best = null;
+        candidates.forEach(c => {
+          const score = studioJaccard(tokens, c.tokens);
+          if (score >= STUDIO_DUP_THRESHOLD && (!best || score > best.score)) best = { score, text: c.text, source: c.source };
+        });
+        for (let j = 0; j < idx; j++) {
+          const other = newlyAdded[j];
+          if (!other.q_en || !other.q_en.trim()) continue;
+          const otherTokens = studioSimilarityTokens(other.q_en);
+          if (otherTokens.size < STUDIO_DUP_MIN_WORDS) continue;
+          const score = studioJaccard(tokens, otherTokens);
+          if (score >= STUDIO_DUP_THRESHOLD && (!best || score > best.score)) best = { score, text: other.q_en, source: 'this same upload' };
+        }
+        if (best) warnings.push({ newText: q.q_en, matchText: best.text, source: best.source, score: best.score });
+      });
+      return warnings;
+    }
+
     function studioApplyMappingAndAdd(mapping, rows) {
       const startId = studioState.questions.length + 1;
       const category = (document.getElementById('studio-category') || {}).value || '';
       const seenSubjects = new Set();
+      const preExistingForDupCheck = studioState.questions.slice();
+      const bankPoolForDupCheck = category ? getQuestionBank().filter(b => b.category === category) : [];
+      const newlyAddedForDupCheck = [];
       let added = 0;
       rows.forEach((row, i) => {
-        const q = { id: startId + i, q_en: '', q_kn: '', options_en: ['', '', '', ''], options_kn: ['', '', '', ''], correct: 'A', exp: '', subject: '', difficulty: null, image_url: '' };
+        const q = { id: startId + i, q_en: '', q_kn: '', options_en: ['', '', '', ''], options_kn: ['', '', '', ''], correct: 'A', exp: '', exp_kn: '', subject: '', difficulty: null, image_url: '', contentType: 'static', relevantPeriod: '', askedInYears: [] };
         for (const [colName, field] of Object.entries(mapping)) {
           const val = row[colName];
           if (val == null || field === '_unknown' || field === '_ignore') continue;
@@ -7522,6 +7805,7 @@ async function refundOrder(orderId) {
             q.correct = /^[ABCD]$/.test(stripped) ? stripped : raw.charAt(0);
           }
           else if (field === 'exp') q.exp = String(val).trim();
+          else if (field === 'exp_kn') q.exp_kn = String(val).trim();
           else if (field === 'subject') {
             // Canonicalize against the registry (case/whitespace-insensitive match) so "polity" and
             // "Polity" from different uploads collapse onto one canonical spelling automatically; a
@@ -7535,23 +7819,46 @@ async function refundOrder(orderId) {
             q.difficulty = (Number.isInteger(n) && n >= 1 && n <= 5) ? n : null;
           }
           else if (field === 'image_url') q.image_url = String(val).trim();
+          else if (field === 'contentType') {
+            // Strip spaces/hyphens before matching so "Current Affairs" (the column's own sample
+            // value in the downloadable template) normalizes the same as "CurrentAffairs" or "CA" —
+            // without this, the template's own sample row silently ingested as 'static'.
+            const raw = String(val).trim().toLowerCase().replace(/[\s-]+/g, '');
+            q.contentType = /^(ca|current|currentaffairs|dynamic|c)$/.test(raw) ? 'ca' : 'static';
+          }
+          else if (field === 'relevantPeriod') q.relevantPeriod = String(val).trim();
+          else if (field === 'askedInYears') {
+            // Accept any of "2018, 2021, 2023" / "2018 2021 2023" / "2018;2021" — split on anything
+            // that isn't a run of digits, keep 4-digit-looking tokens, drop the rest silently rather
+            // than blocking the whole row over one malformed cell.
+            q.askedInYears = String(val).split(/[^0-9]+/).map(s => s.trim()).filter(s => /^(19|20)\d{2}$/.test(s));
+          }
         }
         // Skip completely blank rows
         if (!q.q_en && !q.q_kn && !q.options_en.some(Boolean)) return;
         studioState.questions.push(q);
+        newlyAddedForDupCheck.push(q);
         added++;
       });
       studioRenumber();
       studioRenderList();
       if (category) seenSubjects.forEach(s => registerSubjectIfNew(category, s));
-      alert(`${added} question${added === 1 ? '' : 's'} added. Total now ${studioState.questions.length}.`);
+      const dupWarnings = studioFindNearDuplicates(newlyAddedForDupCheck, preExistingForDupCheck, bankPoolForDupCheck);
+      let msg = `${added} question${added === 1 ? '' : 's'} added. Total now ${studioState.questions.length}.`;
+      if (dupWarnings.length) {
+        msg += `\n\n⚠️ ${dupWarnings.length} possible near-duplicate${dupWarnings.length === 1 ? '' : 's'} — review before publishing:\n` +
+          dupWarnings.slice(0, 8).map(w => `• "${w.newText.slice(0, 80)}"\n   ~${Math.round(w.score * 100)}% similar to ${w.source}: "${w.matchText.slice(0, 80)}"`).join('\n') +
+          (dupWarnings.length > 8 ? `\n…and ${dupWarnings.length - 8} more.` : '');
+      }
+      alert(msg);
     }
 
     function studioDownloadTemplate() {
       const sample = [
-        ['Question_EN', 'Question_KN', 'Opt_A_EN', 'Opt_B_EN', 'Opt_C_EN', 'Opt_D_EN', 'Opt_A_KN', 'Opt_B_KN', 'Opt_C_KN', 'Opt_D_KN', 'Correct', 'Explanation', 'Subject', 'Difficulty', 'Image_URL'],
-        ['Which article of the Indian Constitution deals with Fundamental Duties?', 'ಭಾರತೀಯ ಸಂವಿಧಾನದ ಯಾವ ಆರ್ಟಿಕಲ್ ಮೂಲಭೂತ ಕರ್ತವ್ಯಗಳ ಬಗ್ಗೆ ಇದೆ?', 'Article 51A', 'Article 32', 'Article 21', 'Article 14', 'ಆರ್ಟಿಕಲ್ 51A', 'ಆರ್ಟಿಕಲ್ 32', 'ಆರ್ಟಿಕಲ್ 21', 'ಆರ್ಟಿಕಲ್ 14', 'A', 'Article 51A was added by the 42nd Amendment (1976).', 'Polity', '2', ''],
-        ['The capital of Karnataka is:', 'ಕರ್ನಾಟಕದ ರಾಜಧಾನಿ:', 'Mysuru', 'Bengaluru', 'Hubballi', 'Mangaluru', 'ಮೈಸೂರು', 'ಬೆಂಗಳೂರು', 'ಹುಬ್ಬಳ್ಳಿ', 'ಮಂಗಳೂರು', 'B', 'Bengaluru has been the capital of Karnataka since the state was formed in 1956.', 'Geography', '1', '']
+        ['Question_EN', 'Question_KN', 'Opt_A_EN', 'Opt_B_EN', 'Opt_C_EN', 'Opt_D_EN', 'Opt_A_KN', 'Opt_B_KN', 'Opt_C_KN', 'Opt_D_KN', 'Correct', 'Explanation', 'Explanation_KN', 'Subject', 'Difficulty', 'Type', 'Relevant_Period', 'Asked_In_Years', 'Image_URL'],
+        ['Which article of the Indian Constitution deals with Fundamental Duties?', 'ಭಾರತೀಯ ಸಂವಿಧಾನದ ಯಾವ ಆರ್ಟಿಕಲ್ ಮೂಲಭೂತ ಕರ್ತವ್ಯಗಳ ಬಗ್ಗೆ ಇದೆ?', 'Article 51A', 'Article 32', 'Article 21', 'Article 14', 'ಆರ್ಟಿಕಲ್ 51A', 'ಆರ್ಟಿಕಲ್ 32', 'ಆರ್ಟಿಕಲ್ 21', 'ಆರ್ಟಿಕಲ್ 14', 'A', 'Article 51A was added by the 42nd Amendment (1976).', 'ಆರ್ಟಿಕಲ್ 51A ಅನ್ನು 42ನೇ ತಿದ್ದುಪಡಿಯ (1976) ಮೂಲಕ ಸೇರಿಸಲಾಯಿತು.', 'Polity', '2', 'Static', '', '2018, 2021, 2023', ''],
+        ['The capital of Karnataka is:', 'ಕರ್ನಾಟಕದ ರಾಜಧಾನಿ:', 'Mysuru', 'Bengaluru', 'Hubballi', 'Mangaluru', 'ಮೈಸೂರು', 'ಬೆಂಗಳೂರು', 'ಹುಬ್ಬಳ್ಳಿ', 'ಮಂಗಳೂರು', 'B', 'Bengaluru has been the capital of Karnataka since the state was formed in 1956.', '1956ರಲ್ಲಿ ರಾಜ್ಯ ರಚನೆಯಾದಾಗಿನಿಂದ ಬೆಂಗಳೂರು ಕರ್ನಾಟಕದ ರಾಜಧಾನಿಯಾಗಿದೆ.', 'Geography', '1', 'Static', '', '', ''],
+        ['Which state topped NITI Aayog\'s latest SDG India Index?', 'ಇತ್ತೀಚಿನ NITI ಆಯೋಗ್ SDG ಇಂಡಿಯಾ ಇಂಡೆಕ್ಸ್‌ನಲ್ಲಿ ಯಾವ ರಾಜ್ಯ ಅಗ್ರಸ್ಥಾನದಲ್ಲಿದೆ?', 'Kerala', 'Karnataka', 'Tamil Nadu', 'Punjab', 'ಕೇರಳ', 'ಕರ್ನಾಟಕ', 'ತಮಿಳುನಾಡು', 'ಪಂಜಾಬ್', 'A', 'Released by NITI Aayog; ranking current as of this edition of the index.', 'NITI ಆಯೋಗ್ ಬಿಡುಗಡೆ ಮಾಡಿದೆ; ಈ ಆವೃತ್ತಿಯ ಶ್ರೇಯಾಂಕ.', 'Current Affairs', '2', 'Current Affairs', 'Sep 2026', '', '']
       ];
       const csv = sample.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -7566,7 +7873,7 @@ async function refundOrder(orderId) {
 
     // ---- Add / clear / renumber ----
     function studioAddBlankQuestion() {
-      const q = { id: studioState.questions.length + 1, q_en: '', q_kn: '', options_en: ['', '', '', ''], options_kn: ['', '', '', ''], correct: 'A', exp: '', subject: '', difficulty: null, image_url: '', _isNew: true };
+      const q = { id: studioState.questions.length + 1, q_en: '', q_kn: '', options_en: ['', '', '', ''], options_kn: ['', '', '', ''], correct: 'A', exp: '', exp_kn: '', subject: '', difficulty: null, image_url: '', contentType: 'static', relevantPeriod: '', askedInYears: [], _isNew: true };
       studioState.questions.push(q);
       studioRenderList();
       // Open edit modal immediately for the new blank question
@@ -7703,7 +8010,8 @@ async function refundOrder(orderId) {
       } else {
         body = `<div class="qbody">${renderCol('en')}`;
       }
-      body += `<div class="qmeta">${badge}<span>Correct: <b>${escapeHtml(q.correct)}</b></span>${q.subject ? `<span>· ${escapeHtml(q.subject)}</span>` : ''}${q.difficulty ? `<span>· Lvl ${q.difficulty}/5</span>` : ''}${q.image_url ? '<span>· 🖼️ image</span>' : ''}${problem ? `<div class="qerr">⚠ ${escapeHtml(problem)}</div>` : ''}</div>`;
+      const askedCount = Array.isArray(q.askedInYears) ? q.askedInYears.length : 0;
+      body += `<div class="qmeta">${badge}<span>Correct: <b>${escapeHtml(q.correct)}</b></span>${q.subject ? `<span>· ${escapeHtml(q.subject)}</span>` : ''}${q.difficulty ? `<span>· Lvl ${q.difficulty}/5</span>` : ''}${q.image_url ? '<span>· 🖼️ image</span>' : ''}${q.contentType === 'ca' ? `<span>· 📰 CA${q.relevantPeriod ? ` (${escapeHtml(q.relevantPeriod)})` : ''}</span>` : ''}${askedCount ? `<span>· ⭐ Asked ${askedCount}×</span>` : ''}${q.retired ? '<span class="text-rose-500">· 🚫 retired</span>' : ''}${problem ? `<div class="qerr">⚠ ${escapeHtml(problem)}</div>` : ''}</div>`;
       body += `</div>`;
 
       return `
@@ -7774,6 +8082,11 @@ async function refundOrder(orderId) {
       document.getElementById('edit-difficulty').value = q.difficulty || '';
       populateEditSubjectSelect(q.subject || '');
       document.getElementById('edit-exp').value = q.exp || '';
+      document.getElementById('edit-exp-kn').value = q.exp_kn || '';
+      editSetContentType(q.contentType === 'ca' ? 'ca' : 'static');
+      document.getElementById('edit-relevant-period').value = q.relevantPeriod || '';
+      document.getElementById('edit-asked-years').value = (Array.isArray(q.askedInYears) ? q.askedInYears : []).join(', ');
+      document.getElementById('edit-retired').checked = !!q.retired;
       document.getElementById('edit-image-url').value = q.image_url || '';
       const preview = document.getElementById('edit-image-preview');
       if (q.image_url) { preview.src = q.image_url; preview.classList.remove('hidden'); }
@@ -7795,10 +8108,33 @@ async function refundOrder(orderId) {
       const subjVal = document.getElementById('edit-subject').value;
       q.subject = subjVal === '__add_new__' ? '' : subjVal.trim();
       q.exp = document.getElementById('edit-exp').value.trim();
+      q.exp_kn = document.getElementById('edit-exp-kn').value.trim();
+      q.contentType = editCurrentContentType;
+      q.relevantPeriod = q.contentType === 'ca' ? document.getElementById('edit-relevant-period').value.trim() : '';
+      q.askedInYears = document.getElementById('edit-asked-years').value
+        .split(/[^0-9]+/).map(s => s.trim()).filter(s => /^(19|20)\d{2}$/.test(s));
+      q.retired = document.getElementById('edit-retired').checked;
       q.image_url = document.getElementById('edit-image-url').value.trim();
       delete q._isNew;
       closeModal('studio-edit-modal');
       studioRenderList();
+    }
+
+    // ---- Content type (Static / Current Affairs) toggle in the edit modal ----
+    // Kept as a simple two-button toggle (like the EN/KN/Both language switch) rather than a <select>,
+    // since it's a binary choice checked on every single question edit — a toggle is one click either
+    // way, a dropdown is two. editCurrentContentType is the source of truth while the modal is open;
+    // editSaveQuestion() reads it (not the DOM) when writing back to the question.
+    let editCurrentContentType = 'static';
+    function editSetContentType(type) {
+      editCurrentContentType = type === 'ca' ? 'ca' : 'static';
+      const activeCls = 'flex-1 px-2 py-1.5 text-xs font-bold bg-amber-500 text-slate-950';
+      const inactiveCls = 'flex-1 px-2 py-1.5 text-xs font-bold bg-white text-slate-500 hover:bg-slate-50';
+      document.getElementById('edit-type-static').className = editCurrentContentType === 'static' ? activeCls : inactiveCls;
+      document.getElementById('edit-type-ca').className = (editCurrentContentType === 'ca' ? activeCls : inactiveCls) + ' border-l';
+      // Relevant period only makes sense for Current Affairs — hide it for Static so it isn't
+      // half-filled-in on a question it doesn't apply to.
+      document.getElementById('edit-relevant-period-wrap').classList.toggle('hidden', editCurrentContentType !== 'ca');
     }
 
     function editDeleteQuestion() {
@@ -7814,6 +8150,11 @@ async function refundOrder(orderId) {
       ['a','b','c','d'].forEach(L => {
         document.getElementById(`edit-${L}-kn`).value = document.getElementById(`edit-${L}-en`).value;
       });
+      // Only copy the explanation across if the Kannada side is still empty — unlike the question/
+      // options above (always meant to be parallel text), an admin may have already written a
+      // genuinely different Kannada explanation, and this button shouldn't clobber it.
+      const expKn = document.getElementById('edit-exp-kn');
+      if (expKn && !expKn.value.trim()) expKn.value = document.getElementById('edit-exp').value;
     }
 
     async function editUploadImage(input) {
@@ -7883,8 +8224,15 @@ async function refundOrder(orderId) {
       const cleanQuestions = studioState.questions.map(q => ({
         id: q.id, q_en: q.q_en, q_kn: q.q_kn,
         options_en: q.options_en, options_kn: q.options_kn,
-        correct: q.correct, exp: q.exp, subject: q.subject || '',
-        image_url: q.image_url || ''
+        correct: q.correct, exp: q.exp, exp_kn: q.exp_kn || '', subject: q.subject || '',
+        image_url: q.image_url || '',
+        contentType: q.contentType === 'ca' ? 'ca' : 'static',
+        relevantPeriod: q.relevantPeriod || '',
+        askedInYears: Array.isArray(q.askedInYears) ? q.askedInYears : [],
+        retired: !!q.retired,
+        // See studioGenerateFromBank / getQuestionBank — omitted entirely for ordinary questions, so
+        // storage and dedupe behavior are unchanged for every paper that isn't bank-generated.
+        ...(q.sourceQuestionId ? { sourceQuestionId: q.sourceQuestionId } : {})
       }));
 
       const btn = document.getElementById('studio-publish-btn');
@@ -7903,9 +8251,11 @@ async function refundOrder(orderId) {
         if (existingIdx >= 0) testsCatalog[existingIdx] = runtimePaper;
         else testsCatalog.push(runtimePaper);
 
-        // Only a "new paper" publish should consume the draft slot — editing/duplicating an
-        // already-published paper is a separate concern from the new-paper draft.
-        if (studioState.mode === 'new') studioDiscardDraft();
+        // Always clear the draft slot on a successful publish. studioSaveDraft() is now gated to
+        // 'new' mode only (see its comment), so in practice this only ever fires for a genuinely new
+        // paper — but clearing unconditionally here too is a harmless safety net against the same
+        // stale-draft-resurfaces-later bug if the slot ever ends up populated some other way.
+        studioDiscardDraft();
 
         document.getElementById('view-studio').classList.add('hidden');
         studioState = null;
@@ -7961,6 +8311,7 @@ async function handleBundleAndUploadPaper() {
         options_kn: [row.Opt_A_KN || row.A_KN || '', row.Opt_B_KN || row.B_KN || '', row.Opt_C_KN || row.C_KN || '', row.Opt_D_KN || row.D_KN || ''],
         correct: (row.Correct || row.correct || 'A').toUpperCase().trim(),
         exp: row.Explanation || row.explanation || 'Detailed answer explanation.',
+        exp_kn: row.Explanation_KN || row.explanation_kn || '',
         subject: (row.Subject || row.subject || row.Topic || row.topic || '').trim()
       }));
 
@@ -10460,6 +10811,19 @@ async function handleBundleAndUploadPaper() {
     }
 
     function renderPaper() {
+      // BUG FIX: the ENG/ಕನ್ನಡ toggle buttons never reflected which language was actually active —
+      // clicking ಕನ್ನಡ correctly switched the question/option text (via currentLang below) but the
+      // buttons themselves kept whatever highlight they were given in the static HTML, so the toggle
+      // looked stuck on ENG regardless of what was actually showing. Synced here (rather than only
+      // inside setLanguage) so it's also correct the moment a resumed exam session restores a
+      // previously-saved Kannada language choice, not just after the next click.
+      const langEnBtn = document.getElementById('lang-en'), langKnBtn = document.getElementById('lang-kn');
+      if (langEnBtn && langKnBtn) {
+        const activeCls = 'px-2.5 py-0.5 rounded font-bold bg-amber-500 text-slate-950 transition';
+        const inactiveCls = 'px-2.5 py-0.5 rounded text-slate-300 hover:text-white font-medium transition';
+        langEnBtn.className = currentLang === 'en' ? activeCls : inactiveCls;
+        langKnBtn.className = currentLang === 'kn' ? activeCls : inactiveCls;
+      }
       const container = document.getElementById('questions-stream');
       container.innerHTML = '';
 
@@ -10721,8 +11085,12 @@ async function evaluateOMRSubmission() {
         </span>
       </div>
       <p class="text-slate-700 mb-1.5">${q.q_en}</p>
-      <div class="text-[11px] mb-1">Your Bubble: <b>${choice}</b> | Answer Key: <b class="text-emerald-700 font-bold">${q.correct}</b></div>
-      <div class="p-2 bg-white rounded border border-slate-100 text-[11px] text-slate-600"><b>Explanation:</b> ${q.exp}</div>
+      ${q.q_kn && q.q_kn !== q.q_en ? `<p class="text-slate-500 mb-1.5" style="font-family:'Noto Sans Kannada',sans-serif">${q.q_kn}</p>` : ''}
+      <div class="text-[11px] mb-1">Your Bubble: <b>${choice}</b> | Answer Key: <b class="text-emerald-700 font-bold">${q.correct}</b> ${askedBadgeHtml(q)}</div>
+      <div class="p-2 bg-white rounded border border-slate-100 text-[11px] text-slate-600">
+        <b>Explanation:</b> ${q.exp || ''}
+        ${q.exp_kn ? `<div class="mt-1" style="font-family:'Noto Sans Kannada',sans-serif">${q.exp_kn}</div>` : ''}
+      </div>
     `;
     solBox.appendChild(item);
   });
@@ -11807,6 +12175,10 @@ async function evaluateOMRSubmission() {
             <summary class="cursor-pointer text-xs font-bold text-slate-700">📚 Subjects (${(examSubjects[c.id] || []).length}) — used by Studio's Subject field and the student Topic Builder filter</summary>
             <div id="ec-subjects-${c.id}" class="mt-2"></div>
           </details>
+          <details class="mt-3 border-t pt-3" ontoggle="if(this.open) renderCoverageAndCaReview('${c.id}')">
+            <summary class="cursor-pointer text-xs font-bold text-slate-700">📊 Coverage &amp; Current Affairs review</summary>
+            <div id="ec-coverage-${c.id}" class="mt-2 text-[11px] text-slate-400">Opens on expand…</div>
+          </details>
           <div class="flex flex-wrap items-center gap-3 mt-3">
             <button onclick="saveExamCategoryDetails('${c.id}')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg">Save</button>
             <button onclick="deleteExamCategoryMaster('${c.id}')" class="text-rose-600 font-bold hover:underline">Delete category</button>
@@ -11823,12 +12195,16 @@ async function evaluateOMRSubmission() {
       if (!root) return;
       const list = (examSubjects[catId] || []).slice().sort((a, b) => a.localeCompare(b));
       root.innerHTML = `
-        <div class="flex flex-wrap gap-1.5 mb-2">
+        <div class="space-y-1 mb-2">
           ${list.length ? list.map(s => `
-            <span class="inline-flex items-center gap-1 bg-slate-100 text-slate-700 text-[11px] font-bold px-2 py-1 rounded-full">
-              ${escapeHtml(s)}
+            <div class="flex items-center gap-2 bg-slate-100 rounded-lg px-2 py-1">
+              <span class="flex-1 text-[11px] font-bold text-slate-700">${escapeHtml(s)}</span>
+              <label class="text-[10px] text-slate-400">Weight</label>
+              <select onchange="setSubjectWeight('${catId}', '${escapeHtml(s).replace(/'/g, "\\'")}', +this.value)" class="text-[11px] border rounded px-1 py-0.5 bg-white" title="Higher weight = Generate-from-Bank suggests pulling more of this subject">
+                ${[1,2,3,4,5].map(n => `<option value="${n}" ${subjectWeight(catId, s) === n ? 'selected' : ''}>${n}${n===3 ? ' · Medium' : n===1 ? ' · Low' : n===5 ? ' · High' : ''}</option>`).join('')}
+              </select>
               <button onclick="deleteSubjectFromRegistry('${catId}', '${escapeHtml(s).replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-rose-600" title="Remove from registry (existing questions keep their subject text)">✕</button>
-            </span>`).join('') : '<p class="text-slate-400 text-[11px]">No subjects registered yet for this category.</p>'}
+            </div>`).join('') : '<p class="text-slate-400 text-[11px]">No subjects registered yet for this category.</p>'}
         </div>
         <div class="flex items-center gap-2 mb-2">
           <input type="text" id="ec-newsubject-${catId}" placeholder="New subject name" class="flex-1 px-2 py-1 border rounded-lg text-xs" onkeydown="if(event.key==='Enter'){event.preventDefault();addSubjectToRegistry('${catId}');}" />
@@ -11851,6 +12227,7 @@ async function evaluateOMRSubmission() {
     function deleteSubjectFromRegistry(catId, name) {
       if (!confirm(`Remove "${name}" from the ${categoryDisplayName(catId)} subject list?\n\nQuestions already tagged with this subject keep their tag — they just won't offer it as a dropdown pick for NEW questions until it's re-added.`)) return;
       examSubjects[catId] = (examSubjects[catId] || []).filter(s => s !== name);
+      if (examSubjectWeights[catId]) delete examSubjectWeights[catId][name];
       saveExamSubjects(catId, examSubjects[catId]);
       renderCategorySubjectsAdmin(catId);
     }
@@ -11938,6 +12315,85 @@ async function evaluateOMRSubmission() {
       }
       alert(`Merged ${changed} question${changed === 1 ? '' : 's'} across ${touchedPapers.length} paper(s) into "${canonical}".`);
       renderCategorySubjectsAdmin(catId);
+    }
+
+    // ---- Coverage dashboard + Current Affairs staleness review (per category) ----
+    // Both need the same up-front cost — every paper in the category with its full question content
+    // loaded (ensurePaperQuestionsLoaded, same as the subject cleanup tool above) — so they share one
+    // scan and one lazy-loaded panel rather than duplicating the load. Lazy: only scans when the
+    // <details> is actually opened (see its ontoggle in renderExamCategoriesAdmin), not on every
+    // render of the whole admin page.
+    async function renderCoverageAndCaReview(catId) {
+      const root = document.getElementById(`ec-coverage-${catId}`);
+      if (!root) return;
+      root.innerHTML = '<p class="text-slate-400">Scanning…</p>';
+      const papers = testsCatalog.filter(p => p.category === catId);
+      await Promise.all(papers.map(ensurePaperQuestionsLoaded));
+
+      const bySubject = {}; // subject -> { static, ca }
+      const caQuestions = []; // active (non-retired) CA questions, for the review list
+      papers.forEach(p => (p.questions || []).forEach(q => {
+        const subj = subjectOf(q);
+        const row = bySubject[subj] = bySubject[subj] || { static: 0, ca: 0 };
+        if (q.contentType === 'ca') {
+          row.ca++;
+          if (!q.retired) caQuestions.push({ paper: p, q });
+        } else {
+          row.static++;
+        }
+      }));
+      const subjects = Object.keys(bySubject).sort((a, b) => a.localeCompare(b));
+
+      const coverageHtml = subjects.length ? `
+        <table class="w-full text-[11px] mb-3">
+          <thead><tr class="text-left text-slate-400"><th class="font-bold pb-1">Subject</th><th class="font-bold pb-1 text-right">Static</th><th class="font-bold pb-1 text-right">Current Affairs</th><th class="font-bold pb-1 text-right">Total</th></tr></thead>
+          <tbody>
+            ${subjects.map(s => { const r = bySubject[s]; return `
+            <tr class="border-t"><td class="py-1">${escapeHtml(s)}</td><td class="text-right ${r.static < 10 ? 'text-rose-600 font-bold' : ''}">${r.static}</td><td class="text-right">${r.ca}</td><td class="text-right font-bold">${r.static + r.ca}</td></tr>`; }).join('')}
+          </tbody>
+        </table>
+        <p class="text-[10px] text-slate-400 mb-3">Subjects in red have fewer than 10 static questions — thin coverage worth topping up.</p>
+      ` : '<p class="text-slate-400 mb-3">No questions found in this category yet.</p>';
+
+      // Nothing to sort chronologically on free-text periods, so this groups blank-period questions
+      // first (most likely overlooked at authoring time) then alphabetically by period text.
+      caQuestions.sort((a, b) => (a.q.relevantPeriod || '').localeCompare(b.q.relevantPeriod || ''));
+      const caListHtml = caQuestions.length ? `
+        <div class="space-y-1.5 max-h-64 overflow-y-auto">
+          ${caQuestions.map(({ paper, q }) => `
+            <div class="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
+              <div class="flex-1 min-w-0">
+                <div class="truncate">${escapeHtml(q.q_en || '(no English text)')}</div>
+                <div class="text-slate-400">${escapeHtml(paper.title)} · ${q.relevantPeriod ? escapeHtml(q.relevantPeriod) : '<span class="text-rose-500">no period set</span>'}</div>
+              </div>
+              <button onclick="retireQuestion('${paper.id}', ${q.id})" class="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded text-[10px] whitespace-nowrap">Retire</button>
+            </div>`).join('')}
+        </div>
+      ` : '<p class="text-slate-400">No active Current Affairs questions in this category.</p>';
+
+      root.innerHTML = `
+        <div class="mb-3"><b class="text-slate-700 block mb-1">Coverage by subject</b>${coverageHtml}</div>
+        <div><b class="text-slate-700 block mb-1">Current Affairs — review for staleness</b>
+          <p class="text-[10px] text-slate-400 mb-1.5">Retiring excludes a question from the question bank, Topic Builder, and future Generate-from-Bank sampling — it stays exactly as-is in the paper for anyone who already has it, and nothing is deleted.</p>
+          ${caListHtml}
+        </div>
+      `;
+    }
+
+    async function retireQuestion(paperId, qId) {
+      const p = testsCatalog.find(x => x.id === paperId);
+      if (!p) return;
+      await ensurePaperQuestionsLoaded(p);
+      const q = (p.questions || []).find(x => x.id === qId);
+      if (!q) return;
+      if (!confirm(`Retire this question from "${p.title}"?\n\nIt stays in the paper for anyone who already has it, but is excluded from the question bank, Topic Builder, and future Generate-from-Bank sampling. This can be undone later from Studio's question editor.`)) return;
+      q.retired = true;
+      try {
+        await supabaseClient.from('tests_catalog').update({ questions: p.questions }).eq('id', p.id);
+      } catch (err) {
+        alert('Retired locally, but cloud sync failed: ' + err.message);
+      }
+      renderCoverageAndCaReview(p.category);
     }
 
     function addExamCategory() {
@@ -12297,9 +12753,31 @@ async function evaluateOMRSubmission() {
       return (q.subject || '').trim() || 'General';
     }
 
+    // Small "asked before" badge shown alongside a question's explanation wherever a student reviews
+    // it (practice mode, post-submit results, dashboard review, the downloadable answer sheet) — built
+    // once here so all four call sites render it identically instead of drifting apart. Returns '' when
+    // the question has no askedInYears tagged, so it's always safe to splice into a template literal.
+    function askedBadgeHtml(q) {
+      const years = Array.isArray(q.askedInYears) ? q.askedInYears : [];
+      if (!years.length) return '';
+      return `<span class="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold" style="font-size:10px">⭐ Asked in ${escapeHtml(years.join(', '))}</span>`;
+    }
+
     // All questions in papers this student can open
     function getQuestionBank() {
       const bank = [];
+      // De-dupes questions copied via Studio's "Generate from Question Bank" tool (see
+      // studioGenerateFromBank) from whatever paper(s) they were originally sampled from — those
+      // copies carry a `sourceQuestionId` pointing back at the original `${paperId}::${qid}`. Without
+      // this, generating a paper from the bank and publishing it would make the SAME question appear
+      // twice in a student's Topic Builder for that category (once from the source paper, once from
+      // the generated copy) — the duplication risk of not giving generated questions any identifier.
+      // Keyed per-category, not globally: the same question is still meant to appear once under EVERY
+      // category it's genuinely applicable to (see applicableCats below) — only a literal copy of a
+      // question already counted for THIS category is skipped. Which copy "wins" when a question has
+      // been sampled into more than one paper is arbitrary (whichever testsCatalog reaches first) —
+      // they're identical content by construction, so it doesn't matter which one a student sees.
+      const seenInCategory = new Set();
       testsCatalog.forEach(p => {
         if (!isTestUnlockedForUser(p.id)) return;
         // A paper can be tagged for more than one exam in Studio ("also applicable to" — p.extraCategories,
@@ -12310,13 +12788,24 @@ async function evaluateOMRSubmission() {
         // however many exams it shows up under.
         const applicableCats = [...new Set([p.category, ...(p.extraCategories || [])])];
         (p.questions || []).forEach(q => {
-          applicableCats.forEach(cat => bank.push({
-            key: `${p.id}::${q.id}`,
-            category: cat,
-            subject: subjectOf(q),
-            difficulty: Number.isInteger(q.difficulty) ? q.difficulty : null,
-            q: { ...q, src: { paperId: p.id, qid: q.id, category: cat } }
-          }));
+          // Retired (see retireQuestion / the Current Affairs review tool) — excluded from the bank
+          // entirely without touching the paper it lives in, e.g. a stale current-affairs question
+          // whose relevantPeriod has passed.
+          if (q.retired) return;
+          const originKey = q.sourceQuestionId || `${p.id}::${q.id}`;
+          applicableCats.forEach(cat => {
+            const dedupeKey = `${cat}::${originKey}`;
+            if (seenInCategory.has(dedupeKey)) return;
+            seenInCategory.add(dedupeKey);
+            bank.push({
+              key: `${p.id}::${q.id}`,
+              category: cat,
+              subject: subjectOf(q),
+              difficulty: Number.isInteger(q.difficulty) ? q.difficulty : null,
+              contentType: q.contentType === 'ca' ? 'ca' : 'static',
+              q: { ...q, src: { paperId: p.id, qid: q.id, category: cat } }
+            });
+          });
         });
       });
       return bank;
@@ -12434,7 +12923,7 @@ async function evaluateOMRSubmission() {
     }
 
     // ---- Dashboard card: topic test builder ----
-    const builderState = { category: null, subjects: new Set(), difficulties: new Set(), count: 10, mode: 'practice', freshOnly: false };
+    const builderState = { category: null, subjects: new Set(), difficulties: new Set(), types: new Set(), count: 10, mode: 'practice', freshOnly: false };
 
     function renderTopicBuilder() {
       const el = document.getElementById('topic-builder');
@@ -12453,6 +12942,7 @@ async function evaluateOMRSubmission() {
         builderState.category = categories[0];
         builderState.subjects = new Set();
         builderState.difficulties = new Set();
+        builderState.types = new Set();
       }
 
       const inCat = bank.filter(b => b.category === builderState.category);
@@ -12466,6 +12956,12 @@ async function evaluateOMRSubmission() {
       const difficultyCounts = {};
       inCat.forEach(b => { if (b.difficulty != null) difficultyCounts[b.difficulty] = (difficultyCounts[b.difficulty] || 0) + 1; });
       [...builderState.difficulties].forEach(d => { if (!difficultyCounts[d]) builderState.difficulties.delete(d); });
+
+      // Static vs Current Affairs — only shown when this exam's bank actually has both kinds, so a
+      // category that's 100% static syllabus (the common case) doesn't get a filter with nothing to do.
+      const typeCounts = { static: 0, ca: 0 };
+      inCat.forEach(b => { typeCounts[b.contentType === 'ca' ? 'ca' : 'static']++; });
+      [...builderState.types].forEach(t => { if (!typeCounts[t]) builderState.types.delete(t); });
 
       const pool = getBuilderPool(student);
       const available = pool.length;
@@ -12516,6 +13012,19 @@ async function evaluateOMRSubmission() {
           ${builderState.difficulties.size ? '' : '<p class="text-[11px] text-slate-400 mt-1">No difficulty picked means all difficulties (including unrated questions).</p>'}
         </div>` : ''}
 
+        ${(typeCounts.static && typeCounts.ca) ? `
+        <div>
+          <span class="font-bold text-slate-700 block mb-1.5">Type</span>
+          <div class="flex flex-wrap gap-1.5" role="group" aria-label="Type">
+            ${[['static', '📖 Static syllabus'], ['ca', '📰 Current Affairs']].map(([t, label]) => {
+              const on = builderState.types.has(t);
+              return `<button type="button" aria-pressed="${on}" data-type="${t}" onclick="toggleBuilderType(this.dataset.type)"
+                class="px-2.5 py-1 rounded-full border font-medium ${on ? onCls : offCls}">${on ? '✓ ' : ''}${label} <span class="text-slate-400">${typeCounts[t]}</span></button>`;
+            }).join('')}
+          </div>
+          ${builderState.types.size ? '' : '<p class="text-[11px] text-slate-400 mt-1">No type picked means both static and current affairs.</p>'}
+        </div>` : ''}
+
         <label class="flex items-center gap-2 cursor-pointer text-slate-700">
           <input type="checkbox" ${builderState.freshOnly ? 'checked' : ''} onchange="builderState.freshOnly = this.checked; renderTopicBuilder()" class="rounded" />
           Leave out questions I've already answered correctly
@@ -12553,6 +13062,7 @@ async function evaluateOMRSubmission() {
       let pool = getQuestionBank().filter(b => b.category === builderState.category);
       if (builderState.subjects.size) pool = pool.filter(b => builderState.subjects.has(b.subject));
       if (builderState.difficulties.size) pool = pool.filter(b => b.difficulty != null && builderState.difficulties.has(b.difficulty));
+      if (builderState.types.size) pool = pool.filter(b => builderState.types.has(b.contentType === 'ca' ? 'ca' : 'static'));
       if (builderState.freshOnly) {
         const hist = buildQuestionHistory(student.email);
         pool = pool.filter(b => !(hist[b.key] && hist[b.key].lastRight >= Math.max(hist[b.key].lastWrong, hist[b.key].lastSkip) && hist[b.key].lastRight > 0));
@@ -12570,6 +13080,13 @@ async function evaluateOMRSubmission() {
       builderState.category = cat;
       builderState.subjects = new Set();
       builderState.difficulties = new Set();
+      builderState.types = new Set();
+      renderTopicBuilder();
+    }
+
+    function toggleBuilderType(t) {
+      if (builderState.types.has(t)) builderState.types.delete(t);
+      else builderState.types.add(t);
       renderTopicBuilder();
     }
 
@@ -12738,8 +13255,8 @@ async function evaluateOMRSubmission() {
         </div>
         ${ans ? `
           <div class="mt-4 p-3 rounded-lg border text-xs ${ans.correct ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-amber-50 border-amber-200 text-amber-950'}">
-            <b>${ans.correct ? (practice.source === 'mistakes' ? 'Correct. This one is off your mistakes list.' : 'Correct.') : `Not quite. The answer is ${q.correct}.`}</b>
-            <div class="mt-1 text-slate-700">${escapeHtml(q.exp || '')}</div>
+            <b>${ans.correct ? (practice.source === 'mistakes' ? 'Correct. This one is off your mistakes list.' : 'Correct.') : `Not quite. The answer is ${q.correct}.`}</b> ${askedBadgeHtml(q)}
+            <div class="mt-1 text-slate-700">${escapeHtml(practice.lang === 'kn' ? (q.exp_kn || q.exp || '') : (q.exp || ''))}</div>
           </div>` : ''}`;
 
       footer.innerHTML = ans
@@ -13063,8 +13580,9 @@ async function evaluateOMRSubmission() {
             <p class="qt">${escapeHtml(q.q_en || '')}</p>
             ${hasKn ? `<p class="qt kn">${escapeHtml(q.q_kn)}</p>` : ''}
             ${opts}
-            <p class="ans">Your answer: <b>${c || '—'}</b> · Correct answer: <b>${escapeHtml(q.correct)}</b></p>
+            <p class="ans">Your answer: <b>${c || '—'}</b> · Correct answer: <b>${escapeHtml(q.correct)}</b>${(Array.isArray(q.askedInYears) && q.askedInYears.length) ? `<span class="pyq">⭐ Asked in ${escapeHtml(q.askedInYears.join(', '))}</span>` : ''}</p>
             ${q.exp ? `<div class="exp"><b>Explanation:</b> ${escapeHtml(q.exp)}</div>` : ''}
+            ${q.exp_kn ? `<div class="exp kn">${escapeHtml(q.exp_kn)}</div>` : ''}
           </section>`;
       }).join('');
       return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${escapeHtml(a.paperTitle)} - answers</title>
@@ -13079,6 +13597,7 @@ async function evaluateOMRSubmission() {
           .qhead { display: flex; gap: 8px; align-items: center; } .subj { font-size: 10px; background: #f1f5f9; padding: 1px 6px; border-radius: 4px; }
           .st { margin-left: auto; font-weight: 700; font-size: 11px; } .st.right { color: #047857; } .st.wrong { color: #be123c; } .st.skipped { color: #64748b; }
           .qt { margin: 4px 0; font-weight: 600; } .kn { font-weight: 400; color: #334155; }
+          .pyq { display: inline-block; padding: 1px 5px; border-radius: 4px; background: #fef3c7; color: #92400e; font-weight: 700; font-size: 10px; margin-left: 4px; }
           .opt { padding: 2px 6px; border-radius: 4px; margin: 1px 0; } .opt.key { background: #d1fae5; } .opt.picked { background: #ffe4e6; }
           .mark { font-weight: 700; } .ans { margin: 4px 0; color: #334155; }
           .exp { background: #f8fafc; border-left: 3px solid #f59e0b; padding: 5px 8px; margin-top: 4px; }
@@ -13245,7 +13764,7 @@ async function evaluateOMRSubmission() {
 
         card.innerHTML = `
           <div class="flex justify-between items-center border-b pb-2 mb-2">
-            <span class="font-bold text-slate-900">Question ${qNum}${q.subject ? ` <span class="ml-1 px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium">${escapeHtml(q.subject)}</span>` : ''}</span>
+            <span class="font-bold text-slate-900">Question ${qNum}${q.subject ? ` <span class="ml-1 px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium">${escapeHtml(q.subject)}</span>` : ''} ${askedBadgeHtml(q)}</span>
             <span class="font-bold px-2 py-0.5 rounded text-[10px] ${isRight ? 'bg-emerald-100 text-emerald-800' : (isSkipped ? 'bg-slate-200 text-slate-700' : 'bg-rose-100 text-rose-800')}">
               ${isRight ? `Correct (+${s.marksCorrect})` : (isSkipped ? 'Unattempted (0.00)' : `Incorrect (-${s.marksWrong})`)}
             </span>
@@ -13255,6 +13774,7 @@ async function evaluateOMRSubmission() {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">${optsHtml}</div>
           <div class="p-2.5 bg-white rounded-lg border border-slate-200 text-[11px] text-slate-600">
             <b class="text-slate-800">Official Solution & Syllabus Note:</b> ${q.exp}
+            ${q.exp_kn ? `<div class="mt-1 font-kannada" style="font-family:'Noto Sans Kannada',sans-serif">${q.exp_kn}</div>` : ''}
           </div>
         `;
         container.appendChild(card);
