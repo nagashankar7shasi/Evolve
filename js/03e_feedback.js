@@ -178,7 +178,7 @@
           <td class="py-2.5 pr-3"><div class="font-bold text-slate-800">${escapeHtml(o.name || '')}</div><div class="text-slate-500">${escapeHtml(o.email)}</div></td>
           <td class="py-2.5 pr-3">${escapeHtml(o.title)}</td>
           <td class="py-2.5 pr-3 font-mono font-bold">₹${o.amount}</td>
-          <td class="py-2.5 pr-3 font-mono">${escapeHtml(o.utr)}</td>
+          <td class="py-2.5 pr-3 font-mono">${escapeHtml(o.utr)}${utrDuplicateOrders(o).length ? `<span class="ml-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-800 whitespace-nowrap" title="This UPI reference also appears on ${utrDuplicateOrders(o).length} other order(s) -- may be reused or guessed rather than genuine">⚠ reused</span>` : ''}</td>
           <td class="py-2.5 pr-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${ORDER_STATUS_STYLE[o.status]}">${o.status === 'pending' ? 'Pending' : ORDER_STATUS_LABEL[o.status]}</span>
             ${o.complimentary ? '<span class="ml-1 px-2 py-0.5 rounded text-[10px] font-bold bg-violet-100 text-violet-800">Complimentary</span>' : ''}
             ${o.status === 'rejected' ? `<div class="text-[10px] text-slate-400 mt-0.5">${escapeHtml(o.rejectReason || '')}</div>` : ''}
