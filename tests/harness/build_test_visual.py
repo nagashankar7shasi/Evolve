@@ -1,11 +1,24 @@
 import re
 import os
+import shutil
 
 # Portable: paths are relative to this script's own location, not a hardcoded machine path,
 # so this runs the same whether it's invoked locally or from a CI runner's checkout.
 HERE = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.join(HERE, '..', '..', 'index.html')
+REPO_ROOT = os.path.join(HERE, '..', '..')
+SRC = os.path.join(REPO_ROOT, 'index.html')
 OUT = os.path.join(HERE, 'test-visual.html')
+
+# index.html now references css/main.css and js/*.js with paths relative to the repo root
+# (where it lives in production). test-visual.html lives one level deeper, in tests/harness/,
+# so those same relative paths need the real files sitting right next to it too -- copy them
+# in on every build rather than rewriting the paths, so test-visual.html stays a byte-for-byte
+# stand-in for the real index.html's own markup.
+for name in ('css', 'js'):
+    dst = os.path.join(HERE, name)
+    if os.path.isdir(dst):
+        shutil.rmtree(dst)
+    shutil.copytree(os.path.join(REPO_ROOT, name), dst)
 
 html = open(SRC, encoding='utf-8').read()
 

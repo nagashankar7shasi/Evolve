@@ -1,0 +1,558 @@
+    body { font-family: 'Inter', 'Noto Sans Kannada', sans-serif; }
+
+    /* Brief highlight when landing on a specific test paper card from search results */
+    .search-result-highlight { box-shadow: 0 0 0 3px #f59e0b, 0 8px 20px -4px rgba(245,158,11,0.4) !important; }
+
+    /* --------------------------------------------------
+       Layout guarantee: the body must always allow scroll when content is tall,
+       and must sticky-footer only when content is short. The default Tailwind
+       min-h-screen + flex-col + flex-1 on main can, in some browsers, clip
+       tall content because a flex-1 child with flex-basis:0 doesn't always
+       let content push the parent past 100vh. This explicit rule makes it
+       bulletproof: `main` grows with its content, `body` never clips.
+    -------------------------------------------------- */
+    html, body { overflow-x: hidden; }
+    body { overflow-y: auto !important; }
+    body > main { min-height: 0 !important; }  /* let flex-1 mains shrink AND grow with content */
+    body > main[id^="view-"]:not(.hidden) { display: block; }  /* fallback if flex-1 clips */
+
+    /* View-as-student mode: hide admin-only affordances so preview matches a real student */
+    body.viewing-as-student [data-admin-only],
+    body.viewing-as-student #view-admin,
+    body.viewing-as-student .admin-only,
+    body.viewing-as-student [data-panel-link="admin"],
+    body.viewing-as-student a[onclick*="navigate('admin')"] {
+      display: none !important;
+    }
+    .omr-bubble {
+      width: 26px; height: 26px; border-radius: 9999px; border: 1.5px solid #475569;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #475569; cursor: pointer;
+      user-select: none; transition: all 0.15s ease-in-out; background-color: #ffffff;
+    }
+    .omr-bubble:hover { background-color: #e2e8f0; border-color: #1e293b; }
+    .omr-bubble.filled {
+      background-color: #0f172a !important; border-color: #0f172a !important;
+      color: #ffffff !important; box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.6);
+    }
+    .omr-row-unanswered { background-color: #fff1f2; border-radius: 6px; box-shadow: inset 3px 0 0 #fb7185; }
+    .omr-row-answered { background-color: #ecfdf5; border-radius: 6px; box-shadow: inset 3px 0 0 #10b981; }
+    .omr-row-marked { background-color: #f3e8ff; border-radius: 6px; box-shadow: inset 3px 0 0 #a855f7; }
+    .omr-flag-btn { font-size: 14px; line-height: 1; cursor: pointer; opacity: .25; transition: opacity .15s ease; background: none; border: none; }
+    .omr-flag-btn:hover { opacity: .6; }
+    .omr-flag-btn.active { opacity: 1; }
+    .question-card.active-target {
+      border-color: #f59e0b; box-shadow: 0 0 0 2px #f59e0b; background-color: #fffbeb;
+    }
+    .dropdown-parent:hover .dropdown-menu, .dropdown-parent:focus-within .dropdown-menu { display: block; }
+
+    /* ---------- KAS Study Planner (student dashboard) ---------- */
+    .kp { --ink:#221F4E; --ink2:#3A3670; --cream:#FFF7E8; --yellow:#FFC531; --red:#DA3B2B; --green:#1E9E6A; --greenbg:#E7F6EF; --mute:#6E6A93; --line:#EFE6D2; --flag:linear-gradient(90deg,#FFC531,#DA3B2B);
+      background:var(--cream); color:var(--ink); font-family:'Karla','Noto Sans Kannada',ui-sans-serif,sans-serif; border-radius:1rem; overflow:hidden; border:1px solid var(--line); }
+    .kp-display { font-family:'Bricolage Grotesque','Karla',sans-serif; font-weight:800; }
+    .kp-head { background:var(--ink); color:#fff; padding:22px 18px 24px; position:relative; }
+    .kp-head::before { content:''; position:absolute; top:0; left:0; right:0; height:6px; background:var(--flag); }
+    .kp-head-row { display:flex; align-items:center; gap:16px; }
+    .kp-title { font-size:24px; line-height:1.05; }
+    .kp-sub { font-size:13px; opacity:.85; margin-top:4px; }
+    .kp-chips { margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; }
+    .kp-chip { font-size:11.5px; padding:3px 9px; border-radius:99px; font-weight:700; }
+    .kp-saved { position:absolute; top:12px; right:14px; font-size:11px; font-weight:700; color:#9FE8C8; opacity:0; transition:opacity 200ms ease; }
+    .kp-saved.show { opacity:1; }
+    .kp-saved.error { color:#FFB3A9; }
+    .kp-body { padding:14px; }
+    .kp-tabs { display:flex; gap:8px; }
+    .kp-tab { flex:1; padding:9px 4px; border-radius:14px; border:2px solid transparent; background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(34,31,78,.08); cursor:pointer; text-align:center; transition:all 150ms ease; }
+    .kp-tab[aria-selected="true"] { background:var(--ink); border-color:var(--ink); color:#fff; }
+    .kp-tab-label { font-size:14px; }
+    .kp-tab-sub { font-size:10.5px; opacity:.7; }
+    .kp-section-head { margin:16px 0 14px; }
+    .kp-section-row { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+    .kp-section-title { font-size:19px; }
+    .kp-section-pct { font-size:13px; font-weight:800; color:var(--red); }
+    .kp-note { font-size:12px; color:var(--mute); margin:3px 0 8px; }
+    .kp-bar { background:#F1EADB; border-radius:99px; height:8px; overflow:hidden; }
+    .kp-bar > div { height:100%; background:var(--flag); border-radius:99px; transition:width 500ms ease; }
+    .kp-card { background:#fff; border-radius:16px; padding:12px 14px 12px 12px; margin-bottom:12px; box-shadow:0 1px 4px rgba(34,31,78,.07); border-left:5px solid var(--yellow); transition:background 250ms ease; }
+    .kp-card.mock { border-left-color:var(--red); }
+    .kp-card.full { background:var(--greenbg); border-left-color:var(--green); }
+    .kp-card-top { display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+    .kp-week { font-size:12px; background:var(--ink); color:#fff; padding:3px 10px; border-radius:99px; }
+    .kp-card.full .kp-week { background:var(--green); }
+    .kp-tag { font-size:10.5px; font-weight:800; padding:3px 8px; border-radius:99px; }
+    .kp-tag-kn { color:#B02A1D; background:#FCE3DF; }
+    .kp-tag-mock { color:#7A4A00; background:#FFEDC2; }
+    .kp-tag-opt { color:#1F4E8C; background:#E1ECFA; }
+    .kp-tag-ca { color:#0F6B47; background:#DDF3E8; }
+    .kp-tag-custom { color:#3A3670; background:#ECEAF8; }
+    .kp-version { display:inline-block; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:99px; margin-left:6px; vertical-align:middle; }
+    .kp-version.basic { background:rgba(255,255,255,0.14); color:#EAE8FF; }
+    .kp-version.advanced { background:var(--yellow); color:var(--ink); }
+    .kp-start { display:flex; flex-wrap:wrap; align-items:center; gap:8px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:8px 12px; margin:-4px 0 14px; font-size:12.5px; color:var(--ink2); }
+    .kp-start input { border:1px solid #D8CFBA; border-radius:8px; padding:3px 6px; font:inherit; color:var(--ink); }
+    .kp-start b { color:var(--ink); }
+    .kp-tag-now { color:#221F4E; background:var(--yellow); }
+    .kp-tag-behind { color:#B02A1D; background:#fff; border:1.5px solid #DA3B2B; }
+    .kp-dates { font-size:11.5px; font-weight:700; color:var(--mute); }
+    .kp-card.now { box-shadow:0 0 0 2px var(--yellow), 0 1px 4px rgba(34,31,78,.07); }
+    .kp-num { font-size:12px; background:var(--ink); color:#fff; width:24px; height:24px; border-radius:99px; display:inline-flex; align-items:center; justify-content:center; }
+    .kp-upgrade { margin-top:14px; background:var(--ink); color:#fff; border-radius:16px; padding:14px 16px; }
+    .kp-upgrade button { margin:8px 8px 0 0; border:0; border-radius:99px; padding:7px 14px; font-weight:800; font-size:12.5px; cursor:pointer; background:var(--yellow); color:var(--ink); }
+    .kp-switch { display:inline-flex; margin-top:14px; padding:3px; border-radius:99px; background:rgba(255,255,255,0.10); gap:2px; }
+    .kp-switch button { border:0; background:transparent; color:#EAE8FF; font-weight:800; font-size:12.5px; padding:6px 14px; border-radius:99px; cursor:pointer; transition:all 150ms ease; font-family:'Bricolage Grotesque','Karla',sans-serif; }
+    .kp-switch button:hover { color:#fff; }
+    .kp-switch button[aria-checked="true"] { background:var(--yellow); color:var(--ink); }
+    .kp-switch button:focus-visible { outline:3px solid var(--yellow); outline-offset:2px; }
+    .kp-switch-pct { font-family:'Karla',sans-serif; font-weight:700; opacity:.75; margin-left:4px; font-size:11px; }
+    .kp-done-label { font-size:11.5px; font-weight:800; color:var(--green); margin-left:auto; }
+    .kp-row { display:flex; gap:11px; align-items:flex-start; padding:6px 0; }
+    .kp-row-label { font-size:10px; font-weight:800; letter-spacing:.6px; color:#A9862B; text-transform:uppercase; margin-right:6px; }
+    .kp-row-text { font-size:13px; font-weight:600; line-height:1.45; color:var(--ink2); }
+    .kp-row.bold .kp-row-text { font-size:14.5px; font-weight:800; color:var(--ink); }
+    .kp-row.on .kp-row-text { color:#8B87A8; text-decoration:line-through; }
+    .kp-check { width:20px; height:20px; min-width:20px; border-radius:7px; border:2px solid #CFC7B2; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; transition:all 150ms ease; }
+    .kp-check.lg { width:26px; height:26px; min-width:26px; border-radius:8px; }
+    .kp-check.on { border-color:var(--green); background:var(--green); }
+    .kp-check:focus-visible, .kp-tab:focus-visible, .kp-reset:focus-visible { outline:3px solid var(--yellow); outline-offset:2px; }
+    .kp-book { margin-top:8px; font-size:11.5px; color:var(--mute); font-weight:700; }
+    .kp-callout { background:#FFF1D6; border:1.5px solid var(--yellow); border-radius:14px; padding:12px 14px; font-size:13px; }
+    .kp-panel { background:#fff; border-radius:16px; padding:6px 14px; box-shadow:0 1px 4px rgba(34,31,78,.07); }
+    .kp-daily-row { display:flex; gap:12px; align-items:center; padding:13px 0; border-bottom:1px solid var(--line); }
+    .kp-daily-row:last-child { border-bottom:none; }
+    .kp-daily-text { font-size:14.5px; font-weight:600; }
+    .kp-daily-row.on .kp-daily-text { text-decoration:line-through; color:var(--mute); }
+    .kp-dark { margin-top:14px; background:var(--ink); color:#fff; border-radius:16px; padding:14px 16px; }
+    .kp-books { background:#fff; border-radius:16px; padding:12px 14px; margin-bottom:12px; box-shadow:0 1px 4px rgba(34,31,78,.07); border-top:4px solid var(--yellow); }
+    .kp-books.alt { border-top-color:var(--red); }
+    .kp-book-row { display:flex; gap:11px; align-items:center; padding:8px 0; }
+    .kp-book-text { font-size:13.5px; font-weight:600; color:var(--ink2); }
+    .kp-book-row.on .kp-book-text { text-decoration:line-through; color:var(--mute); }
+    .kp-foot { text-align:center; margin-top:18px; padding-bottom:6px; }
+    .kp-reset { background:none; border:1.5px solid #D8CFBA; color:var(--mute); border-radius:99px; padding:7px 18px; font-size:12.5px; font-weight:700; cursor:pointer; }
+    .kp-foot-note { font-size:11px; color:#A79F8C; margin-top:10px; }
+    @media (prefers-reduced-motion: reduce) { .kp * { transition:none !important; } }
+    
+    /* Word Document Canvas Styling */
+    .word-canvas {
+      min-height: 440px;
+      outline: none;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+    .word-canvas h1 { font-size: 1.75rem; font-weight: 800; margin-bottom: 0.75rem; color: #0f172a; }
+    .word-canvas h2 { font-size: 1.35rem; font-weight: 700; margin-top: 1.25rem; margin-bottom: 0.5rem; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.25rem; }
+    .word-canvas h3 { font-size: 1.15rem; font-weight: 700; margin-top: 1rem; margin-bottom: 0.25rem; color: #334155; }
+    .word-canvas p { margin-bottom: 0.75rem; }
+    .word-canvas ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+    .word-canvas ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+
+    /* ---------- Page content blocks (info boxes, tables, columns, figures, timeline, FAQ, page cards) ---------- */
+    .word-canvas .kb-box { border: 1px solid; border-left-width: 5px; border-radius: 10px; padding: 0.85rem 1rem; margin: 1rem 0; }
+    .word-canvas .kb-box > :last-child { margin-bottom: 0; }
+    .word-canvas .kb-box-title { font-weight: 800; margin-bottom: 0.35rem; }
+    .word-canvas .kb-info  { background: #eff6ff; border-color: #bfdbfe; border-left-color: #2563eb; color: #1e3a8a; }
+    .word-canvas .kb-tip   { background: #ecfdf5; border-color: #a7f3d0; border-left-color: #059669; color: #064e3b; }
+    .word-canvas .kb-warn  { background: #fffbeb; border-color: #fde68a; border-left-color: #d97706; color: #78350f; }
+    .word-canvas .kb-facts { background: #f5f3ff; border-color: #ddd6fe; border-left-color: #7c3aed; color: #3b0764; }
+    .word-canvas .kb-table-wrap { overflow-x: auto; margin: 1rem 0; border: 1px solid #e2e8f0; border-radius: 10px; }
+    .word-canvas table.kb-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .word-canvas .kb-table th, .word-canvas .kb-table td { border-bottom: 1px solid #e2e8f0; border-right: 1px solid #f1f5f9; padding: 0.5rem 0.7rem; text-align: left; vertical-align: top; min-width: 80px; }
+    .word-canvas .kb-table th { background: #f1f5f9; font-weight: 700; color: #0f172a; }
+    .word-canvas .kb-table tbody tr:nth-child(even) td { background: #fafafa; }
+    .word-canvas .kb-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .word-canvas .kb-cols { grid-template-columns: minmax(0, 1fr); } }
+    .word-canvas .kb-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin: 1rem 0; }
+    .word-canvas .kb-stats > div { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.8rem; }
+    .word-canvas .kb-stats b { display: block; font-size: 1.5rem; font-weight: 900; color: #0f172a; line-height: 1.2; }
+    .word-canvas .kb-stats span { font-size: 12px; color: #475569; }
+    .word-canvas ol.kb-timeline { list-style: none; padding-left: 1.1rem; border-left: 3px solid #f59e0b; margin: 1rem 0 1rem 0.4rem; }
+    .word-canvas ol.kb-timeline li { position: relative; margin-bottom: 0.7rem; }
+    .word-canvas ol.kb-timeline li::before { content: ''; position: absolute; left: -1.55rem; top: 0.45rem; width: 11px; height: 11px; border-radius: 50%; background: #fff; border: 3px solid #f59e0b; }
+    .word-canvas ol.kb-timeline li b { color: #b45309; margin-right: 0.35rem; }
+    .word-canvas details.kb-faq { border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.6rem 0.9rem; margin: 0.5rem 0; background: #fff; }
+    .word-canvas details.kb-faq summary { font-weight: 700; cursor: pointer; }
+    .word-canvas details.kb-faq[open] summary { margin-bottom: 0.4rem; }
+    /* editor-only guides */
+    #word-editor-canvas .kb-cols > div { outline: 1px dashed #cbd5e1; outline-offset: 4px; min-height: 2rem; }
+    #word-editor-canvas .kb-pagelink { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; margin: 4px 0; border: 1px dashed #f59e0b; border-radius: 8px; background: #fffbeb; font-size: 12px; font-weight: 700; color: #78350f; }
+    #word-editor-canvas details.kb-faq { display: block; }
+    #word-editor-canvas details.kb-faq > *:not(summary) { display: block; }
+    .page-tile-img { aspect-ratio: 16 / 9; object-fit: cover; width: 100%; }
+    .word-canvas figure.kb-figure { margin: 1rem 0; }
+    .word-canvas figure.kb-figure img { max-width: 100%; height: auto; border-radius: 10px; border: 1px solid #e2e8f0; display: block; }
+    .word-canvas figure.kb-figure.kb-small img { max-width: 320px; }
+    .word-canvas figure.kb-figure.kb-medium img { max-width: 560px; }
+    .word-canvas figure.kb-figure figcaption { font-size: 12px; color: #64748b; margin-top: 0.35rem; }
+    #word-editor-canvas figure.kb-figure img { cursor: pointer; }
+    #word-editor-canvas figure.kb-figure img.kb-selected { outline: 3px solid #f59e0b; outline-offset: 2px; }
+
+    /* ---------- New: text alignment classes (safety net alongside inline execCommand) ---------- */
+    .word-canvas .kb-align-left   { text-align: left; }
+    .word-canvas .kb-align-center { text-align: center; }
+    .word-canvas .kb-align-right  { text-align: right; }
+    .word-canvas .kb-align-justify{ text-align: justify; }
+
+    /* ---------- New: extra column variants (existing .kb-cols is 2-col, kept) ---------- */
+    .word-canvas .kb-cols-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; }
+    .word-canvas .kb-cols-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 900px) { .word-canvas .kb-cols-3, .word-canvas .kb-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 640px) { .word-canvas .kb-cols-3, .word-canvas .kb-cols-4 { grid-template-columns: minmax(0, 1fr); } }
+
+    /* ---------- New: magazine / resource grid (auto-flow of cards) ---------- */
+    .word-canvas .kb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin: 1rem 0; }
+    #word-editor-canvas .kb-cols-3 > div,
+    #word-editor-canvas .kb-cols-4 > div,
+    #word-editor-canvas .kb-grid   > * { outline: 1px dashed #cbd5e1; outline-offset: 4px; min-height: 2rem; }
+
+    /* ---------- New: extra image sizes ---------- */
+    .word-canvas figure.kb-figure.kb-icon  img { max-width: 80px;  }
+    .word-canvas figure.kb-figure.kb-tiny  img { max-width: 140px; }
+    .word-canvas figure.kb-figure.kb-large img { max-width: 780px; }
+
+    /* ---------- New: image alignment (left/right float, center) ---------- */
+    .word-canvas figure.kb-figure.kb-left  { float: left;  margin: 0.25rem 1rem 0.5rem 0; max-width: 45%; }
+    .word-canvas figure.kb-figure.kb-right { float: right; margin: 0.25rem 0 0.5rem 1rem; max-width: 45%; }
+    .word-canvas figure.kb-figure.kb-center { margin-left: auto; margin-right: auto; text-align: center; }
+    .word-canvas figure.kb-figure.kb-center img { margin-left: auto; margin-right: auto; }
+    /* self-clear so floated images don't collide with next block */
+    .word-canvas .kb-clear { clear: both; display: block; height: 0; }
+
+    /* ---------- New: Resource card (image + text + optional PDF/page link) ---------- */
+    .word-canvas .kb-resource-card {
+      display: flex; flex-direction: column; background: #fff; border: 1px solid #e2e8f0;
+      border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(15,23,42,.06);
+      transition: border-color .15s, box-shadow .15s, transform .15s;
+      margin: 0.75rem 0; text-decoration: none; color: inherit;
+    }
+    .word-canvas .kb-resource-card:hover { border-color: #f59e0b; box-shadow: 0 4px 10px rgba(245,158,11,.15); transform: translateY(-1px); }
+    .word-canvas .kb-resource-thumb {
+      width: 100%; aspect-ratio: 16 / 10; background: #fef3c7 center/cover no-repeat;
+      display: flex; align-items: center; justify-content: center; font-size: 2.25rem;
+    }
+    .word-canvas .kb-resource-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .word-canvas .kb-resource-body { padding: 0.75rem 0.9rem 0.9rem; }
+    .word-canvas .kb-resource-title { font-weight: 800; color: #0f172a; font-size: 0.95rem; line-height: 1.3; margin: 0 0 0.3rem; }
+    .word-canvas .kb-resource-desc  { font-size: 12.5px; color: #475569; margin: 0 0 0.5rem; line-height: 1.45; }
+    .word-canvas .kb-resource-cta {
+      display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 800;
+      color: #b45309; background: #fffbeb; padding: 3px 8px; border-radius: 99px; border: 1px solid #fde68a;
+    }
+    .word-canvas .kb-resource-cta.pdf  { color: #991b1b; background: #fef2f2; border-color: #fecaca; }
+    .word-canvas .kb-resource-cta.page { color: #1e3a8a; background: #eff6ff; border-color: #bfdbfe; }
+
+    /* editor-only guides for resource cards */
+    #word-editor-canvas .kb-resource-card { position: relative; outline: 1px dashed #cbd5e1; outline-offset: 3px; }
+    #word-editor-canvas .kb-resource-card::before {
+      content: attr(data-editor-label); position: absolute; top: -10px; left: 8px;
+      font-size: 10px; font-weight: 800; background: #f59e0b; color: #0f172a;
+      padding: 1px 6px; border-radius: 99px; z-index: 2;
+    }
+
+    /* ---------- Home page: ticker, stats, section styling ---------- */
+    @keyframes ticker-scroll { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+    .animate-ticker { display: inline-block; padding-left: 100%; animation: ticker-scroll 45s linear infinite; }
+    .animate-ticker:hover { animation-play-state: paused; }
+    .animate-ticker .tick-item { display: inline-block; margin-right: 3rem; }
+    .animate-ticker .tick-item .dot { display: inline-block; width: 6px; height: 6px; border-radius: 999px; background: #f59e0b; margin: 0 8px 2px 0; vertical-align: middle; }
+
+    .home-stat b { display: block; font-size: 1.8rem; font-weight: 900; color: #0f172a; line-height: 1.1; }
+    .home-stat b .accent { color: #b45309; }
+    .home-stat span { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; margin-top: 2px; font-weight: 700; }
+
+    .home-news-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; transition: border-color .15s, box-shadow .15s, transform .15s; }
+    .home-news-card:hover { border-color: #f59e0b; box-shadow: 0 6px 14px rgba(15,23,42,.08); transform: translateY(-2px); }
+    .home-news-card .date { font-size: 11px; font-weight: 800; color: #64748b; letter-spacing: .04em; text-transform: uppercase; }
+    .home-news-card .badge { display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #fef3c7; color: #92400e; text-transform: uppercase; letter-spacing: .04em; }
+    .home-news-card .badge.exam { background: #dbeafe; color: #1e3a8a; }
+    .home-news-card .badge.result { background: #dcfce7; color: #065f46; }
+    .home-news-card .badge.alert { background: #fee2e2; color: #991b1b; }
+    .home-news-card h4 { font-weight: 800; color: #0f172a; margin: 6px 0 4px; font-size: 15px; line-height: 1.35; }
+    .home-news-card p { font-size: 12.5px; color: #475569; line-height: 1.5; }
+    .home-news-card a.more { display: inline-block; margin-top: 6px; font-size: 12px; font-weight: 700; color: #b45309; }
+
+    .home-why-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 16px; text-align: center; }
+    .home-why-card .icon { font-size: 30px; margin-bottom: 6px; }
+    .home-why-card h4 { font-weight: 800; color: #0f172a; margin: 6px 0 4px; font-size: 14px; }
+    .home-why-card p { font-size: 12px; color: #64748b; line-height: 1.5; }
+
+    .home-topper-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; display: flex; gap: 12px; align-items: flex-start; }
+    .home-topper-card .avatar { width: 56px; height: 56px; border-radius: 999px; object-fit: cover; background: #fef3c7 center/cover no-repeat; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #92400e; font-size: 18px; }
+    .home-topper-card h4 { font-weight: 800; color: #0f172a; font-size: 14px; }
+    .home-topper-card .exam-line { font-size: 11px; color: #64748b; font-weight: 700; margin-top: 1px; }
+    .home-topper-card .rank { display: inline-block; margin-top: 4px; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #fef3c7; color: #92400e; }
+    .home-topper-card blockquote { font-size: 12.5px; color: #475569; margin-top: 8px; font-style: italic; line-height: 1.5; }
+
+    .home-faq-item { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; }
+    .home-faq-item summary { font-weight: 700; color: #0f172a; cursor: pointer; font-size: 14px; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .home-faq-item summary::-webkit-details-marker { display: none; }
+    .home-faq-item summary::after { content: '+'; color: #b45309; font-size: 20px; font-weight: 700; }
+    .home-faq-item[open] summary::after { content: '−'; }
+    .home-faq-item[open] summary { margin-bottom: 8px; }
+    .home-faq-item p { font-size: 13px; color: #475569; line-height: 1.55; }
+
+    .hc-editor-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start; padding: 8px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
+    .hc-editor-row + .hc-editor-row { margin-top: 6px; }
+    .hc-editor-row .hc-fields { display: grid; gap: 6px; }
+
+    /* PDF publishing wizard — step indicator */
+    .wiz-step { color: #94a3b8; padding: 2px 4px; letter-spacing: .04em; }
+    .wiz-step.wiz-step-active { color: #b45309; }
+    .wiz-step.wiz-step-done { color: #059669; }
+
+    /* Test paper studio */
+    .studio-tab { background: #f1f5f9; color: #475569; }
+    .studio-tab.active { background: #0f172a; color: #fff; }
+    .studio-lang { background: #fff; color: #64748b; }
+    .studio-lang.active { background: #f59e0b; color: #0f172a; }
+    .studio-qrow { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 12px; display: grid; grid-template-columns: auto auto 1fr auto; gap: 10px; align-items: start; cursor: pointer; transition: border-color .1s, box-shadow .1s; }
+    .studio-qrow:hover { border-color: #f59e0b; box-shadow: 0 2px 6px rgba(15,23,42,.05); }
+    .studio-qrow.selected { background: #fefce8; border-color: #eab308; }
+    .studio-qrow.error   { background: #fef2f2; border-color: #fca5a5; }
+    .studio-qrow .qnum   { font-family: ui-monospace, monospace; font-weight: 800; color: #64748b; font-size: 12px; padding-top: 2px; min-width: 26px; text-align: right; }
+    .studio-qrow .qbody  { min-width: 0; }
+    .studio-qrow .qtext  { font-weight: 600; color: #0f172a; font-size: 13px; line-height: 1.4; }
+    .studio-qrow .qmeta  { display: flex; gap: 8px; align-items: center; margin-top: 6px; font-size: 11px; color: #64748b; flex-wrap: wrap; }
+    .studio-qrow .qopts  { color: #475569; margin-top: 4px; font-size: 11.5px; line-height: 1.5; }
+    .studio-qrow .qopts .correct { color: #059669; font-weight: 700; }
+    .studio-qrow .qerr   { color: #991b1b; font-weight: 700; font-size: 11px; margin-top: 4px; }
+    .studio-qrow .qactions { display: flex; flex-direction: column; gap: 3px; }
+    .studio-qrow .qactions button { padding: 2px 6px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px; font-weight: 700; color: #64748b; background: #fff; cursor: pointer; }
+    .studio-qrow .qactions button:hover { border-color: #64748b; color: #0f172a; }
+    .studio-qrow .qthumb { max-width: 60px; max-height: 40px; border-radius: 4px; border: 1px solid #e2e8f0; margin-top: 6px; }
+    .badge-both { background: #dcfce7; color: #065f46; }
+    .badge-en   { background: #fef3c7; color: #92400e; }
+    .badge-none { background: #fee2e2; color: #991b1b; }
+    .qbadge { display: inline-block; padding: 1px 6px; border-radius: 999px; font-weight: 800; font-size: 9px; text-transform: uppercase; letter-spacing: .05em; }
+    /* Both-mode two-column preview */
+    .qboth { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .qboth .qcol { min-width: 0; padding-right: 8px; }
+    .qboth .qcol + .qcol { border-left: 1px dashed #e2e8f0; padding-left: 12px; padding-right: 0; }
+
+    /* ============================================================
+       VISUAL POLISH LAYER — smooth transitions + a more premium look.
+       Purely additive: every rule here targets classes/patterns that
+       already exist throughout the page (buttons, rounded cards, modal
+       backdrops, view containers). Nothing here changes any element's
+       class attribute, id, or behavior — it only adds transitions,
+       shadows, and entrance animations on top of what's already there.
+       Safe to delete this whole block to fully revert the visual pass
+       without touching anything else in the file.
+       ============================================================ */
+
+    /* Smooth page scrolling + a nicer scrollbar than the OS default */
+    html { scroll-behavior: smooth; }
+    * { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+    ::-webkit-scrollbar { width: 9px; height: 9px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; background-clip: content-box; }
+    ::selection { background: #f59e0b; color: #0f172a; }
+
+    /* Smooth, springy transitions on every interactive element — scoped to specific tags rather
+       than a universal `*` selector so it never interferes with the ticker's continuous scroll
+       animation or any other keyframe-driven element. */
+    button, a, input, select, textarea, [role="button"], .category-tab-btn, .admin-nav-btn {
+      transition: background-color .18s ease, border-color .18s ease, color .18s ease,
+                  box-shadow .22s cubic-bezier(.16,1,.3,1), transform .14s ease, opacity .18s ease;
+    }
+    button:not(:disabled):active, [role="button"]:active { transform: scale(0.97); }
+    a:not(.no-lift):active { transform: scale(0.98); }
+
+    /* A gentle lift + deeper shadow on the site's main call-to-action buttons, so the primary
+       actions (Publish, Save, Buy Now, Approve…) feel a level more premium than a flat color swap. */
+    button.bg-amber-500:hover, button.bg-slate-900:hover, button.bg-emerald-600:hover,
+    button.bg-emerald-500:hover, button.bg-rose-600:hover, .category-tab-btn:hover {
+      transform: translateY(-1.5px);
+      box-shadow: 0 8px 20px -6px rgba(15,23,42,.25);
+    }
+    button.bg-amber-500:active, button.bg-slate-900:active, button.bg-emerald-600:active {
+      transform: translateY(0) scale(0.97);
+      box-shadow: 0 2px 6px -2px rgba(15,23,42,.2);
+    }
+
+    /* Refined focus states — visible, on-brand, and consistent everywhere instead of each browser's
+       default outline (still fully keyboard-accessible, just better looking). */
+    button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible,
+    textarea:focus-visible, [role="button"]:focus-visible {
+      outline: 2px solid #f59e0b; outline-offset: 2px; border-radius: 4px;
+    }
+
+    /* Cards and panels: every rounded-2xl/rounded-xl bordered box across the whole site (bundle
+       cards, test paper cards, admin panels, resource cards) gets a smooth shadow/border transition
+       and a subtle hover lift where it makes sense (clickable cards specifically). */
+    .rounded-2xl.border, .rounded-xl.border {
+      transition: box-shadow .25s cubic-bezier(.16,1,.3,1), border-color .25s ease, transform .25s cubic-bezier(.16,1,.3,1);
+    }
+    a.rounded-2xl.border:hover, a.rounded-xl.border:hover,
+    .home-news-card:hover, .studio-qrow:hover {
+      box-shadow: 0 12px 28px -10px rgba(15,23,42,.18);
+    }
+    [data-panel].rounded-2xl { box-shadow: 0 1px 3px rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.03); }
+    [data-panel].rounded-2xl:hover { box-shadow: 0 4px 16px -4px rgba(15,23,42,.08); }
+
+    /* Modal entrance: a soft pop-in instead of an instant snap-to-visible. CSS animations restart
+       automatically whenever an element re-enters the render tree (goes from display:none via the
+       existing .hidden toggle to displayed), so this needs no JavaScript changes at all — it rides
+       on the exact same show/hide mechanism every modal already uses. */
+    @keyframes modalBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes modalPopIn {
+      from { opacity: 0; transform: scale(.95) translateY(10px); }
+      to   { opacity: 1; transform: scale(1)   translateY(0); }
+    }
+    .fixed.inset-0.backdrop-blur-sm:not(.hidden) { animation: modalBackdropIn .2s ease-out; }
+    .fixed.inset-0.backdrop-blur-sm:not(.hidden) > .bg-white.rounded-2xl,
+    .fixed.inset-0.backdrop-blur-sm:not(.hidden) > .bg-white.rounded-xl {
+      animation: modalPopIn .28s cubic-bezier(.16,1,.3,1);
+    }
+
+    /* View transitions: a gentle fade+rise whenever the app switches between Home / Tests /
+       Dashboard / Admin / the exam engine / the paper studio — same "animate on becoming visible"
+       technique as the modals above, applied to every top-level view container. */
+    @keyframes viewFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    [id^="view-"]:not(.hidden) { animation: viewFadeIn .3s cubic-bezier(.16,1,.3,1); }
+
+    /* Toasts and floating banners (error toasts, exam warnings, PWA prompt, student-preview banner)
+       ease in rather than popping in abruptly. */
+    @keyframes floatUpIn { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    #pwa-install-chip, #student-preview-banner, #pdf-wizard-modal { animation: floatUpIn .25s ease-out; }
+
+    /* Bundle price cards and the home pass strip get a slightly richer resting shadow so pricing
+       tiles read as tappable products rather than flat information boxes. */
+    #home-bundles > div, .home-news-card, #tests-catalog-grid > div {
+      transition: box-shadow .25s cubic-bezier(.16,1,.3,1), transform .25s cubic-bezier(.16,1,.3,1), border-color .25s ease;
+    }
+    #home-bundles > div:hover, #tests-catalog-grid > div:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 30px -12px rgba(15,23,42,.18);
+    }
+
+    /* Admin sidebar: smoother active-state feel on nav switches (colors already swap via JS class
+       toggles — this just makes the swap glide instead of snap, using the transition rule above). */
+    .admin-nav-btn { border-radius: 10px; }
+
+    /* Table rows and list rows get a soft hover tint instead of nothing, so dense admin lists
+       (payments, students, templates) feel more responsive to the cursor. */
+    tbody tr { transition: background-color .15s ease; }
+
+    /* ============================================================
+       PREMIUM DESIGN PASS — deepens the existing Evolve+ navy/gold
+       identity rather than replacing it. Purely additive: new CSS
+       classes on the hero (which needed real markup for the glow/
+       texture layers — every existing id, onclick, and text node is
+       untouched) plus rules targeting existing IDs/classes elsewhere.
+       Nothing here changes behavior, data flow, or removes anything.
+       ============================================================ */
+
+    :root {
+      --ink-950: #0B1220;   /* richer than flat slate-900 */
+      --ink-900: #131B2E;
+      --navy-800: #1B2A4A;
+      --gold-500: #C89B3C;  /* metallic gold, replaces flat amber as the "premium" accent */
+      --gold-400: #D4AF52;
+      --gold-300: #E8C874;
+      --paper: #FAF8F4;     /* warm off-white for section alternation */
+    }
+
+    /* ---- Hero: the one bold moment (see design rationale in chat) ---- */
+    .hero-premium {
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(200,155,60,.18), transparent 60%),
+        linear-gradient(180deg, var(--ink-950) 0%, var(--ink-900) 55%, var(--navy-800) 100%);
+    }
+    .hero-bg-img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; object-position: center;
+      opacity: 0; transition: opacity .5s ease;
+    }
+    #home-hero.has-photo .hero-bg-img { opacity: 1; }
+    /* Dark scrim in the same ink/navy tones as .hero-premium's own gradient, so an admin-uploaded
+       photo (any brightness/content) still reads as "the same premium dark hero" underneath it,
+       and the existing text/buttons stay legible without needing per-photo tuning. */
+    .hero-photo-overlay {
+      position: absolute; inset: 0; pointer-events: none;
+      background: linear-gradient(180deg, rgba(11,18,32,.90) 0%, rgba(11,18,32,.74) 45%, rgba(27,42,74,.92) 100%);
+      opacity: 0; transition: opacity .5s ease;
+    }
+    #home-hero.has-photo .hero-photo-overlay { opacity: 1; }
+    .hero-glow {
+      position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(circle 420px at 50% 0%, rgba(232,200,116,.14), transparent 70%);
+    }
+    .hero-grain {
+      position: absolute; inset: 0; pointer-events: none; opacity: .5;
+      background-image:
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: radial-gradient(ellipse 70% 70% at 50% 30%, black 0%, transparent 75%);
+    }
+    .hero-badge {
+      background: linear-gradient(180deg, rgba(232,200,116,.14), rgba(200,155,60,.08));
+      border: 1px solid rgba(212,175,82,.35);
+      color: var(--gold-300);
+    }
+    .hero-rule {
+      width: 44px; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold-400), transparent);
+    }
+    .hero-plus {
+      background: linear-gradient(180deg, var(--gold-300), var(--gold-500));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .hero-btn-primary {
+      background: linear-gradient(180deg, var(--gold-300), var(--gold-500));
+      color: var(--ink-950);
+      box-shadow: 0 10px 24px -8px rgba(200,155,60,.5), inset 0 1px 0 rgba(255,255,255,.3);
+      border: none;
+    }
+    .hero-btn-primary:hover { background: linear-gradient(180deg, #F0D488, var(--gold-400)); box-shadow: 0 14px 30px -6px rgba(200,155,60,.6), inset 0 1px 0 rgba(255,255,255,.35); }
+    .hero-btn-secondary {
+      background: transparent; color: #E2E8F0;
+      border: 1.5px solid rgba(226,232,240,.28);
+    }
+    .hero-btn-secondary:hover { border-color: rgba(226,232,240,.55); background: rgba(255,255,255,.05); }
+
+    /* ---- Typography: extend Playfair Display to every section heading, not just the hero/logo —
+       one deliberate typographic identity instead of a single decorated moment. Targets the exact
+       IDs already in the markup; the JS that fills in admin-edited titles is untouched. ---- */
+    #home-whatsnew-title, #home-news-title, #home-why-title, #home-toppers-title,
+    #home-faq-title, #home-cta-heading, #home-upcoming-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-weight: 800;
+      letter-spacing: -.01em;
+    }
+
+    /* ---- Section rhythm: intentional white/paper alternation instead of the previous
+       accidental mix of slate-50/slate-100/white. Dark sections (ticker, CTA) are untouched. ---- */
+    #home-passes { background: var(--paper); }
+    #home-whatsnew { background: #fff; }
+    #home-why { background: var(--paper); }
+    #home-toppers { background: linear-gradient(180deg, #fff, var(--paper)); }
+    #home-faq { background: #fff; }
+
+    /* ---- Button hierarchy: primary actions (amber/gold fills) get a richer gradient + deeper
+       shadow so they read as THE important action; plain slate-900 buttons stay a clean solid so
+       the two tiers are visually distinct rather than same-weight color swaps. Scoped to `button`
+       so it can never affect a non-interactive element that happens to share a color class. ---- */
+    button.bg-amber-500 {
+      background: linear-gradient(180deg, var(--gold-300), var(--gold-500)) !important;
+      color: var(--ink-950) !important;
+    }
+    button.bg-amber-500:hover { background: linear-gradient(180deg, #F0D488, var(--gold-400)) !important; }
+    button.bg-slate-900 { background: var(--ink-950) !important; }
+    button.bg-slate-900:hover { background: var(--ink-900) !important; }
+
+    /* ---- Featured card differentiation: avoids the generic "identical card kit" look where every
+       card gets the same treatment regardless of importance. The Popular/featured bundle card gets
+       a gold top accent; plain informational cards stay quiet. ---- */
+    .bundle-featured { position: relative; border-color: var(--gold-400) !important; }
+    .bundle-featured::before {
+      content: ''; position: absolute; top: 0; left: 16px; right: 16px; height: 3px;
+      background: linear-gradient(90deg, var(--gold-300), var(--gold-500));
+      border-radius: 0 0 4px 4px;
+    }
+
+    /* ---- Admin console: same restrained gold/ink language on the primary "Dev Console" heading and
+       the sidebar's active state, so the working tool doesn't feel like a separate, plainer product. ---- */
+    #view-admin h2.text-2xl.font-black { font-family: 'Playfair Display', Georgia, serif; letter-spacing: -.01em; }
+    .admin-nav-btn.bg-slate-900, .admin-nav-btn[class*="bg-slate-900"] { background: var(--ink-950) !important; }
