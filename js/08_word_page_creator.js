@@ -1109,8 +1109,14 @@
         const pages = pdfDoc.getPages();
         pages.forEach(page => {
           const { width } = page.getSize();
+          // A page's own template often already has its own footer text (page numbers, running
+          // titles) sitting right at the bottom-left, same spot this watermark used to draw
+          // straight into -- the two would overlap into an illegible mess. A light translucent
+          // band under the watermark text guarantees it stays readable regardless of what the
+          // page itself already has there, without fully hiding that original content.
+          page.drawRectangle({ x: 0, y: 0, width, height: 15, color: rgb(1, 1, 1), opacity: 0.72 });
           page.drawText(footerText, {
-            x: 24, y: 16, size: 7.5, font, color: rgb(0.55, 0.55, 0.55), opacity: 0.85
+            x: 24, y: 4.5, size: 7.5, font, color: rgb(0.35, 0.35, 0.35), opacity: 1
           });
         });
         return await pdfDoc.save();
