@@ -3,6 +3,7 @@
     ----------------------------------------------------- */
     let announcements = JSON.parse(localStorage.getItem('kas_announcements')) || [];
     let dismissedAnnouncements = JSON.parse(localStorage.getItem('kas_dismissed_announcements')) || {};
+    let editingAnnouncementId = null; // id of the announcement being edited, or null when posting a new one
 
     function todayISO() {
       const d = new Date();
@@ -27,18 +28,50 @@
       e.preventDefault();
       const title = document.getElementById('ann-title').value.trim();
       if (!title) return;
-      announcements.unshift({
-        id: 'ann_' + Date.now(),
+      const fields = {
         title,
         message: document.getElementById('ann-message').value.trim(),
         audience: document.getElementById('ann-audience').value,
-        expiresOn: document.getElementById('ann-expires').value || '',
-        createdAt: new Date().toISOString()
-      });
+        expiresOn: document.getElementById('ann-expires').value || ''
+      };
+
+      if (editingAnnouncementId) {
+        const a = announcements.find(x => x.id === editingAnnouncementId);
+        if (a) Object.assign(a, fields);
+        cancelEditAnnouncement();
+      } else {
+        announcements.unshift({ id: 'ann_' + Date.now(), ...fields, createdAt: new Date().toISOString() });
+      }
+
       localStorage.setItem('kas_announcements', JSON.stringify(announcements));
       saveAnnouncementsCloud();
       e.target.reset();
       renderAnnouncements();
+    }
+
+    // Loads an existing announcement's fields back into the post form (reused for edit, same
+    // as the bundle/page editors) -- until this existed, fixing a typo meant deleting the
+    // announcement and losing its original post date.
+    function editAnnouncement(id) {
+      const a = announcements.find(x => x.id === id);
+      if (!a) return;
+      editingAnnouncementId = id;
+      document.getElementById('ann-title').value = a.title || '';
+      document.getElementById('ann-message').value = a.message || '';
+      document.getElementById('ann-audience').value = a.audience || 'all';
+      document.getElementById('ann-expires').value = a.expiresOn || '';
+      document.getElementById('ann-form-label').innerText = 'Headline (editing)';
+      document.getElementById('ann-submit-btn').innerText = 'Save changes';
+      document.getElementById('ann-cancel-edit-btn').classList.remove('hidden');
+      document.getElementById('ann-title').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function cancelEditAnnouncement() {
+      editingAnnouncementId = null;
+      document.getElementById('ann-form-label').innerText = 'Headline';
+      document.getElementById('ann-submit-btn').innerText = 'Post announcement';
+      document.getElementById('ann-cancel-edit-btn').classList.add('hidden');
+      document.getElementById('ann-title').closest('form').reset();
     }
 
     function deleteAnnouncement(id) {
@@ -46,6 +79,7 @@
       announcements = announcements.filter(a => a.id !== id);
       localStorage.setItem('kas_announcements', JSON.stringify(announcements));
       saveAnnouncementsCloud();
+      if (editingAnnouncementId === id) cancelEditAnnouncement();
       renderAnnouncements();
     }
 
@@ -96,7 +130,10 @@
             <div class="p-2 border rounded-lg ${expired ? 'bg-slate-50 text-slate-400' : 'bg-white'}">
               <div class="flex justify-between gap-2">
                 <b class="text-slate-800">${escapeHtml(a.title)}</b>
-                <button onclick="deleteAnnouncement('${a.id}')" class="text-rose-600 font-bold hover:underline">Delete</button>
+                <span class="space-x-2 shrink-0">
+                  <button onclick="editAnnouncement('${a.id}')" class="text-amber-600 font-bold hover:underline">Edit</button>
+                  <button onclick="deleteAnnouncement('${a.id}')" class="text-rose-600 font-bold hover:underline">Delete</button>
+                </span>
               </div>
               <div class="text-[10px] text-slate-400">${a.audience === 'students' ? 'Students only' : 'Everyone'}${a.expiresOn ? ` · until ${a.expiresOn}` : ''}${expired ? ' · expired' : ''}</div>
             </div>`;

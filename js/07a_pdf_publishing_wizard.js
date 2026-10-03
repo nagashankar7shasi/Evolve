@@ -342,12 +342,58 @@
             <div class="space-x-3">
               ${needsSecuring ? `<button onclick="securePdfDoc('${doc.id}')" class="text-amber-700 font-bold hover:underline">🔒 Secure</button>` : ''}
               <button onclick="downloadOrOpenPdf('${doc.id}')" class="text-blue-600 font-bold hover:underline">Preview</button>
+              <button onclick="openEditPdfModal('${doc.id}')" class="text-amber-600 font-bold hover:underline">Edit</button>
               <button onclick="deletePdfDoc('${doc.id}')" class="text-rose-600 font-bold hover:underline">Delete</button>
             </div>
           </div>
         `;
         container.appendChild(div);
       });
+    }
+
+    // Edit an existing vault entry's metadata (title / category / access / price) without
+    // touching its file or id -- until this existed, the only way to fix a typo in a title or
+    // change a PDF's price was to delete the entry and upload the file again, which also broke
+    // any bundle or page resource card already pointing at its old id. Replacing the underlying
+    // file itself is intentionally NOT part of this -- that's a separate, riskier operation
+    // (see securePdfDoc, just below, which is the template for a future "replace file" action).
+    let editingPdfDocId = null;
+
+    function openEditPdfModal(docId) {
+      const doc = pdfVault.find(d => d.id === docId);
+      if (!doc) return;
+      editingPdfDocId = docId;
+      document.getElementById('pdf-edit-title').value = doc.title || '';
+      document.getElementById('pdf-edit-cat').value = doc.category || 'KPSC KAS';
+      document.getElementById('pdf-edit-access').value = doc.access || 'paid';
+      document.getElementById('pdf-edit-price').value = doc.price || 0;
+      openModal('pdf-edit-modal');
+    }
+
+    async function savePdfEdit() {
+      const doc = pdfVault.find(d => d.id === editingPdfDocId);
+      if (!doc) return closeModal('pdf-edit-modal');
+
+      const title = document.getElementById('pdf-edit-title').value.trim();
+      if (!title) return alert('Give the document a title.');
+      const category = document.getElementById('pdf-edit-cat').value;
+      const access = document.getElementById('pdf-edit-access').value;
+      const price = access === 'free' ? 0 : (parseInt(document.getElementById('pdf-edit-price').value, 10) || 0);
+
+      const { error } = await supabaseClient.from('pdf_vault')
+        .update({ title, category, access, price }).eq('id', doc.id);
+      if (error) return alert('Failed to save changes: ' + error.message);
+
+      doc.title = title;
+      doc.category = category;
+      doc.access = access;
+      doc.price = price;
+      localStorage.setItem('kas_pdf_vault', JSON.stringify(pdfVault));
+
+      editingPdfDocId = null;
+      closeModal('pdf-edit-modal');
+      renderPdfVault();
+      renderStudentEntitlementsDesk();
     }
 
     // One-time migration for a PAID PDF that was uploaded before this fix (so it still has a
