@@ -820,6 +820,28 @@
       if (bulk) alert(`Copied EN → KN for ${count} question${count === 1 ? '' : 's'} (blank Kannada fields only — existing Kannada text was not overwritten).`);
     }
 
+    // One-click fix for papers that were mistagged by the retired legacy upload form (which never
+    // set contentType, so every one of its questions silently defaulted to "Static" even for
+    // Current-Affairs papers). "Select all" + "Mark CA" relabels a whole paper in two clicks,
+    // instead of opening each question's own edit modal to flip the Static/CA toggle one at a time.
+    // Like every other bulk action here, this only updates the in-memory draft -- Publish still
+    // has to be clicked to write it back to Supabase.
+    function studioSetContentTypeSelected(type) {
+      const idxs = studioSelectedIndices();
+      if (!idxs.length) return;
+      const label = type === 'ca' ? 'Current Affairs (CA)' : 'Static';
+      if (!confirm(`Mark ${idxs.length} selected question${idxs.length === 1 ? '' : 's'} as ${label}?`)) return;
+      idxs.forEach(i => {
+        const q = studioState.questions[i];
+        if (!q) return;
+        q.contentType = type === 'ca' ? 'ca' : 'static';
+        // relevantPeriod is documented as "CA only" -- clear it when a question stops being CA so
+        // a stale period doesn't linger and mislead the Coverage dashboard after a re-tag.
+        if (q.contentType !== 'ca') q.relevantPeriod = '';
+      });
+      studioRenderList();
+    }
+
     // ---- Question row rendering ----
     function studioRenderList() {
       const list = document.getElementById('studio-question-list');
@@ -1143,75 +1165,9 @@
     }
 
 
-async function handleBundleAndUploadPaper() {
-  const category = document.getElementById('upload-exam-category').value;
-  const title = document.getElementById('upload-paper-title').value.trim();
-  if (!title) return alert('Enter exam paper title.');
-
-  // SECURITY FIX: previously `parseInt(rawValue) || 0` treated a BLANK/invalid price field exactly
-  // the same as explicitly typing 0 — meaning a stray empty field silently published a paid paper
-  // as FREE, with no warning, and it would open for anyone. Studio (the ✎ editor) already got this
-  // exact fix; this is the other, older upload form, which didn't. Mirrors Studio's behavior now:
-  // blank/invalid requires an explicit confirmation before publishing as free.
-  const rawPrice = document.getElementById('upload-paper-price').value;
-  let price;
-  if (rawPrice.trim() === '' || isNaN(parseInt(rawPrice, 10))) {
-    if (!confirm(`The price field is blank or invalid. Publish "${title}" as FREE (₹0)?\n\nClick Cancel to go back and enter a price.`)) return;
-    price = 0;
-  } else {
-    price = Math.max(0, parseInt(rawPrice, 10));
-  }
-  const marksCorrect = parseFloat(document.getElementById('upload-mark-correct').value) || 2.0;
-  const marksWrong = parseFloat(document.getElementById('upload-mark-wrong').value) || 0.0;
-  const duration = parseInt(document.getElementById('upload-duration').value) || 120;
-  const cutoff = parseFloat(document.getElementById('upload-cutoff').value) || 120;
-
-  const fileInput = document.getElementById('upload-file-input');
-  if (fileInput.files.length === 0) return alert('Attach a question CSV file containing column "Correct".');
-
-  const catBadge = EXAM_CATEGORIES[category]?.defaultScheme.examBadge || 'EXAM';
-  const paperId = 'paper_' + Date.now();
-
-  Papa.parse(fileInput.files[0], {
-    header: true,
-    skipEmptyLines: true,
-    complete: async function(res) {
-      const parsed = res.data.map((row, idx) => ({
-        id: idx + 1,
-        q_en: row.Question_EN || row.question_en || '',
-        q_kn: row.Question_KN || row.question_kn || row.Question_EN || '',
-        options_en: [row.Opt_A_EN || row.A_EN || '', row.Opt_B_EN || row.B_EN || '', row.Opt_C_EN || row.C_EN || '', row.Opt_D_EN || row.D_EN || ''],
-        options_kn: [row.Opt_A_KN || row.A_KN || '', row.Opt_B_KN || row.B_KN || '', row.Opt_C_KN || row.C_KN || '', row.Opt_D_KN || row.D_KN || ''],
-        correct: (row.Correct || row.correct || 'A').toUpperCase().trim(),
-        exp: row.Explanation || row.explanation || 'Detailed answer explanation.',
-        exp_kn: row.Explanation_KN || row.explanation_kn || '',
-        subject: (row.Subject || row.subject || row.Topic || row.topic || '').trim()
-      }));
-
-      const scheme = { examBadge: catBadge, marksCorrect, marksWrong, duration, cutoff };
-
-      // --- SYNC TO SUPABASE CLOUD ---
-      const { error } = await supabaseClient.from('tests_catalog').upsert({
-        id: paperId,
-        category: category,
-        title: title,
-        price: price,
-        scheme: scheme,
-        questions: parsed,
-        question_count: parsed.length
-      });
-
-      if (error) {
-        return alert("Failed to upload test paper to cloud: " + error.message);
-      }
-
-      const newPaper = { id: paperId, category, title, price, scheme, questions: parsed, questionCount: parsed.length };
-      testsCatalog.push(newPaper);
-      
-      renderStudentEntitlementsDesk();
-      filterExamCategory(category);
-      alert(`Success! Paper "${title}" published live to the cloud in ${EXAM_CATEGORIES[category].name}.`);
-    }
-  });
-}
+// handleBundleAndUploadPaper() (the legacy one-shot "Quick upload" CSV form) was retired along
+// with its markup in index.html -- see the comment there for why. Test Paper Studio's own CSV
+// upload is the only paper-upload path now, and it always sets contentType, so a new
+// Current-Affairs paper can no longer silently default to "Static" by going through a form
+// that never asked.
 
