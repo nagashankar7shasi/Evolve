@@ -171,15 +171,29 @@
         if (distPage && pageId) {
           const page = customPages.find(p => p.id === pageId);
           if (!page) throw new Error('Chosen page not found');
-          const cardHtml = `<div class="kb-resource-card" contenteditable="false" data-target-type="pdf" data-target-id="${doc.id}" data-editor-label="Resource → PDF">` +
-            `<div class="kb-resource-thumb" aria-hidden="true">📕</div>` +
-            `<div class="kb-resource-body">` +
-              `<h4 class="kb-resource-title">${escapeHtml(doc.title)}</h4>` +
-              `<p class="kb-resource-desc">${escapeHtml(doc.category)} · ${doc.access === 'paid' ? '₹' + doc.price : 'Free'}</p>` +
-              `<span class="kb-resource-cta pdf">Open PDF →</span>` +
-            `</div>` +
-          `</div><p><br></p>`;
-          page.content = (page.content || '') + cardHtml;
+          // Uses the same buildResourceCardHtml() the page editor's "Insert Resource Card"
+          // modal uses (08_word_page_creator.js) -- this used to be its own hand-copied
+          // markup here, which silently fell out of sync (missing the delete button, stuck
+          // on the old "Open PDF →" label) the moment that card type was redesigned elsewhere.
+          const cardHtml = buildResourceCardHtml({
+            type: 'pdf',
+            targetId: doc.id,
+            title: doc.title,
+            desc: `${doc.category} · ${doc.access === 'paid' ? '₹' + doc.price : 'Free'}`,
+            thumbHtml: `<div class="kb-resource-thumb" aria-hidden="true">📕</div>`
+          });
+          // Appended through the DOM, not by concatenating raw HTML strings. Existing page
+          // content can end mid-element (an unclosed table cell, a stray div left by some
+          // earlier edit) -- pasting new HTML onto the end of that as plain text risks the
+          // browser's parser silently mis-nesting or dropping it when the editor next loads
+          // this content back in. Building it as real DOM nodes first lets the browser resolve
+          // that the same way it already does for everything else in the editor.
+          const existing = document.createElement('div');
+          existing.innerHTML = page.content || '';
+          const added = document.createElement('div');
+          added.innerHTML = cardHtml;
+          while (added.firstChild) existing.appendChild(added.firstChild);
+          page.content = existing.innerHTML;
           // Upsert this one page back to cloud
           const { error } = await supabaseClient.from('custom_pages').upsert({
             id: page.id, slug: page.slug, title: page.title, is_gated: page.isGated, price: page.price,
