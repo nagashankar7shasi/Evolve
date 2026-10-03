@@ -324,6 +324,33 @@
       else setup();
     })();
 
+    // Builds the markup for one Resource Card. Shared by every place that can create one --
+    // this modal (insertResourceCard, below) AND the PDF Publishing Wizard's "Add to page"
+    // step (wizPublish, in 07a_pdf_publishing_wizard.js) -- so a fix or design change (like
+    // the delete button, or the button's label) only has to happen in one place. Before this
+    // was pulled out, the wizard had its own second copy of this markup that silently drifted
+    // out of sync with this one: it kept the old "Open PDF →" pill label and never got a
+    // delete button when this card type was redesigned.
+    function buildResourceCardHtml({ type, targetId, title, desc, thumbHtml }) {
+      const ctaLabel = type === 'pdf' ? 'Download' : (type === 'page' ? 'Open page' : '');
+      const ctaClass = type === 'pdf' ? 'pdf' : (type === 'page' ? 'page' : '');
+      const ctaHtml = (type === 'none' || !ctaLabel) ? '' : `<span class="kb-resource-cta ${ctaClass}">${ctaLabel}</span>`;
+      const editorLabel = type === 'pdf'
+        ? 'Resource → PDF'
+        : (type === 'page' ? 'Resource → Page' : 'Resource card');
+      return (
+        `<div class="kb-resource-card" contenteditable="false" data-target-type="${type}" data-target-id="${escapeHtml(targetId || '')}" data-editor-label="${editorLabel}">` +
+          `<button type="button" class="kb-block-delete" title="Delete this resource card" onclick="event.preventDefault(); event.stopPropagation(); if (confirm('Delete this resource card?')) this.closest('.kb-resource-card').remove();">✕</button>` +
+          thumbHtml +
+          `<div class="kb-resource-body">` +
+            `<h4 class="kb-resource-title">${escapeHtml(title)}</h4>` +
+            (desc ? `<p class="kb-resource-desc">${escapeHtml(desc)}</p>` : '') +
+            ctaHtml +
+          `</div>` +
+        `</div><p><br></p>`
+      );
+    }
+
     function insertResourceCard() {
       const title = document.getElementById('res-card-title').value.trim();
       const desc  = document.getElementById('res-card-desc').value.trim();
@@ -337,24 +364,7 @@
         ? `<div class="kb-resource-thumb"><img src="${escapeHtml(resourceCardThumbDataUrl)}" alt="" /></div>`
         : `<div class="kb-resource-thumb" aria-hidden="true">${type === 'pdf' ? '📕' : (type === 'page' ? '📄' : '📚')}</div>`;
 
-      const ctaLabel = type === 'pdf' ? 'Download' : (type === 'page' ? 'Open page' : '');
-      const ctaClass = type === 'pdf' ? 'pdf' : (type === 'page' ? 'page' : '');
-      const ctaHtml = type === 'none' ? '' : `<span class="kb-resource-cta ${ctaClass}">${ctaLabel}</span>`;
-
-      const editorLabel = type === 'pdf'
-        ? 'Resource → PDF'
-        : (type === 'page' ? 'Resource → Page' : 'Resource card');
-
-      const card =
-        `<div class="kb-resource-card" contenteditable="false" data-target-type="${type}" data-target-id="${escapeHtml(targetId || '')}" data-editor-label="${editorLabel}">` +
-          `<button type="button" class="kb-block-delete" title="Delete this resource card" onclick="event.preventDefault(); event.stopPropagation(); if (confirm('Delete this resource card?')) this.closest('.kb-resource-card').remove();">✕</button>` +
-          thumbHtml +
-          `<div class="kb-resource-body">` +
-            `<h4 class="kb-resource-title">${escapeHtml(title)}</h4>` +
-            (desc ? `<p class="kb-resource-desc">${escapeHtml(desc)}</p>` : '') +
-            ctaHtml +
-          `</div>` +
-        `</div><p><br></p>`;
+      const card = buildResourceCardHtml({ type, targetId, title, desc, thumbHtml });
 
       closeModal('resource-card-modal');
       placeCaretInEditor();
