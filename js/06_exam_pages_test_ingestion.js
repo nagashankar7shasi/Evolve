@@ -18,13 +18,14 @@
         </button>`).join('');
     }
 
-    // Fills every <select> that lists exam categories — replaces 3 of the 4 previously hand-typed
-    // spots (quick-upload form, tests admin filter, studio dropdown). Each caller passes whether to
-    // prepend an "All categories" option and what the currently-selected value should be (so
-    // re-populating after an admin edits the category list doesn't reset an in-progress selection).
+    // Fills every <select> that lists exam categories (tests admin filter, studio dropdown --
+    // the legacy quick-upload form's own copy of this dropdown was retired along with that form).
+    // Each caller passes whether to prepend an "All categories" option and what the
+    // currently-selected value should be (so re-populating after an admin edits the category list
+    // doesn't reset an in-progress selection).
     function populateCategoryDropdown(selectId, { includeAll = false, keepValue = true } = {}) {
-      // NOTE: these dropdowns (upload-exam-category, tests-list-filter, studio-category) are all
-      // admin-only backend controls, never shown to students. Deactivated ("not shown to students")
+      // NOTE: these dropdowns (tests-list-filter, studio-category) are all admin-only backend
+      // controls, never shown to students. Deactivated ("not shown to students")
       // categories must still be fully manageable in the backend, so they're intentionally included
       // here (with a "(hidden)" marker) — only the genuinely student-facing renderCategoryTabs()
       // should filter them out.
@@ -41,7 +42,6 @@
     }
 
     function populateAllCategoryDropdowns() {
-      populateCategoryDropdown('upload-exam-category');
       populateCategoryDropdown('tests-list-filter', { includeAll: true });
       populateCategoryDropdown('studio-category');
     }
@@ -159,15 +159,9 @@
       });
     }
 
-    function handleExamCategoryChange(catId) {
-      const def = EXAM_CATEGORIES[catId]?.defaultScheme;
-      if (def) {
-        document.getElementById('upload-mark-correct').value = def.marksCorrect;
-        document.getElementById('upload-mark-wrong').value = def.marksWrong;
-        document.getElementById('upload-duration').value = def.duration;
-        document.getElementById('upload-cutoff').value = def.cutoff;
-      }
-    }
+    // handleExamCategoryChange() was only wired to the legacy "Quick upload" form's category
+    // select (removed from index.html along with that form) -- removed here too since nothing
+    // else calls it.
 
     // ---- Uploaded papers: list, edit price/title, delete with cascade ----
     function renderTestsCatalogAdmin() {
