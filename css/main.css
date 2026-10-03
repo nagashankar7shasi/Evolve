@@ -175,17 +175,20 @@
     /* editor-only guides */
     #word-editor-canvas .kb-cols > div { outline: 1px dashed #cbd5e1; outline-offset: 4px; min-height: 2rem; }
     #word-editor-canvas .kb-pagelink { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 6px 30px 6px 10px; margin: 4px 0; border: 1px dashed #f59e0b; border-radius: 8px; background: #fffbeb; font-size: 12px; font-weight: 700; color: #78350f; }
-    /* Delete button overlaid on non-editable blocks (resource cards, page cards). These blocks
-       are contenteditable="false" "islands" the browser won't let you select-and-backspace
-       reliably, so without this there is no way to remove one once inserted. Editor-only --
-       never appears on the published page (scoped to #word-editor-canvas, not .word-canvas). */
+    /* Delete (and, for resource cards, edit) buttons overlaid on non-editable blocks (resource
+       cards, page cards). These blocks are contenteditable="false" "islands" the browser won't
+       let you select-and-backspace or click into reliably, so without these there is no way to
+       remove or change one once inserted (only delete-and-recreate). Editor-only -- never
+       appears on the published page (scoped to #word-editor-canvas, not .word-canvas). */
     #word-editor-canvas .kb-block-delete {
       position: absolute; z-index: 3; width: 20px; height: 20px; padding: 0; border: none;
       border-radius: 999px; background: rgba(15,23,42,.78); color: #fff; font-size: 11px;
       font-weight: 800; line-height: 20px; text-align: center; cursor: pointer;
     }
     #word-editor-canvas .kb-block-delete:hover { background: #dc2626; }
+    #word-editor-canvas .kb-block-delete-edit:hover { background: #2563eb; }
     #word-editor-canvas .kb-resource-card .kb-block-delete { top: 6px; right: 6px; }
+    #word-editor-canvas .kb-resource-card .kb-block-delete-edit { top: 6px; right: 30px; }
     #word-editor-canvas .kb-pagelink .kb-block-delete { top: 50%; right: 6px; transform: translateY(-50%); }
     #word-editor-canvas details.kb-faq { display: block; }
     #word-editor-canvas details.kb-faq > *:not(summary) { display: block; }
