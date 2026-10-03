@@ -247,8 +247,14 @@
 
     // ---- Resource card (image + text bundled with a PDF or page link) ----
     let resourceCardThumbDataUrl = '';
+    let editingResourceCardEl = null; // the .kb-resource-card node being edited, or null when inserting a new one
 
-    function openResourceCardModal() {
+    // Pass an existing .kb-resource-card element (editCardEl) to edit it in place instead of
+    // inserting a new one -- called from that card's own ✎ Edit button. Until this existed, the
+    // only way to change a card's title/link after creating it was delete-and-recreate.
+    function openResourceCardModal(editCardEl) {
+      editingResourceCardEl = editCardEl || null;
+
       // Reset the form
       document.getElementById('res-card-title').value = '';
       document.getElementById('res-card-desc').value = '';
@@ -258,11 +264,30 @@
       preview.classList.add('hidden');
       resourceCardThumbDataUrl = '';
 
-      // Remember where the cursor was so we can insert back to the right spot
-      placeCaretInEditor();
+      document.getElementById('resource-card-modal-title').innerText = editingResourceCardEl ? '📚 Edit Resource card' : '📚 Insert Resource card';
+      document.getElementById('resource-card-modal-submit').innerText = editingResourceCardEl ? 'Save changes' : 'Insert card';
 
-      document.getElementById('res-card-target-type').value = 'pdf';
-      refreshResourceCardTarget();
+      if (editingResourceCardEl) {
+        // Pre-fill from the existing card's own markup/data attributes.
+        document.getElementById('res-card-title').value = editingResourceCardEl.querySelector('.kb-resource-title')?.innerText || '';
+        document.getElementById('res-card-desc').value = editingResourceCardEl.querySelector('.kb-resource-desc')?.innerText || '';
+        const existingImg = editingResourceCardEl.querySelector('.kb-resource-thumb img');
+        if (existingImg) {
+          resourceCardThumbDataUrl = existingImg.src;
+          preview.src = resourceCardThumbDataUrl;
+          preview.classList.remove('hidden');
+        }
+        const type = editingResourceCardEl.dataset.targetType || 'pdf';
+        document.getElementById('res-card-target-type').value = type;
+        refreshResourceCardTarget();
+        document.getElementById('res-card-target-id').value = editingResourceCardEl.dataset.targetId || '';
+      } else {
+        // Remember where the cursor was so a brand-new card gets inserted back at the right spot.
+        placeCaretInEditor();
+        document.getElementById('res-card-target-type').value = 'pdf';
+        refreshResourceCardTarget();
+      }
+
       openModal('resource-card-modal');
     }
 
@@ -340,6 +365,7 @@
         : (type === 'page' ? 'Resource → Page' : 'Resource card');
       return (
         `<div class="kb-resource-card" contenteditable="false" data-target-type="${type}" data-target-id="${escapeHtml(targetId || '')}" data-editor-label="${editorLabel}">` +
+          `<button type="button" class="kb-block-delete kb-block-delete-edit" title="Edit this resource card" onclick="event.preventDefault(); event.stopPropagation(); openResourceCardModal(this.closest('.kb-resource-card'));">✎</button>` +
           `<button type="button" class="kb-block-delete" title="Delete this resource card" onclick="event.preventDefault(); event.stopPropagation(); if (confirm('Delete this resource card?')) this.closest('.kb-resource-card').remove();">✕</button>` +
           thumbHtml +
           `<div class="kb-resource-body">` +
@@ -367,6 +393,19 @@
       const card = buildResourceCardHtml({ type, targetId, title, desc, thumbHtml });
 
       closeModal('resource-card-modal');
+
+      if (editingResourceCardEl) {
+        // Replace the existing card in place with a freshly-built one from the edited fields,
+        // instead of inserting a new card -- only swap the card div itself, not the trailing
+        // <p><br></p> that buildResourceCardHtml also returns, since the original already has
+        // its own trailing paragraph and re-adding one on every edit would pile up blank lines.
+        const wrap = document.createElement('div');
+        wrap.innerHTML = card;
+        editingResourceCardEl.replaceWith(wrap.querySelector('.kb-resource-card'));
+        editingResourceCardEl = null;
+        return;
+      }
+
       placeCaretInEditor();
       document.execCommand('insertHTML', false, card);
     }
