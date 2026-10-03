@@ -225,20 +225,32 @@
       margin: 0.75rem 0; text-decoration: none; color: inherit;
     }
     .word-canvas .kb-resource-card:hover { border-color: #f59e0b; box-shadow: 0 4px 10px rgba(245,158,11,.15); transform: translateY(-1px); }
+    /* Portrait-ish, like an A4/document cover (was 16:10 landscape, which cropped the
+       top/bottom off most PDF cover art — exam-prep PDFs are almost always portrait). */
     .word-canvas .kb-resource-thumb {
-      width: 100%; aspect-ratio: 16 / 10; background: #fef3c7 center/cover no-repeat;
+      width: 100%; aspect-ratio: 3 / 4; background: #fef3c7 center/cover no-repeat;
       display: flex; align-items: center; justify-content: center; font-size: 2.25rem;
     }
     .word-canvas .kb-resource-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .word-canvas .kb-resource-body { padding: 0.75rem 0.9rem 0.9rem; }
+    .word-canvas .kb-resource-body { padding: 0.75rem 0.9rem 0.9rem; display: flex; flex-direction: column; flex: 1; }
     .word-canvas .kb-resource-title { font-weight: 800; color: #0f172a; font-size: 0.95rem; line-height: 1.3; margin: 0 0 0.3rem; }
     .word-canvas .kb-resource-desc  { font-size: 12.5px; color: #475569; margin: 0 0 0.5rem; line-height: 1.45; }
+    /* A real button — solid fill, full width, high contrast — not a small pill tag.
+       Pinned to the bottom of the card (margin-top: auto) so titles of different
+       lengths don't push it to different heights across a row of cards. */
     .word-canvas .kb-resource-cta {
-      display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 800;
-      color: #b45309; background: #fffbeb; padding: 3px 8px; border-radius: 99px; border: 1px solid #fde68a;
+      display: block; width: 100%; text-align: center; box-sizing: border-box;
+      font-size: 13px; font-weight: 800; letter-spacing: 0.01em;
+      color: #fff; background: #f59e0b; border: none; border-radius: 8px;
+      padding: 9px 14px; margin-top: auto; cursor: pointer;
+      transition: background-color .15s, transform .15s;
     }
-    .word-canvas .kb-resource-cta.pdf  { color: #991b1b; background: #fef2f2; border-color: #fecaca; }
-    .word-canvas .kb-resource-cta.page { color: #1e3a8a; background: #eff6ff; border-color: #bfdbfe; }
+    .word-canvas a:hover .kb-resource-cta,
+    .word-canvas .kb-resource-card:hover .kb-resource-cta { transform: translateY(-1px); }
+    .word-canvas .kb-resource-cta.pdf  { background: #dc2626; }
+    .word-canvas .kb-resource-cta.pdf:hover   { background: #b91c1c; }
+    .word-canvas .kb-resource-cta.page { background: #2563eb; }
+    .word-canvas .kb-resource-cta.page:hover  { background: #1d4ed8; }
 
     /* editor-only guides for resource cards */
     #word-editor-canvas .kb-resource-card { position: relative; outline: 1px dashed #cbd5e1; outline-offset: 3px; }

@@ -334,9 +334,9 @@
         ? `<div class="kb-resource-thumb"><img src="${escapeHtml(resourceCardThumbDataUrl)}" alt="" /></div>`
         : `<div class="kb-resource-thumb" aria-hidden="true">${type === 'pdf' ? '📕' : (type === 'page' ? '📄' : '📚')}</div>`;
 
-      const ctaLabel = type === 'pdf' ? 'Open PDF' : (type === 'page' ? 'Open page' : '');
+      const ctaLabel = type === 'pdf' ? 'Download' : (type === 'page' ? 'Open page' : '');
       const ctaClass = type === 'pdf' ? 'pdf' : (type === 'page' ? 'page' : '');
-      const ctaHtml = type === 'none' ? '' : `<span class="kb-resource-cta ${ctaClass}">${ctaLabel} →</span>`;
+      const ctaHtml = type === 'none' ? '' : `<span class="kb-resource-cta ${ctaClass}">${ctaLabel}</span>`;
 
       const editorLabel = type === 'pdf'
         ? 'Resource → PDF'
