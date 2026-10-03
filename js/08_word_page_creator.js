@@ -239,7 +239,10 @@
       if (!p) return;
       placeCaretInEditor();
       document.execCommand('insertHTML', false,
-        `<div class="kb-pagelink" contenteditable="false" data-page="${p.id}">${escapeHtml(p.icon || '📄')} Page card: ${escapeHtml(p.title)}</div><p><br></p>`);
+        `<div class="kb-pagelink" contenteditable="false" data-page="${p.id}">` +
+          `<button type="button" class="kb-block-delete" title="Delete this page card" onclick="event.preventDefault(); event.stopPropagation(); if (confirm('Delete this page card?')) this.closest('.kb-pagelink').remove();">✕</button>` +
+          `${escapeHtml(p.icon || '📄')} Page card: ${escapeHtml(p.title)}` +
+        `</div><p><br></p>`);
     }
 
     // ---- Resource card (image + text bundled with a PDF or page link) ----
@@ -344,6 +347,7 @@
 
       const card =
         `<div class="kb-resource-card" contenteditable="false" data-target-type="${type}" data-target-id="${escapeHtml(targetId || '')}" data-editor-label="${editorLabel}">` +
+          `<button type="button" class="kb-block-delete" title="Delete this resource card" onclick="event.preventDefault(); event.stopPropagation(); if (confirm('Delete this resource card?')) this.closest('.kb-resource-card').remove();">✕</button>` +
           thumbHtml +
           `<div class="kb-resource-body">` +
             `<h4 class="kb-resource-title">${escapeHtml(title)}</h4>` +
