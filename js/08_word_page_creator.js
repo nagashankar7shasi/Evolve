@@ -220,6 +220,33 @@
     // it), then explicitly check what landed right after the inserted block and only add a new
     // empty paragraph if one isn't already sitting there -- reusing the canvas's own trailing
     // placeholder paragraph when present, instead of piling up extra blank lines every insert.
+    function isEmptyEditorParagraph(n) {
+      return !!n && n.nodeType === 1 && n.tagName === 'P' && n.textContent.trim() === '' &&
+        !n.querySelector('img, iframe, .kb-resource-card, .kb-page-card, .kb-testpaper-card');
+    }
+
+    // Makes sure `node` has an empty, typeable paragraph right after it -- reusing one that's
+    // already there (common once insertBlockWithTrailingParagraph below has run at least once)
+    // instead of stacking up extra blank lines every time this is called -- and returns it.
+    function ensureTrailingParagraphAfter(node) {
+      let trailing = node.nextSibling;
+      if (!isEmptyEditorParagraph(trailing)) {
+        trailing = document.createElement('p');
+        trailing.innerHTML = '<br>';
+        node.parentNode.insertBefore(trailing, node.nextSibling);
+      }
+      return trailing;
+    }
+
+    function placeCaretInNode(node) {
+      const r = document.createRange();
+      r.selectNodeContents(node);
+      r.collapse(true);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(r);
+    }
+
     function insertBlockWithTrailingParagraph(html) {
       const canvas = document.getElementById('word-editor-canvas');
       const sel = window.getSelection();
@@ -239,21 +266,46 @@
       range.collapse(true);
       range.insertNode(template.content);
 
-      const isEmptyParagraph = n => !!n && n.nodeType === 1 && n.tagName === 'P' &&
-        (n.textContent.trim() === '') && !n.querySelector('img, iframe, .kb-resource-card, .kb-page-card, .kb-testpaper-card');
-      let trailing = inserted.nextSibling;
-      if (!isEmptyParagraph(trailing)) {
-        trailing = document.createElement('p');
-        trailing.innerHTML = '<br>';
-        inserted.parentNode.insertBefore(trailing, inserted.nextSibling);
-      }
-
-      const after = document.createRange();
-      after.selectNodeContents(trailing);
-      after.collapse(true);
-      sel.removeAllRanges();
-      sel.addRange(after);
+      placeCaretInNode(ensureTrailingParagraphAfter(inserted));
     }
+
+    // Pressing Enter inside a multi-column block's last paragraph, like pressing Enter in a table
+    // cell, normally just adds another line WITHIN that same column -- correct and needed for
+    // columns with more than one paragraph of text. But unlike a table, a column reads as plain
+    // text to an admin, so when they're actually done writing and expect Enter to carry on below
+    // the whole block, getting stuck adding blank line after blank line inside the last column
+    // reads as "the cursor won't go below the columns" (reported after the insertion-order bug
+    // above was already fixed -- that fix guarantees a paragraph exists after the block for a
+    // click or Down-arrow to land in, but doesn't change what Enter itself does while still inside
+    // the block). Fixed with the same "double-Enter exits the nested block" convention several
+    // editors use for lists/blockquotes: the FIRST Enter on real text still just adds a normal new
+    // line in the column (unchanged); a SECOND Enter on what is now an already-empty trailing line
+    // in the block's LAST column escapes the whole block instead of adding yet another blank line
+    // trapped inside it, landing the caret in (or creating) the paragraph right after the block.
+    function handleColsBlockEnterKey(e) {
+      if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
+      const sel = window.getSelection();
+      if (!sel.rangeCount || !sel.isCollapsed) return;
+      const node = sel.anchorNode;
+      const el = node && (node.nodeType === 1 ? node : node.parentElement);
+      if (!el) return;
+      const colDiv = el.closest('.kb-cols > div, .kb-cols-3 > div, .kb-cols-4 > div');
+      if (!colDiv) return;
+      const curP = el.closest('p');
+      // Only step in for a plain paragraph that's the last thing in its column -- a heading, a
+      // list, or a paragraph with more column content after it all keep completely normal Enter
+      // behavior.
+      if (!curP || curP.parentElement !== colDiv || curP !== colDiv.lastElementChild) return;
+      if (curP.textContent.trim() !== '') return; // first Enter on real text -- let it add the new line normally
+      const block = colDiv.closest('.kb-cols, .kb-cols-3, .kb-cols-4');
+      const cols = [...block.children].filter(c => c.tagName === 'DIV');
+      if (cols[cols.length - 1] !== colDiv) return; // only escape from the block's LAST column
+      e.preventDefault();
+      if (colDiv.children.length > 1) curP.remove(); // tidy up the now-unused blank line (keeps the heading etc.)
+      placeCaretInNode(ensureTrailingParagraphAfter(block));
+    }
+    const _wordEditorCanvasEl = document.getElementById('word-editor-canvas');
+    if (_wordEditorCanvasEl) _wordEditorCanvasEl.addEventListener('keydown', handleColsBlockEnterKey);
 
     function insertBlock(kind) {
       let html = BLOCK_TEMPLATES[kind];
