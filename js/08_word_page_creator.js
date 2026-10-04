@@ -17,6 +17,29 @@
       }
     });
 
+    // Inserts HTML for a non-editable block (resource card, page card) and immediately verifies it
+    // actually arrived with its real content, not just its opening markup -- execCommand
+    // ('insertHTML') re-parses a string in the context of the live, already-edited DOM, and one
+    // admin session ended up with a resource card stub (only its ✎/✕ buttons, no title or
+    // thumbnail) silently saved to Supabase this way; it only became visible as a broken empty box
+    // once that page reached students. Rather than assume this was a one-off, every new-card
+    // insertion is checked right after it happens: if the content that should be there isn't, the
+    // stub is removed and the admin is told to try again instead of it quietly reaching the
+    // database. `validateFn` gets the inserted element and returns whether it looks right.
+    function insertHtmlWithIntegrityCheck(html, validateFn, blockLabel) {
+      const canvas = document.getElementById('word-editor-canvas');
+      const marker = 'kb-just-inserted-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+      const markedHtml = html.replace(/^(<div\s+class="[^"]+")/, `$1 data-just-inserted="${marker}"`);
+      document.execCommand('insertHTML', false, markedHtml);
+      const inserted = canvas.querySelector(`[data-just-inserted="${marker}"]`);
+      if (!inserted) return; // caret wasn't in the canvas or insertion landed somewhere unexpected -- nothing to validate
+      inserted.removeAttribute('data-just-inserted');
+      if (!validateFn(inserted)) {
+        inserted.remove();
+        alert(`Inserting that ${blockLabel} didn't go through cleanly, so nothing was added. Please try again.`);
+      }
+    }
+
     function placeCaretInEditor() {
       const canvas = document.getElementById('word-editor-canvas');
       canvas.focus();
@@ -56,7 +79,15 @@
         const cols = Math.min(8, Math.max(1, +m[2]));
         const head = Array.from({ length: cols }, (_, c) => `<th>Heading ${c + 1}</th>`).join('');
         const body = Array.from({ length: rows - 1 }, () => `<tr>${Array.from({ length: cols }, () => '<td>&nbsp;</td>').join('')}</tr>`).join('');
-        html = `<div class="kb-table-wrap"><table class="kb-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+        // The delete button is its own contenteditable="false" island inside the wrapper, same
+        // trick resource/page cards use -- the table itself stays normal editable content (cells
+        // are typed into directly), this is the only part that isn't. Without this, the only way
+        // to remove a table was the floating per-cell toolbar (table-tools), which only appears
+        // once you click inside a cell and is easy to miss -- reported as tables having no way to
+        // be deleted at all once inserted.
+        html = `<div class="kb-table-wrap">` +
+          `<button type="button" class="kb-block-delete" contenteditable="false" title="Delete this table" onclick="event.preventDefault(); event.stopPropagation(); if (confirm('Delete this table?')) this.closest('.kb-table-wrap').remove();">✕</button>` +
+          `<table class="kb-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
       }
       if (!html) return;
       placeCaretInEditor();
@@ -192,9 +223,21 @@
       if (action === 'alignCenter') { ALIGN_CLASSES.forEach(c => fig.classList.remove(c)); fig.classList.add('kb-center'); return; }
     }
 
+    // Makes the canvas behave like a word processor instead of a raw contenteditable div.
+    // Chrome/Edge's default contenteditable behavior wraps every new line from the Enter key in a
+    // bare, unstyled <div> (no spacing, nothing like the <p> every other block here uses) --
+    // reported as the editor "creating random boxes" just from typing. defaultParagraphSeparator
+    // tells the browser to use <p> for new lines instead, matching Word/Docs and every block
+    // template's own markup. Set on every focus (not just once) since nothing else guarantees it
+    // survives across tab-aways or the browser resetting editing-mode defaults.
+    function ensureWordLikeParagraphs() {
+      try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (_) {}
+    }
+
     (function wireEditorImages() {
       const canvas = document.getElementById('word-editor-canvas');
       if (!canvas) return;
+      canvas.addEventListener('focus', ensureWordLikeParagraphs);
       canvas.addEventListener('paste', e => {
         const files = [...((e.clipboardData && e.clipboardData.files) || [])].filter(f => f.type.startsWith('image/'));
         if (!files.length) return;
@@ -238,11 +281,14 @@
       closeModal('pagecard-modal');
       if (!p) return;
       placeCaretInEditor();
-      document.execCommand('insertHTML', false,
+      insertHtmlWithIntegrityCheck(
         `<div class="kb-pagelink" contenteditable="false" data-page="${p.id}">` +
           `<button type="button" class="kb-block-delete" title="Delete this page card" onclick="event.preventDefault(); event.stopPropagation(); if (confirm('Delete this page card?')) this.closest('.kb-pagelink').remove();">✕</button>` +
           `${escapeHtml(p.icon || '📄')} Page card: ${escapeHtml(p.title)}` +
-        `</div><p><br></p>`);
+        `</div><p><br></p>`,
+        el => el.innerHTML.includes('Page card:'),
+        'page card'
+      );
     }
 
     // ---- Resource card (image + text bundled with a PDF or page link) ----
@@ -407,7 +453,7 @@
       }
 
       placeCaretInEditor();
-      document.execCommand('insertHTML', false, card);
+      insertHtmlWithIntegrityCheck(card, el => !!el.querySelector('.kb-resource-title'), 'resource card');
     }
 
     function formatWordText(command, value = null) {
@@ -443,7 +489,12 @@
       document.getElementById('page-slug-input').value = page.slug;
       document.getElementById('page-gated-check').checked = page.isGated;
       document.getElementById('page-price-input').value = page.price || 0;
-      document.getElementById('word-editor-canvas').innerHTML = page.content;
+      // A seeded empty paragraph, not '', even for a page with genuinely no content yet -- so the
+      // very first character typed lands inside a real <p> (with normal spacing) instead of as a
+      // bare text node sitting directly in the canvas, which is what an empty contenteditable div
+      // does by default. See ensureWordLikeParagraphs() for the same fix applied to every line
+      // after the first (via Enter).
+      document.getElementById('word-editor-canvas').innerHTML = page.content || '<p><br></p>';
       fillPageMetaFields(page);
       setSlugFieldEditable(false);
       updateSlugHint();
@@ -544,7 +595,9 @@
       document.getElementById('page-slug-input').value = '';
       document.getElementById('page-gated-check').checked = false;
       document.getElementById('page-price-input').value = '0';
-      document.getElementById('word-editor-canvas').innerHTML = '';
+      // Seeded with an empty paragraph rather than '' -- see the matching comment in
+      // loadPageIntoWordEditor() for why a truly empty canvas breaks the first line typed.
+      document.getElementById('word-editor-canvas').innerHTML = '<p><br></p>';
       fillPageMetaFields(null);
       setSlugFieldEditable(false);
       updateSlugHint();
@@ -984,6 +1037,14 @@
       } else {
         lockedBanner.classList.add('hidden');
         contentBox.innerHTML = page.content;
+        // The editor overlays small ✎/✕ controls directly onto non-editable blocks (resource
+        // cards, page cards, tables) so an admin can edit/delete them in place -- see the CSS
+        // comment near #word-editor-canvas .kb-block-delete. That CSS only STYLES them inside the
+        // editor; it never removes the <button> elements themselves, so without this they still
+        // render here too (unstyled, but present and clickable) -- reported as "there's an X even
+        // on the front end". Stripped unconditionally, for every page, regardless of how the
+        // content was produced (hand-typed, pasted, or published via the PDF wizard).
+        contentBox.querySelectorAll('.kb-block-delete').forEach(btn => btn.remove());
         hydratePageCards(contentBox);
       }
 

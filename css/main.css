@@ -154,7 +154,7 @@
     .word-canvas .kb-tip   { background: #ecfdf5; border-color: #a7f3d0; border-left-color: #059669; color: #064e3b; }
     .word-canvas .kb-warn  { background: #fffbeb; border-color: #fde68a; border-left-color: #d97706; color: #78350f; }
     .word-canvas .kb-facts { background: #f5f3ff; border-color: #ddd6fe; border-left-color: #7c3aed; color: #3b0764; }
-    .word-canvas .kb-table-wrap { overflow-x: auto; margin: 1rem 0; border: 1px solid #e2e8f0; border-radius: 10px; }
+    .word-canvas .kb-table-wrap { position: relative; overflow-x: auto; margin: 1rem 0; border: 1px solid #e2e8f0; border-radius: 10px; }
     .word-canvas table.kb-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .word-canvas .kb-table th, .word-canvas .kb-table td { border-bottom: 1px solid #e2e8f0; border-right: 1px solid #f1f5f9; padding: 0.5rem 0.7rem; text-align: left; vertical-align: top; min-width: 80px; }
     .word-canvas .kb-table th { background: #f1f5f9; font-weight: 700; color: #0f172a; }
@@ -176,10 +176,15 @@
     #word-editor-canvas .kb-cols > div { outline: 1px dashed #cbd5e1; outline-offset: 4px; min-height: 2rem; }
     #word-editor-canvas .kb-pagelink { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 6px 30px 6px 10px; margin: 4px 0; border: 1px dashed #f59e0b; border-radius: 8px; background: #fffbeb; font-size: 12px; font-weight: 700; color: #78350f; }
     /* Delete (and, for resource cards, edit) buttons overlaid on non-editable blocks (resource
-       cards, page cards). These blocks are contenteditable="false" "islands" the browser won't
-       let you select-and-backspace or click into reliably, so without these there is no way to
-       remove or change one once inserted (only delete-and-recreate). Editor-only -- never
-       appears on the published page (scoped to #word-editor-canvas, not .word-canvas). */
+       cards, page cards, tables). These blocks are contenteditable="false" "islands" the browser
+       won't let you select-and-backspace or click into reliably, so without these there is no way
+       to remove or change one once inserted (only delete-and-recreate). Editor-only -- styled only
+       inside #word-editor-canvas, not .word-canvas. The <button> elements themselves are still
+       part of the saved content (so the editor can find and style them), so this scoping alone
+       does NOT keep them off the published page -- renderDynamicCustomPage() in
+       08_word_page_creator.js strips every .kb-block-delete node from the DOM before a visitor
+       ever sees it. Keep both: the strip is the real guarantee, this CSS is what makes them usable
+       in the editor in the first place. */
     #word-editor-canvas .kb-block-delete {
       position: absolute; z-index: 3; width: 20px; height: 20px; padding: 0; border: none;
       border-radius: 999px; background: rgba(15,23,42,.78); color: #fff; font-size: 11px;
@@ -190,8 +195,21 @@
     #word-editor-canvas .kb-resource-card .kb-block-delete { top: 6px; right: 6px; }
     #word-editor-canvas .kb-resource-card .kb-block-delete-edit { top: 6px; right: 30px; }
     #word-editor-canvas .kb-pagelink .kb-block-delete { top: 50%; right: 6px; transform: translateY(-50%); }
+    /* Same overlay pattern, on a table's wrapper -- tables stay normal contenteditable content
+       (cells are typed into directly), only the button itself is an island, so this doesn't
+       interfere with editing cell text. Previously a table's only delete path was the floating
+       toolbar that appears while the cursor sits in a cell -- easy to miss, and the only block
+       type here without the same obvious ✕ every other block got. */
+    #word-editor-canvas .kb-table-wrap .kb-block-delete { top: 6px; right: 6px; }
     #word-editor-canvas details.kb-faq { display: block; }
     #word-editor-canvas details.kb-faq > *:not(summary) { display: block; }
+    /* A blank page should read like a blank Word/Docs page, not an unlabeled empty box. Targets
+       the exact "nothing typed yet" shape (a lone empty paragraph) rather than :empty, since the
+       seeded <p><br></p> always has the <br> as a child. */
+    #word-editor-canvas > p:only-child:has(> br:only-child):before {
+      content: "Type or paste your page content here. You can also paste or drag pictures in.";
+      color: #94a3b8; pointer-events: none;
+    }
     .page-tile-img { aspect-ratio: 16 / 9; object-fit: cover; width: 100%; }
     .word-canvas figure.kb-figure { margin: 1rem 0; }
     .word-canvas figure.kb-figure img { max-width: 100%; height: auto; border-radius: 10px; border: 1px solid #e2e8f0; display: block; }
