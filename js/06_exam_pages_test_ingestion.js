@@ -93,7 +93,11 @@
       // opted into cross-listing there via alsoListCategories (see studioRefreshAlsoListCategoryOptions
       // for why this is no longer the same thing as extraCategories/question-bank applicability).
       const scope = categoryAndDescendants(selectedSubCategory || rootId);
-      const papers = testsCatalog.filter(p => p.active !== false &&
+      // Delisted papers (Studio's "Delist" toggle) are skipped here too, same as inactive ones — but
+      // unlike inactive, a delisted paper stays fully purchasable/openable via a direct link or a
+      // Test paper card on a page (see testPaperCardHtml/hydratePageCards); it just doesn't clutter
+      // this browse grid.
+      const papers = testsCatalog.filter(p => p.active !== false && !p.delisted &&
         (scope.includes(p.category) || (p.alsoListCategories || []).some(c => scope.includes(c))));
 
       const bannerInfo = (selectedSubCategory && EXAM_CATEGORIES[selectedSubCategory]) || catInfo;
@@ -190,12 +194,14 @@
         const p_issue = problem(p);
         const inBundles = (bundles || []).filter(b => (b.papers || []).includes(p.id)).map(b => b.name);
         const isInactive = p.active === false;
+        const isDelisted = !!p.delisted;
         return `<div class="border ${p_issue ? 'border-rose-300 bg-rose-50' : isInactive ? 'border-slate-200 bg-slate-100' : 'border-slate-200 bg-white'} rounded-lg p-2.5 ${isInactive ? 'opacity-70' : ''}">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0 flex-1">
               <div class="font-bold text-slate-900 truncate">${escapeHtml(p.title || 'Untitled paper')}</div>
               <div class="text-[11px] text-slate-500 mt-0.5 flex flex-wrap items-center gap-2">
                 ${isInactive ? '<span class="font-bold uppercase tracking-wider bg-slate-700 text-white px-1.5 py-0.5 rounded">Inactive</span>' : ''}
+                ${isDelisted ? '<span class="font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded" title="Hidden from the Test Papers grid and search — still purchasable via a direct link or a page\'s Test paper card">🙈 Delisted</span>' : ''}
                 <span class="font-mono uppercase tracking-wider bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">${escapeHtml(catName(p.category))}</span>
                 ${(p.extraCategories || []).map(c => `<span class="font-mono uppercase tracking-wider bg-slate-50 border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded" title="Feeds the question bank of ${escapeHtml(catName(c))}">🏦 ${escapeHtml(catName(c))}</span>`).join('')}
                 ${(p.alsoListCategories || []).map(c => `<span class="font-mono uppercase tracking-wider bg-amber-50 border border-amber-200 text-amber-700 px-1.5 py-0.5 rounded" title="Also listed as its own paper + unlockable under ${escapeHtml(catName(c))}">🔗 ${escapeHtml(catName(c))}</span>`).join('')}
@@ -212,6 +218,7 @@
               <button onclick="downloadTestPaperCsv('${p.id}')" class="px-2 py-1 border border-emerald-300 hover:bg-emerald-100 text-emerald-700 font-bold rounded" title="Download this paper's questions as CSV — fix mistakes in a spreadsheet, then re-upload">⬇</button>
               <button onclick="openStudio('${p.id}', true)" class="px-2 py-1 border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold rounded" title="Duplicate as a new paper">⎘</button>
               <button onclick="toggleTestPaperActive('${p.id}')" class="px-2 py-1 border ${isInactive ? 'border-emerald-300 hover:bg-emerald-100 text-emerald-700' : 'border-slate-300 hover:bg-slate-100 text-slate-700'} font-bold rounded" title="${isInactive ? 'Reactivate — visible and openable again' : 'Deactivate — hides it and blocks opening for everyone'}">${isInactive ? '▶' : '⏸'}</button>
+              <button onclick="toggleTestPaperDelisted('${p.id}')" class="px-2 py-1 border ${isDelisted ? 'border-indigo-300 hover:bg-indigo-100 text-indigo-700' : 'border-slate-300 hover:bg-slate-100 text-slate-700'} font-bold rounded" title="${isDelisted ? 'Re-list — show in the Test Papers grid and search again' : 'Delist — hide from the Test Papers grid/search, keep it openable via a direct link or page card'}">${isDelisted ? '🙈' : '👁'}</button>
               <button onclick="editTestPaperPrice('${p.id}')" class="px-2 py-1 border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold rounded" title="Change price">₹</button>
               <button onclick="editTestPaperTitle('${p.id}')" class="px-2 py-1 border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold rounded" title="Rename">✎T</button>
               <button onclick="deleteTestPaper('${p.id}')" class="px-2 py-1 border border-rose-300 hover:bg-rose-100 text-rose-700 font-bold rounded" title="Delete permanently">×</button>
@@ -276,6 +283,26 @@
       p.active = nextActive;
       try {
         const { error } = await supabaseClient.from('tests_catalog').update({ active: nextActive }).eq('id', paperId);
+        if (error) throw error;
+      } catch (err) {
+        alert('Changed locally, but cloud save failed: ' + err.message);
+      }
+      renderTestsCatalogAdmin();
+      filterExamCategory(selectedCategory);
+    }
+
+    // Unlike Active/Inactive, delisting never blocks opening the paper or earning entitlement to
+    // it — isTestUnlockedForUser/launchExamPaper don't look at this flag at all. It only affects
+    // whether the paper shows up in the ordinary Test Papers browse grid and site search (see
+    // filterExamCategoryBase and siteSearch), so a direct link, a bundle, or a Test paper card
+    // placed on a custom page keep working exactly as before either way.
+    async function toggleTestPaperDelisted(paperId) {
+      const p = testsCatalog.find(x => x.id === paperId);
+      if (!p) return;
+      const nextDelisted = !p.delisted;
+      p.delisted = nextDelisted;
+      try {
+        const { error } = await supabaseClient.from('tests_catalog').update({ delisted: nextDelisted }).eq('id', paperId);
         if (error) throw error;
       } catch (err) {
         alert('Changed locally, but cloud save failed: ' + err.message);

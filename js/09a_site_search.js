@@ -35,10 +35,15 @@
         stripHtmlToText(p.content).toLowerCase().includes(q)
       ).slice(0, 6);
 
+      // BUG FIX: this previously had no active/delisted check at all, so an inactive paper (fully
+      // hidden and unopenable everywhere else) or a delisted one (hidden from the browse grid on
+      // purpose) could still surface here and send a student to a dead end. Matches the same
+      // active/delisted scope filterExamCategoryBase uses for the browse grid.
       const papers = testsCatalog.filter(p =>
-        (p.title || '').toLowerCase().includes(q) ||
+        p.active !== false && !p.delisted &&
+        ((p.title || '').toLowerCase().includes(q) ||
         (EXAM_CATEGORIES[p.category]?.name || '').toLowerCase().includes(q) ||
-        (p.scheme?.examBadge || '').toLowerCase().includes(q)
+        (p.scheme?.examBadge || '').toLowerCase().includes(q))
       ).slice(0, 6);
 
       return { pages, papers };

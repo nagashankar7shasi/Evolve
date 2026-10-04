@@ -496,8 +496,14 @@ window.onload = async function() {
   // ensureUnlockedPapersLoaded), or an admin manages it (see ensureFullTestsCatalogForAdmin).
   // `question_count` is a plain number kept in sync by Studio on every publish — safe to ship in bulk
   // since it carries no question content.
+  // BUG FIX: this select string previously omitted `also_list_categories` entirely (even though the
+  // mapping below already read `t.also_list_categories`) — the view had the same gap, so cross-listing
+  // a paper under alsoListCategories silently never worked via this bulk fetch; it always came back
+  // as [] here regardless of what was saved. Also now requests `delisted` (see the Studio "Delist"
+  // toggle), which hides a paper from the Test Papers browse grid/search while leaving it fully
+  // purchasable via a direct link or a page's Test paper card.
   const { data: tests } = await supabaseClient.from('tests_catalog_public')
-    .select('id, category, extra_categories, active, title, price, scheme, scheduled_for, question_count');
+    .select('id, category, extra_categories, also_list_categories, active, delisted, title, price, scheme, scheduled_for, question_count');
   if (tests && tests.length > 0) {
     testsCatalog = tests.map(t => {
       // Defensive: Supabase may return jsonb columns as parsed objects, but if the
@@ -527,7 +533,7 @@ window.onload = async function() {
       // `questions` is intentionally left unset here — [] would look like "loaded, zero questions"
       // and silently mask a paper failing to load; leaving it undefined makes every loader below
       // treat this paper as "content not fetched yet" until ensurePaperQuestionsLoaded runs.
-      return { id: t.id, category: t.category, extraCategories, alsoListCategories, active: t.active !== false, title: t.title, price: t.price, scheme, questionCount: +t.question_count || 0, scheduled_for: t.scheduled_for || null };
+      return { id: t.id, category: t.category, extraCategories, alsoListCategories, active: t.active !== false, delisted: !!t.delisted, title: t.title, price: t.price, scheme, questionCount: +t.question_count || 0, scheduled_for: t.scheduled_for || null };
     });
   }
 
