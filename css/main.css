@@ -213,6 +213,22 @@
     #word-editor-canvas .kb-cols .kb-block-delete,
     #word-editor-canvas .kb-cols-3 .kb-block-delete,
     #word-editor-canvas .kb-cols-4 .kb-block-delete { top: 6px; right: 6px; }
+    /* The generic column-delete rule just above has the same specificity (two classes) as the
+       per-block-type positioning rules above it (.kb-resource-card .kb-block-delete-edit,
+       .kb-pagelink .kb-block-delete), so without these higher-specificity overrides, source
+       order alone decides the winner for an island block nested inside a columns block -- and
+       since the column rule comes later, it would silently clobber the block's own position. For
+       a resource card specifically, that meant its edit (✎) button landed in the exact same spot
+       as its delete (✕) button (both top:6px;right:6px), so the delete button -- later in the
+       DOM, same z-index -- always intercepted clicks meant for edit, making "Edit" do nothing for
+       any resource card placed inside columns. These rules restore the correct per-type position
+       whenever that block type sits inside any columns block. */
+    #word-editor-canvas .kb-cols .kb-resource-card .kb-block-delete-edit,
+    #word-editor-canvas .kb-cols-3 .kb-resource-card .kb-block-delete-edit,
+    #word-editor-canvas .kb-cols-4 .kb-resource-card .kb-block-delete-edit { right: 30px; }
+    #word-editor-canvas .kb-cols .kb-pagelink .kb-block-delete,
+    #word-editor-canvas .kb-cols-3 .kb-pagelink .kb-block-delete,
+    #word-editor-canvas .kb-cols-4 .kb-pagelink .kb-block-delete { top: 50%; right: 6px; transform: translateY(-50%); }
     #word-editor-canvas details.kb-faq { display: block; }
     #word-editor-canvas details.kb-faq > *:not(summary) { display: block; }
     /* A blank page should read like a blank Word/Docs page, not an unlabeled empty box. Targets
