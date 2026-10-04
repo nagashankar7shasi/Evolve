@@ -26,27 +26,101 @@
       }
     });
 
-    // Inserts HTML for a non-editable block (resource card, page card) and immediately verifies it
-    // actually arrived with its real content, not just its opening markup -- execCommand
-    // ('insertHTML') re-parses a string in the context of the live, already-edited DOM, and one
-    // admin session ended up with a resource card stub (only its ✎/✕ buttons, no title or
-    // thumbnail) silently saved to Supabase this way; it only became visible as a broken empty box
-    // once that page reached students. Rather than assume this was a one-off, every new-card
-    // insertion is checked right after it happens: if the content that should be there isn't, the
-    // stub is removed and the admin is told to try again instead of it quietly reaching the
-    // database. `validateFn` gets the inserted element and returns whether it looks right.
+    // Inserts HTML for a non-editable block (resource card, page card, test paper card) and
+    // immediately verifies it actually arrived with its real content, not just its opening markup.
+    //
+    // This used to go through document.execCommand('insertHTML', ...), which re-parses the string
+    // a SECOND time through the browser's "paste" pipeline (the same codepath a real paste goes
+    // through, with its own sanitization/normalization pass) -- not a plain, predictable HTML
+    // parse. One admin session ended up with a resource card stub (only its ✎/✕ buttons, no title
+    // or thumbnail) silently saved to Supabase this way; it only became visible as a broken empty
+    // box once that page reached students. A regex-tagged marker + post-hoc validateFn check was
+    // added to catch that, and it did -- but the alert it produces ("didn't go through cleanly")
+    // kept recurring for some admin sessions, and separately, cards that DID pass validation (which
+    // only checks for a title) could still land missing an unrelated sibling, like the whole
+    // `.kb-resource-thumb` box, because execCommand's paste-pipeline reparse can drop a nested
+    // child without touching the parts validateFn happens to look at. That's a fragility class of
+    // execCommand itself (documented as behaving inconsistently across browsers/devices for rich
+    // HTML), not something a better regex or a wider validateFn can fully close off.
+    //
+    // Fixed by not going through execCommand's reparse at all: `html` is parsed ONCE into real DOM
+    // nodes via a <template>, and that already-correct node tree is spliced straight into the
+    // document with Range.insertNode -- the same standard, deterministic DOM API table/column
+    // edits in this file already rely on elsewhere (moveEditorCaretTo, removeColsBlock, etc.).
+    // There's no second reinterpretation step left to corrupt the markup, so the class of bug this
+    // function was built to catch can no longer happen -- the validateFn check and alert stay in
+    // place anyway as cheap defense-in-depth. `validateFn` gets the inserted block element and
+    // returns whether it looks right; `blockLabel` is used only in the alert text.
+    // Elements whose content model is "phrasing content only" -- a heading or paragraph can't
+    // validly contain a block like a resource card, so inserting one needs to split out of these
+    // first (and out of any inline-formatting element -- b/i/span/a/etc. -- in between), the same
+    // way a real paste mid-paragraph splits the paragraph and lands the new block between the two
+    // halves. DIV/TD/TH/LI/BLOCKQUOTE all legitimately allow block children (including the canvas
+    // itself, a .kb-cols column, a table cell, a list item, an info/tip/warn box), so climbing
+    // stops there instead of splitting further.
+    const PHRASING_ONLY_TAGS = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6']);
+    function escapeToBlockBoundary(range, canvas) {
+      let container = range.startContainer;
+      let offset = range.startOffset;
+      while (true) {
+        const el = container.nodeType === 1 ? container : container.parentNode;
+        if (el === canvas) return { container, offset };
+        const style = el.nodeType === 1 ? getComputedStyle(el) : null;
+        const mustSplit = PHRASING_ONLY_TAGS.has(el.tagName) || (style && style.display === 'inline');
+        if (!mustSplit) return { container, offset };
+        // Move everything from (container, offset) to the end of el into a sibling clone placed
+        // right after el, then continue climbing from the gap between the two halves.
+        const splitRange = document.createRange();
+        splitRange.setStart(container, offset);
+        splitRange.setEnd(el, el.childNodes.length);
+        const tail = splitRange.extractContents();
+        if (tail.hasChildNodes()) {
+          const clone = el.cloneNode(false);
+          clone.appendChild(tail);
+          el.parentNode.insertBefore(clone, el.nextSibling);
+        }
+        container = el.parentNode;
+        offset = Array.prototype.indexOf.call(container.childNodes, el) + 1;
+      }
+    }
+
     function insertHtmlWithIntegrityCheck(html, validateFn, blockLabel) {
       const canvas = document.getElementById('word-editor-canvas');
-      const marker = 'kb-just-inserted-' + Date.now() + '-' + Math.random().toString(36).slice(2);
-      const markedHtml = html.replace(/^(<div\s+class="[^"]+")/, `$1 data-just-inserted="${marker}"`);
-      document.execCommand('insertHTML', false, markedHtml);
-      const inserted = canvas.querySelector(`[data-just-inserted="${marker}"]`);
-      if (!inserted) return; // caret wasn't in the canvas or insertion landed somewhere unexpected -- nothing to validate
-      inserted.removeAttribute('data-just-inserted');
-      if (!validateFn(inserted)) {
-        inserted.remove();
+      const sel = window.getSelection();
+      if (!sel.rangeCount) return; // caret wasn't placed -- nothing to insert into
+      const original = sel.getRangeAt(0);
+      if (!canvas.contains(original.startContainer)) return; // caret wasn't in the canvas -- nothing to validate
+
+      const template = document.createElement('template');
+      template.innerHTML = html;
+      const fragment = template.content;
+      const block = fragment.firstElementChild;
+      if (!block) return;
+
+      // Delete any actual selection first (replacing selected text is normal insert behavior,
+      // same as a real paste) -- deleteContents() collapses the range to where that selection
+      // started, so escapeToBlockBoundary below always climbs from a plain caret position, whether
+      // or not there was a selection to begin with.
+      original.deleteContents();
+      const { container, offset } = escapeToBlockBoundary(original, canvas);
+      const range = document.createRange();
+      range.setStart(container, offset);
+      range.collapse(true);
+      range.insertNode(fragment);
+
+      if (!validateFn(block)) {
+        block.remove();
         alert(`Inserting that ${blockLabel} didn't go through cleanly, so nothing was added. Please try again.`);
+        return;
       }
+
+      // Leave the caret right after the inserted block, same place execCommand('insertHTML')
+      // used to, so typing continues naturally instead of jumping back to the old selection.
+      const after = document.createRange();
+      after.setStartAfter(block);
+      after.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(after);
     }
 
     function placeCaretInEditor() {
