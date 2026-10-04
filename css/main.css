@@ -307,6 +307,26 @@
       padding: 1px 6px; border-radius: 99px; z-index: 2;
     }
 
+    /* Test paper card: rich, always-live preview tile embedded in a custom page via the Word
+       Page Editor's "📝 Test paper card" button (see testPaperCardHtml/hydratePageCards in
+       js/08_word_page_creator.js). Indigo accent distinguishes it from the amber page-card/
+       resource-card family since it links out to a timed exam rather than another page/PDF. */
+    .word-canvas .kb-paper-card {
+      display: flex; flex-direction: column; gap: 4px; background: #fff;
+      border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;
+      box-shadow: 0 1px 3px rgba(15,23,42,.06); text-decoration: none; color: inherit;
+      transition: border-color .15s, box-shadow .15s, transform .15s; margin: 0.75rem 0;
+    }
+    .word-canvas .kb-paper-card:hover { border-color: #6366f1; box-shadow: 0 4px 10px rgba(99,102,241,.15); transform: translateY(-1px); }
+    .word-canvas .kb-paper-card-head { display: flex; align-items: center; justify-content: space-between; }
+    .word-canvas .kb-paper-card-badge { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; background: #e0e7ff; color: #3730a3; padding: 2px 10px; border-radius: 99px; }
+    .word-canvas .kb-paper-card-price { font-size: 12px; font-family: monospace; font-weight: 800; color: #0f172a; }
+    .word-canvas .kb-paper-card-price.is-free { color: #059669; }
+    .word-canvas .kb-paper-card-title { font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 4px; }
+    .word-canvas .kb-paper-card-meta { font-size: 11px; font-family: monospace; color: #64748b; }
+    .word-canvas .kb-paper-card-cta { margin-top: 10px; align-self: flex-start; font-size: 11px; font-weight: 800; color: #4338ca; }
+    .word-canvas .kb-paper-card:hover .kb-paper-card-cta { text-decoration: underline; }
+
     /* ---------- Home page: ticker, stats, section styling ---------- */
     @keyframes ticker-scroll { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
     .animate-ticker { display: inline-block; padding-left: 100%; animation: ticker-scroll 45s linear infinite; }
