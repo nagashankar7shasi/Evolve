@@ -302,3 +302,26 @@
       saveExamSubjects(categoryId, next);
     }
 
+    // Batched version for bulk ingestion (CSV upload, which can introduce many distinct new
+    // subjects in one paper). Registers them all into ONE saveExamSubjects() call/round-trip
+    // instead of one per subject -- besides being faster, this means a cloud-sync problem surfaces
+    // as at most one alert instead of one per new subject (a 100-question KPSC/UPSC prelims paper
+    // can easily span 8-15 subjects, which previously meant clicking through that many blocking
+    // alerts in a row for a single underlying failure).
+    function registerSubjectsIfNew(categoryId, names) {
+      const list = examSubjects[categoryId] || [];
+      const have = new Set(list.map(s => s.toLowerCase()));
+      const toAdd = [];
+      (names || []).forEach(raw => {
+        const trimmed = String(raw || '').trim();
+        if (!trimmed) return;
+        const key = trimmed.toLowerCase();
+        if (have.has(key)) return;
+        have.add(key); // dedupe within this same batch too (two rows naming the same new subject)
+        toAdd.push(trimmed);
+      });
+      if (!toAdd.length) return;
+      const next = [...list, ...toAdd].sort((a, b) => a.localeCompare(b));
+      saveExamSubjects(categoryId, next);
+    }
+

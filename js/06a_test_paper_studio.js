@@ -715,7 +715,7 @@
       });
       studioRenumber();
       studioRenderList();
-      if (category) seenSubjects.forEach(s => registerSubjectIfNew(category, s));
+      if (category) registerSubjectsIfNew(category, [...seenSubjects]);
       const dupWarnings = studioFindNearDuplicates(newlyAddedForDupCheck, preExistingForDupCheck, bankPoolForDupCheck);
       let msg = `${added} question${added === 1 ? '' : 's'} added. Total now ${studioState.questions.length}.`;
       if (dupWarnings.length) {
