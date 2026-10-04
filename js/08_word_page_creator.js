@@ -10,10 +10,19 @@
       const node = sel.anchorNode;
       if (node && canvas.contains(node)) {
         editorRange = sel.getRangeAt(0).cloneRange();
-        const cell = (node.nodeType === 1 ? node : node.parentElement).closest('td, th');
+        const el = node.nodeType === 1 ? node : node.parentElement;
+        const cell = el.closest('td, th');
         const tools = document.getElementById('table-tools');
         tools.classList.toggle('hidden', !cell);
         tools.classList.toggle('inline-flex', !!cell);
+        // Same floating-toolbar pattern as tables: shows +/- Column controls only while the
+        // caret is actually inside a multi-column block, so they don't clutter the bar otherwise.
+        const colsBlock = el.closest('.kb-cols, .kb-cols-3, .kb-cols-4');
+        const colsTools = document.getElementById('cols-tools');
+        if (colsTools) {
+          colsTools.classList.toggle('hidden', !colsBlock);
+          colsTools.classList.toggle('inline-flex', !!colsBlock);
+        }
       }
     });
 
@@ -54,14 +63,59 @@
       }
     }
 
+    // Same ✕-overlay pattern as the table-delete button above: an island button, not part of
+    // normal editable flow, so a multi-column block can be removed in one obvious click instead
+    // of only through the floating per-block toolbar (which, like the old table toolbar, is easy
+    // to miss unless the cursor happens to already be inside the block).
+    const COLS_DELETE_BTN = '<button type="button" class="kb-block-delete" contenteditable="false" title="Delete this column block" onmousedown="event.preventDefault()" onclick="event.stopPropagation(); removeColsBlock(this);">✕</button>';
+    function removeColsBlock(btn) {
+      const block = btn.closest('.kb-cols, .kb-cols-3, .kb-cols-4');
+      if (block && confirm('Delete this column block?')) block.remove();
+    }
+
+    // Recomputes the actual number of columns (every child except the delete-button island) and
+    // sets it as an inline style, so the layout tracks columns added/removed after the block was
+    // first inserted -- the mobile/tablet breakpoints in main.css override this with !important,
+    // so a block with 5 or 6 columns still collapses sensibly on a phone.
+    function applyColsWidth(block) {
+      const cols = [...block.children].filter(c => c.tagName === 'DIV');
+      block.style.gridTemplateColumns = `repeat(${Math.max(1, cols.length)}, minmax(0, 1fr))`;
+    }
+
+    // Adds or removes one column from the multi-column block the caret is currently inside.
+    // Mirrors tableAction()'s addCol/delCol, which is the existing pattern admins already know
+    // from tables -- requested so columns (like table rows/columns) can keep changing after the
+    // block is first inserted, not just at insertion time.
+    function columnsAction(action) {
+      const node = editorRange && editorRange.startContainer;
+      const el = node && (node.nodeType === 1 ? node : node.parentElement);
+      const block = el && el.closest('.kb-cols, .kb-cols-3, .kb-cols-4');
+      if (!block) return alert('Click inside a multi-column block first.');
+      const cols = [...block.children].filter(c => c.tagName === 'DIV');
+      if (action === 'addCol') {
+        if (cols.length >= 6) return alert('A column block supports at most 6 columns.');
+        const div = document.createElement('div');
+        div.innerHTML = `<h3>Column ${cols.length + 1}</h3><p>Text.</p>`;
+        block.appendChild(div);
+        moveEditorCaretTo(div.querySelector('p'));
+      } else if (action === 'delCol') {
+        if (cols.length <= 1) return alert('A column block needs at least one column.');
+        const caretCol = el.closest('.kb-cols > div, .kb-cols-3 > div, .kb-cols-4 > div');
+        (caretCol && cols.includes(caretCol) ? caretCol : cols[cols.length - 1]).remove();
+        const remaining = [...block.children].filter(c => c.tagName === 'DIV');
+        moveEditorCaretTo(remaining[remaining.length - 1]);
+      }
+      applyColsWidth(block);
+    }
+
     const BLOCK_TEMPLATES = {
       info: '<div class="kb-box kb-info"><div class="kb-box-title">ℹ️ Note</div><p>Write the note here.</p></div>',
       tip: '<div class="kb-box kb-tip"><div class="kb-box-title">✅ Exam tip</div><p>Write the tip here.</p></div>',
       warn: '<div class="kb-box kb-warn"><div class="kb-box-title">⚠️ Common mistake</div><p>Describe the trap students fall into.</p></div>',
       facts: '<div class="kb-box kb-facts"><div class="kb-box-title">📌 Key facts</div><ul><li>First fact</li><li>Second fact</li><li>Third fact</li></ul></div>',
-      cols: '<div class="kb-cols"><div><h3>Left heading</h3><p>Left column text.</p></div><div><h3>Right heading</h3><p>Right column text.</p></div></div>',
-      cols3: '<div class="kb-cols-3"><div><h3>Column 1</h3><p>Text.</p></div><div><h3>Column 2</h3><p>Text.</p></div><div><h3>Column 3</h3><p>Text.</p></div></div>',
-      cols4: '<div class="kb-cols-4"><div><h3>1</h3><p>Text.</p></div><div><h3>2</h3><p>Text.</p></div><div><h3>3</h3><p>Text.</p></div><div><h3>4</h3><p>Text.</p></div></div>',
+      cols: '<div class="kb-cols">' + COLS_DELETE_BTN + '<div><h3>Left heading</h3><p>Left column text.</p></div><div><h3>Right heading</h3><p>Right column text.</p></div></div>',
+      cols3: '<div class="kb-cols-3">' + COLS_DELETE_BTN + '<div><h3>Column 1</h3><p>Text.</p></div><div><h3>Column 2</h3><p>Text.</p></div><div><h3>Column 3</h3><p>Text.</p></div></div>',
+      cols4: '<div class="kb-cols-4">' + COLS_DELETE_BTN + '<div><h3>1</h3><p>Text.</p></div><div><h3>2</h3><p>Text.</p></div><div><h3>3</h3><p>Text.</p></div><div><h3>4</h3><p>Text.</p></div></div>',
       grid: '<div class="kb-grid"><p>Insert Resource cards (or any content) here — this grid auto-flows into as many columns as fit.</p></div>',
       stats: '<div class="kb-stats"><div><b>64%</b><span>Services share of GSVA</span></div><div><b>31</b><span>Districts in Karnataka</span></div><div><b>1956</b><span>State reorganisation</span></div></div>',
       timeline: '<ol class="kb-timeline"><li><b>1336</b>Event or ruler</li><li><b>1565</b>Next event</li><li><b>1799</b>Next event</li></ol>',
