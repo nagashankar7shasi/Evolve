@@ -321,7 +321,86 @@
         </div>
         <button onclick="renderSubjectCleanupTool('${catId}')" class="text-[11px] font-bold text-amber-700 hover:underline">🧹 Find & merge duplicate subjects in this category's questions</button>
         <div id="ec-subject-cleanup-${catId}" class="mt-2"></div>
+        <div class="mt-3 border-t pt-2">
+          <div class="text-[11px] font-bold text-slate-700 mb-1">📦 Subject groups <span class="text-slate-400 font-normal">— combine subjects into one row on the student Weakness/Strength dashboard (e.g. "History" + "Art &amp; Culture" → "Humanities"); a question's own subject tag is never changed, so ungrouping is just as easy</span></div>
+          <div id="ec-subject-groups-${catId}"></div>
+        </div>
       `;
+      renderSubjectGroupsAdmin(catId);
+    }
+
+    // ---- Subject groups admin (per category) ----
+    function renderSubjectGroupsAdmin(catId) {
+      const root = document.getElementById(`ec-subject-groups-${catId}`);
+      if (!root) return;
+      const groups = subjectGroups[catId] || [];
+      const allSubjects = (examSubjects[catId] || []).slice().sort((a, b) => a.localeCompare(b));
+      const groupedElsewhere = (subjName, exceptGroupName) =>
+        groups.find(g => g.name !== exceptGroupName && g.members.includes(subjName));
+      root.innerHTML = `
+        ${groups.length ? groups.map((g, gi) => `
+          <div id="sg-group-${catId}-${gi}" class="p-2 bg-amber-50 border border-amber-200 rounded-lg text-[11px] mb-2">
+            <div class="flex items-center gap-2 mb-1.5">
+              <input type="text" class="sg-name-input flex-1 px-2 py-1 border rounded-lg font-bold" value="${escapeHtml(g.name)}" />
+              <button onclick="deleteSubjectGroupUi('${catId}', ${JSON.stringify(g.name).replace(/"/g, '&quot;')})" class="text-rose-600 font-bold hover:underline">Delete group</button>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              ${allSubjects.length ? allSubjects.map(s => {
+                const other = groupedElsewhere(s, g.name);
+                const checked = g.members.includes(s);
+                const disabled = !!other && !checked;
+                return `<label class="flex items-center gap-1 ${disabled ? 'opacity-40' : 'cursor-pointer'}" ${disabled ? `title="Already in &quot;${escapeHtml(other.name)}&quot;"` : ''}>
+                  <input type="checkbox" data-subject="${escapeHtml(s)}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} class="rounded" />
+                  ${escapeHtml(s)}
+                </label>`;
+              }).join('') : '<p class="text-slate-400">No subjects registered yet for this category.</p>'}
+            </div>
+            <button onclick="saveSubjectGroupUi('${catId}', ${gi})" class="mt-1.5 px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold rounded-lg">Save group</button>
+          </div>`).join('') : '<p class="text-slate-400 text-[11px] mb-2">No subject groups yet — ungrouped subjects show individually on the dashboard.</p>'}
+        <div class="flex items-center gap-2">
+          <input type="text" id="sg-newname-${catId}" placeholder="New group name" class="flex-1 px-2 py-1 border rounded-lg text-xs" onkeydown="if(event.key==='Enter'){event.preventDefault();addSubjectGroupUi('${catId}');}" />
+          <button onclick="addSubjectGroupUi('${catId}')" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold rounded-lg">+ Add group</button>
+        </div>
+      `;
+    }
+
+    function addSubjectGroupUi(catId) {
+      const input = document.getElementById(`sg-newname-${catId}`);
+      const name = (input.value || '').trim();
+      if (!name) return alert('Give the group a name.');
+      const groups = subjectGroups[catId] || [];
+      if (groups.some(g => g.name.toLowerCase() === name.toLowerCase())) return alert('A group with that name already exists.');
+      // Draft only (local state) until "Save group" is clicked, same as every other admin form here --
+      // lets the admin tick members before the first cloud write instead of creating an empty group.
+      subjectGroups[catId] = [...groups, { name, members: [] }];
+      input.value = '';
+      renderSubjectGroupsAdmin(catId);
+    }
+
+    async function saveSubjectGroupUi(catId, gi) {
+      const groups = subjectGroups[catId] || [];
+      const g = groups[gi];
+      if (!g) return;
+      const container = document.getElementById(`sg-group-${catId}-${gi}`);
+      const newName = (container.querySelector('.sg-name-input').value || '').trim();
+      if (!newName) return alert('Give the group a name.');
+      if (groups.some((og, ogi) => ogi !== gi && og.name.toLowerCase() === newName.toLowerCase())) {
+        return alert('Another group already has that name.');
+      }
+      const members = [...container.querySelectorAll('input[type=checkbox][data-subject]')]
+        .filter(cb => cb.checked).map(cb => cb.dataset.subject);
+      const oldName = g.name;
+      await saveSubjectGroup(catId, newName, members);
+      // Renamed: the old-named row is a separate (category_id, group_name) primary key in Supabase,
+      // so it has to be deleted explicitly too, or it'd linger as a stale duplicate.
+      if (oldName !== newName) await deleteSubjectGroup(catId, oldName);
+      renderCategorySubjectsAdmin(catId); // full re-render so other groups' disabled checkboxes reflect the new membership
+    }
+
+    function deleteSubjectGroupUi(catId, name) {
+      if (!confirm(`Delete the "${name}" group? Its subjects will show individually on the dashboard again.`)) return;
+      deleteSubjectGroup(catId, name);
+      renderCategorySubjectsAdmin(catId);
     }
 
     function addSubjectToRegistry(catId) {
@@ -695,24 +774,45 @@
       const countEl = document.getElementById('dash-weakness-count');
       if (!wrap) return;
       if (admin || attempts.length === 0) { wrap.classList.add('hidden'); return; }
-      const subjects = {};   // { subject: { correct, wrong, unattempted, total } }
+      const subjects = {};       // { key: { correct, wrong, unattempted, total } }
+      const labelByKey = {};     // key -> display label (a group name, or the raw subject if ungrouped)
+      const membersByKey = {};   // key -> Set of raw subject strings actually seen under this key (for the Practise shortcut)
+      // A student can have attempts from more than one exam category (e.g. KAS and PSI), and
+      // subject groups are defined per category (see subjectGroupNameFor) -- so each attempt's own
+      // paper->category has to be resolved to apply the RIGHT category's grouping to its questions,
+      // rather than grouping blind off a bare subject string. Grouped rows are keyed internally by
+      // `${categoryId}::${groupName}` so two different categories that happen to define a
+      // same-named group (e.g. both calling one "Humanities") never get their stats merged into one
+      // bucket -- only the display label is the plain group name. Ungrouped subjects keep the exact
+      // same flat, cross-category key they always had (a bare subject string) -- unchanged behavior
+      // for anyone who hasn't set up any groups.
       attempts.forEach(a => {
         const qs = a.questionsSnapshot || a.questions_snapshot || [];
         const sel = a.userSelections || a.user_selections || {};
+        const paper = testsCatalog.find(p => p.id === (a.paperId || a.paper_id));
+        const categoryId = paper && paper.category;
         qs.forEach((q, idx) => {
-          const subj = (q && q.subject && String(q.subject).trim()) || 'Untagged';
-          if (!subjects[subj]) subjects[subj] = { correct: 0, wrong: 0, unattempted: 0, total: 0 };
-          subjects[subj].total++;
+          const rawSubj = (q && q.subject && String(q.subject).trim()) || 'Untagged';
+          const groupName = (categoryId && rawSubj !== 'Untagged') ? subjectGroupNameFor(categoryId, rawSubj) : rawSubj;
+          const isGrouped = !!categoryId && groupName !== rawSubj;
+          const key = isGrouped ? `${categoryId}::${groupName}` : rawSubj;
+          if (!subjects[key]) {
+            subjects[key] = { correct: 0, wrong: 0, unattempted: 0, total: 0 };
+            labelByKey[key] = isGrouped ? groupName : rawSubj;
+            membersByKey[key] = new Set();
+          }
+          membersByKey[key].add(rawSubj);
+          subjects[key].total++;
           const choice = sel[idx + 1];
-          if (!choice)                              subjects[subj].unattempted++;
-          else if (choice === (q && q.correct))     subjects[subj].correct++;
-          else                                       subjects[subj].wrong++;
+          if (!choice)                              subjects[key].unattempted++;
+          else if (choice === (q && q.correct))     subjects[key].correct++;
+          else                                       subjects[key].wrong++;
         });
       });
-      const rows = Object.entries(subjects).map(([subj, s]) => {
+      const rows = Object.entries(subjects).map(([key, s]) => {
         const attempted = s.correct + s.wrong;
         const acc = attempted > 0 ? (s.correct / attempted) * 100 : 0;
-        return { subj, ...s, attempted, acc };
+        return { key, subj: labelByKey[key], members: [...membersByKey[key]], ...s, attempted, acc };
       });
       if (!rows.length) { wrap.classList.add('hidden'); return; }
       wrap.classList.remove('hidden');
@@ -731,15 +831,20 @@
         const label    = r.acc >= 70 ? 'Strong' : r.acc >= 40 ? 'Practise more' : 'Focus area';
         // Preserved from the old (now-removed) duplicate panel: a direct "Practise" shortcut that
         // jumps into a subject-filtered practice session — kept only on weak subjects, where it's
-        // actually useful.
+        // actually useful. For a grouped row, r.members holds every raw subject folded into it, so
+        // the shortcut practises across all of them (matching what the row visually represents)
+        // rather than just whichever one happened to be first.
         const practiseBtn = isWeak
-          ? ` <button data-subject="${escapeHtml(r.subj)}" onclick="practiseSubject(this.dataset.subject)" class="text-amber-700 font-bold hover:underline text-[11px]">Practise →</button>`
+          ? ` <button data-subjects='${escapeHtml(JSON.stringify(r.members))}' onclick="practiseSubject(JSON.parse(this.dataset.subjects))" class="text-amber-700 font-bold hover:underline text-[11px]">Practise →</button>`
+          : '';
+        const groupHint = r.members.length > 1
+          ? ` <span class="text-[10px] text-slate-400" title="${escapeHtml(r.members.join(', '))}">(${r.members.length} subjects grouped)</span>`
           : '';
         return `
           <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 items-center">
             <div class="min-w-0">
               <div class="flex items-baseline gap-2 flex-wrap">
-                <span class="font-bold text-slate-800 text-sm truncate">${escapeHtml(r.subj)}</span>
+                <span class="font-bold text-slate-800 text-sm truncate">${escapeHtml(r.subj)}</span>${groupHint}
                 <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full whitespace-nowrap" style="background:${badgeBg};color:${badgeFg};">${label}</span>
                 ${practiseBtn}
               </div>
