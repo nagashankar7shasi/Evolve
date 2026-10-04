@@ -11,10 +11,58 @@
       document.getElementById('cfg-payee-name').value = pricingMaster.payeeName;
       const wa = document.getElementById('cfg-whatsapp-number');
       if (wa) wa.value = pricingMaster.whatsappNumber || '';
+      const waId = document.getElementById('cfg-whatsapp-id');
+      if (waId) waId.value = pricingMaster.whatsappId || '';
+      const waEnabled = document.getElementById('cfg-whatsapp-enabled');
+      // whatsappEnabled defaults to true for installs saved before this toggle existed (merged in
+      // by the initialPricingMaster spread at load time), so this only reads false when the admin
+      // has actually turned it off.
+      if (waEnabled) waEnabled.checked = pricingMaster.whatsappEnabled !== false;
+      const waModeRadio = document.querySelector(`input[name="cfg-whatsapp-mode"][value="${pricingMaster.whatsappMode === 'id' ? 'id' : 'number'}"]`);
+      if (waModeRadio) waModeRadio.checked = true;
+      const tgEnabled = document.getElementById('cfg-telegram-enabled');
+      if (tgEnabled) tgEnabled.checked = !!pricingMaster.telegramEnabled;
+      const tgUser = document.getElementById('cfg-telegram-username');
+      if (tgUser) tgUser.value = pricingMaster.telegramUsername || '';
+      renderContactConfigVisibility();
       const wm = document.getElementById('cfg-watermark-template');
       if (wm) wm.value = pricingMaster.watermarkTemplate || '';
       renderQrPreview();
       renderBundlesAdmin();
+    }
+
+    // Shows only the WhatsApp input (phone number vs ID) that matches the selected mode, and dims
+    // + disables each contact's fields while its "Show ... option at checkout" box is unticked --
+    // so the saved value isn't lost, it's just not being used while hidden.
+    function renderContactConfigVisibility() {
+      const waOn = document.getElementById('cfg-whatsapp-enabled')?.checked;
+      const waMode = document.querySelector('input[name="cfg-whatsapp-mode"]:checked')?.value || 'number';
+      const waFields = document.getElementById('cfg-whatsapp-fields');
+      const waNumberRow = document.getElementById('cfg-whatsapp-number-row');
+      const waIdRow = document.getElementById('cfg-whatsapp-id-row');
+      if (waFields) {
+        waFields.classList.toggle('opacity-40', !waOn);
+        waFields.querySelectorAll('input').forEach(i => i.disabled = !waOn);
+      }
+      if (waNumberRow) waNumberRow.classList.toggle('hidden', waMode !== 'number');
+      if (waIdRow) waIdRow.classList.toggle('hidden', waMode !== 'id');
+
+      const tgOn = document.getElementById('cfg-telegram-enabled')?.checked;
+      const tgFields = document.getElementById('cfg-telegram-fields');
+      if (tgFields) {
+        tgFields.classList.toggle('opacity-40', !tgOn);
+        tgFields.querySelectorAll('input').forEach(i => i.disabled = !tgOn);
+      }
+    }
+
+    // Admin may paste the whole wa.me/message/<id> link or just the bare code after it -- either
+    // way the stored value is just the code, so buildWhatsAppUrl() can reassemble a clean link.
+    function extractWhatsAppId(raw) {
+      const v = (raw || '').trim();
+      if (!v) return '';
+      const m = v.match(/wa\.me\/message\/([A-Za-z0-9]+)/i);
+      if (m) return m[1];
+      return v.replace(/^https?:\/\//i, '').replace(/^wa\.me\//i, '');
     }
 
     // Admin-uploaded payment QR (as opposed to the auto-generated-from-UPI-ID one used at checkout
@@ -109,11 +157,24 @@
     function savePricingMasterSettings() {
       pricingMaster.upiId = document.getElementById('cfg-upi-id').value.trim() || 'yourkasacademy@upi';
       pricingMaster.payeeName = document.getElementById('cfg-payee-name').value.trim() || "Evolve+";
+
+      const waEnabled = document.getElementById('cfg-whatsapp-enabled');
+      if (waEnabled) pricingMaster.whatsappEnabled = waEnabled.checked;
+      const waModeChecked = document.querySelector('input[name="cfg-whatsapp-mode"]:checked');
+      if (waModeChecked) pricingMaster.whatsappMode = waModeChecked.value;
       const wa = document.getElementById('cfg-whatsapp-number');
       if (wa) {
         const digits = wa.value.replace(/\D/g, '').slice(0, 10);
         pricingMaster.whatsappNumber = digits;
       }
+      const waId = document.getElementById('cfg-whatsapp-id');
+      if (waId) pricingMaster.whatsappId = extractWhatsAppId(waId.value);
+
+      const tgEnabled = document.getElementById('cfg-telegram-enabled');
+      if (tgEnabled) pricingMaster.telegramEnabled = tgEnabled.checked;
+      const tgUser = document.getElementById('cfg-telegram-username');
+      if (tgUser) pricingMaster.telegramUsername = tgUser.value.trim().replace(/^@/, '').replace(/^https?:\/\/t\.me\//i, '').replace(/[^a-zA-Z0-9_]/g, '');
+
       const wm = document.getElementById('cfg-watermark-template');
       if (wm) pricingMaster.watermarkTemplate = wm.value.trim();
       localStorage.setItem('kas_pricing_master', JSON.stringify(pricingMaster));
@@ -123,13 +184,32 @@
       alert('UPI settings saved.');
     }
 
-    // Build a click-to-WhatsApp URL using the admin's configured number + pre-filled message.
-    // Returns '' if no number is set — callers should hide the button in that case.
+    // Build a click-to-WhatsApp URL for the checkout modal, honoring the whole-feature toggle plus
+    // whichever contact mode is selected. In 'id' mode this uses WhatsApp's own wa.me/message/<id>
+    // short link (generated from the WhatsApp Business app), which never puts the real number
+    // anywhere in this page's HTML -- only WhatsApp's servers resolve it to a number. Returns ''
+    // when the feature is off or nothing usable is configured — callers hide the button in that case.
     function buildWhatsAppUrl(prefillMessage) {
+      if (pricingMaster.whatsappEnabled === false) return '';
+      const msg = encodeURIComponent(prefillMessage || 'Hi, I have a question about my Evolve+ purchase.');
+      if (pricingMaster.whatsappMode === 'id') {
+        const id = (pricingMaster.whatsappId || '').trim();
+        if (!id) return '';
+        return `https://wa.me/message/${encodeURIComponent(id)}?text=${msg}`;
+      }
       const n = (pricingMaster.whatsappNumber || '').replace(/\D/g, '');
       if (n.length !== 10) return '';
-      const msg = encodeURIComponent(prefillMessage || 'Hi, I have a question about my Evolve+ purchase.');
       return `https://wa.me/91${n}?text=${msg}`;
+    }
+
+    // Telegram's t.me/<username> links are already ID-based (a username, never a phone number), so
+    // there's no "number vs ID" choice to make here -- just the one whole-feature toggle.
+    function buildTelegramUrl(prefillMessage) {
+      if (!pricingMaster.telegramEnabled) return '';
+      const username = (pricingMaster.telegramUsername || '').trim();
+      if (!username) return '';
+      const msg = encodeURIComponent(prefillMessage || 'Hi, I have a question about my Evolve+ purchase.');
+      return `https://t.me/${encodeURIComponent(username)}?text=${msg}`;
     }
 
     let checkoutItem = null;
@@ -178,17 +258,21 @@
       document.getElementById('checkout-bill-scope').innerText = scopeLabel;
       document.getElementById('checkout-vpa-display').innerText = pricingMaster.upiId;
 
-      // WhatsApp button: prefill a message with the item + price so the admin has context.
-      // Hidden entirely if the number isn't set (avoids a dead button).
+      // WhatsApp / Telegram buttons: prefill a message with the item + price so the admin has
+      // context. Each is hidden individually when its feature is off or unconfigured, and the
+      // shared contact box collapses entirely when neither has anything to show (avoids a bare
+      // border-top with nothing under it).
       const waUrl = buildWhatsAppUrl(`Hi, I want to buy "${title}" (₹${price}) on Evolve+. Can you help?`);
       const waBox = document.getElementById('checkout-whatsapp-box');
-      const waBtn = document.getElementById('checkout-whatsapp-btn');
-      if (waUrl) {
-        waBtn.href = waUrl;
-        waBox.classList.remove('hidden');
-      } else {
-        waBox.classList.add('hidden');
-      }
+      if (waUrl) document.getElementById('checkout-whatsapp-btn').href = waUrl;
+      waBox.classList.toggle('hidden', !waUrl);
+
+      const tgUrl = buildTelegramUrl(`Hi, I want to buy "${title}" (₹${price}) on Evolve+. Can you help?`);
+      const tgBox = document.getElementById('checkout-telegram-box');
+      if (tgUrl) document.getElementById('checkout-telegram-btn').href = tgUrl;
+      tgBox.classList.toggle('hidden', !tgUrl);
+
+      document.getElementById('checkout-contact-box').classList.toggle('hidden', !waUrl && !tgUrl);
 
       const upsell = bundlesForSale(b => b.allAccess)[0];
       const upsellBox = document.getElementById('checkout-upsell-box');
