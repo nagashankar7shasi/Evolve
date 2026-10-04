@@ -164,6 +164,20 @@
        08_word_page_creator.js, for the "add/remove columns after the fact" feature) still
        collapses to one column on phones -- the inline style otherwise wins over this breakpoint. */
     @media (max-width: 640px) { .word-canvas .kb-cols { grid-template-columns: minmax(0, 1fr) !important; } }
+    /* A column's own box already stretches to match its tallest sibling (CSS grid's default
+       align-items:stretch) -- but a resource card nested one level inside that column (see
+       .kb-resource-card below) doesn't inherit that stretch automatically, since it's not itself
+       the grid item. Without this, two resource cards side by side end up at whatever height
+       their own title/description text happens to produce, so a short card and a long card in
+       the same row visibly mismatch even though their columns are the same height. Making the
+       column a flex column and the card flex:1 (below) lets the card fill the already-stretched
+       column, so same-row cards always end up the same height regardless of text length. */
+    .word-canvas .kb-cols > div,
+    .word-canvas .kb-cols-3 > div,
+    .word-canvas .kb-cols-4 > div { display: flex; flex-direction: column; }
+    .word-canvas .kb-cols > div > .kb-resource-card,
+    .word-canvas .kb-cols-3 > div > .kb-resource-card,
+    .word-canvas .kb-cols-4 > div > .kb-resource-card { flex: 1 1 auto; }
     .word-canvas .kb-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin: 1rem 0; }
     .word-canvas .kb-stats > div { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.8rem; }
     .word-canvas .kb-stats b { display: block; font-size: 1.5rem; font-weight: 900; color: #0f172a; line-height: 1.2; }
