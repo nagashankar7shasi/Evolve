@@ -440,13 +440,21 @@
       await Promise.all(papers.map(ensurePaperQuestionsLoaded));
 
       const bySubject = {}; // subject -> { static, ca }
-      const caQuestions = []; // active (non-retired) CA questions, for the review list
+      const caQuestions = []; // active (non-retired, not-yet-lapsed) CA questions, for the staleness review
+      const lapsedQuestions = []; // active (non-retired) CA questions past their relevantUntil window, pending Accept/Reject
       papers.forEach(p => (p.questions || []).forEach(q => {
         const subj = subjectOf(q);
         const row = bySubject[subj] = bySubject[subj] || { static: 0, ca: 0 };
         if (q.contentType === 'ca') {
           row.ca++;
-          if (!q.retired) caQuestions.push({ paper: p, q });
+          if (!q.retired) {
+            // Lapsed (relevantUntil has passed, no admin decision yet) goes to the Archive queue
+            // instead of the ordinary staleness-review list — isCaLapsedPendingReview is the single
+            // source of truth also used to exclude these from the bank/Topic Builder (see
+            // js/06a_test_paper_studio.js, js/11b_practice_mistakes_topic_builder.js).
+            if (isCaLapsedPendingReview(q)) lapsedQuestions.push({ paper: p, q });
+            else caQuestions.push({ paper: p, q });
+          }
         } else {
           row.static++;
         }
@@ -464,6 +472,24 @@
         <p class="text-[10px] text-slate-400 mb-3">Subjects in red have fewer than 10 static questions — thin coverage worth topping up.</p>
       ` : '<p class="text-slate-400 mb-3">No questions found in this category yet.</p>';
 
+      // Lapsed questions are sorted by relevantUntil ascending — longest-overdue first, since those
+      // are the ones most likely to be showing genuinely outdated information if a student somehow
+      // still saw them (they're already excluded from the bank, but the paper itself still has them).
+      lapsedQuestions.sort((a, b) => (a.q.relevantUntil || '').localeCompare(b.q.relevantUntil || ''));
+      const lapsedListHtml = lapsedQuestions.length ? `
+        <div class="space-y-1.5 max-h-64 overflow-y-auto">
+          ${lapsedQuestions.map(({ paper, q }) => `
+            <div class="flex items-center gap-2 bg-rose-50 border border-rose-200 rounded-lg px-2 py-1.5">
+              <div class="flex-1 min-w-0">
+                <div class="truncate">${escapeHtml(q.q_en || '(no English text)')}</div>
+                <div class="text-slate-400">${escapeHtml(paper.title)} · lapsed ${escapeHtml(q.relevantUntil)}${q.relevantPeriod ? ' · ' + escapeHtml(q.relevantPeriod) : ''}</div>
+              </div>
+              <button onclick="archiveCaDecision('${paper.id}', ${q.id}, 'accept')" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-[10px] whitespace-nowrap" title="Keep as a permanent Static question — clears the expiry">Accept</button>
+              <button onclick="archiveCaDecision('${paper.id}', ${q.id}, 'reject')" class="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded text-[10px] whitespace-nowrap" title="Retire it — same as the staleness review's Retire">Reject</button>
+            </div>`).join('')}
+        </div>
+      ` : '<p class="text-slate-400">No lapsed Current Affairs questions awaiting review in this category.</p>';
+
       // Nothing to sort chronologically on free-text periods, so this groups blank-period questions
       // first (most likely overlooked at authoring time) then alphabetically by period text.
       caQuestions.sort((a, b) => (a.q.relevantPeriod || '').localeCompare(b.q.relevantPeriod || ''));
@@ -473,7 +499,7 @@
             <div class="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
               <div class="flex-1 min-w-0">
                 <div class="truncate">${escapeHtml(q.q_en || '(no English text)')}</div>
-                <div class="text-slate-400">${escapeHtml(paper.title)} · ${q.relevantPeriod ? escapeHtml(q.relevantPeriod) : '<span class="text-rose-500">no period set</span>'}</div>
+                <div class="text-slate-400">${escapeHtml(paper.title)} · ${q.relevantPeriod ? escapeHtml(q.relevantPeriod) : '<span class="text-rose-500">no period set</span>'}${q.relevantUntil ? ' · relevant until ' + escapeHtml(q.relevantUntil) : ''}</div>
               </div>
               <button onclick="retireQuestion('${paper.id}', ${q.id})" class="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded text-[10px] whitespace-nowrap">Retire</button>
             </div>`).join('')}
@@ -482,6 +508,10 @@
 
       root.innerHTML = `
         <div class="mb-3"><b class="text-slate-700 block mb-1">Coverage by subject</b>${coverageHtml}</div>
+        <div class="mb-3"><b class="text-slate-700 block mb-1">🗄 Archive — lapsed, needs a decision</b>
+          <p class="text-[10px] text-slate-400 mb-1.5">These Current Affairs questions passed their one-year relevance window and are already excluded from the question bank, Topic Builder, and Generate-from-Bank — but still need you to Accept (keep permanently, as Static) or Reject (Retire) each one.</p>
+          ${lapsedListHtml}
+        </div>
         <div><b class="text-slate-700 block mb-1">Current Affairs — review for staleness</b>
           <p class="text-[10px] text-slate-400 mb-1.5">Retiring excludes a question from the question bank, Topic Builder, and future Generate-from-Bank sampling — it stays exactly as-is in the paper for anyone who already has it, and nothing is deleted.</p>
           ${caListHtml}
@@ -501,6 +531,34 @@
         await supabaseClient.from('tests_catalog').update({ questions: p.questions }).eq('id', p.id);
       } catch (err) {
         alert('Retired locally, but cloud sync failed: ' + err.message);
+      }
+      renderCoverageAndCaReview(p.category);
+    }
+
+    // Admin decision on a lapsed (relevantUntil passed) Current Affairs question surfaced in the
+    // Archive panel above. 'accept' keeps it permanently — reclassified to Static so it never lapses
+    // again and clears relevantPeriod/relevantUntil (both documented as CA-only). 'reject' retires it,
+    // identically to the existing standalone Retire button — same mechanism, same exclusion from the
+    // bank/Topic Builder/Generate-from-Bank, same "stays as-is in the paper, nothing deleted" guarantee.
+    async function archiveCaDecision(paperId, qId, decision) {
+      const p = testsCatalog.find(x => x.id === paperId);
+      if (!p) return;
+      await ensurePaperQuestionsLoaded(p);
+      const q = (p.questions || []).find(x => x.id === qId);
+      if (!q) return;
+      if (decision === 'accept') {
+        if (!confirm(`Accept this question from "${p.title}"?\n\nIt becomes a permanent Static question — no more expiry, and it drops out of the Archive queue.`)) return;
+        q.contentType = 'static';
+        q.relevantPeriod = '';
+        q.relevantUntil = '';
+      } else {
+        if (!confirm(`Reject this question from "${p.title}"?\n\nIt will be retired, same as the staleness review's Retire button — stays in the paper for anyone who already has it, but excluded from the question bank, Topic Builder, and future Generate-from-Bank sampling.`)) return;
+        q.retired = true;
+      }
+      try {
+        await supabaseClient.from('tests_catalog').update({ questions: p.questions }).eq('id', p.id);
+      } catch (err) {
+        alert(`${decision === 'accept' ? 'Accepted' : 'Rejected'} locally, but cloud sync failed: ` + err.message);
       }
       renderCoverageAndCaReview(p.category);
     }
