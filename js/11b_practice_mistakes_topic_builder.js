@@ -126,6 +126,10 @@
           // entirely without touching the paper it lives in, e.g. a stale current-affairs question
           // whose relevantPeriod has passed.
           if (q.retired) return;
+          // Lapsed Current Affairs, pending an admin Accept/Reject decision in the Archive review
+          // queue (see isCaLapsedPendingReview, js/06a_test_paper_studio.js) — excluded the same way
+          // as retired, until that decision is made.
+          if (isCaLapsedPendingReview(q)) return;
           const originKey = q.sourceQuestionId || `${p.id}::${q.id}`;
           applicableCats.forEach(cat => {
             const dedupeKey = `${cat}::${originKey}`;

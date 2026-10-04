@@ -5,7 +5,7 @@
     //   { mode: 'new'|'edit'|'duplicate', originalId, questions:[…], … }
     // Questions use the same shape the exam engine already renders:
     //   { id, q_en, q_kn, options_en:[4], options_kn:[4], correct, exp, exp_kn, subject, image_url,
-    //     contentType, relevantPeriod, askedInYears, retired, sourceQuestionId }
+    //     contentType, relevantPeriod, relevantUntil, askedInYears, retired, sourceQuestionId }
     // exp_kn (Kannada explanation) is optional and independent of exp (English) — a paper can have
     // English-only explanations, Kannada-only, both, or neither, same as q_en/q_kn.
     // contentType ('static' | 'ca') separates a question's SHELF LIFE from its Subject — "Fundamental
@@ -14,12 +14,49 @@
     // into "Polity" / "Polity CA" pairs (which would fragment the registry we built the cleanup tool
     // for). Unset/missing === 'static', so every question from before this field existed needs no
     // migration. relevantPeriod is a free-text period ("Sep 2026") used only for 'ca' questions, shown
-    // in the Current Affairs review tool (see renderCoverageAndCaReview) to help decide what's stale.
+    // in the Current Affairs review tool (see renderCoverageAndCaReview) to help decide what's stale —
+    // it's descriptive only, not parsed by anything.
+    // relevantUntil is the STRUCTURED counterpart: an ISO date ("2027-10-04"), only meaningful for
+    // contentType==='ca', auto-defaulted to one year from the day the question is added/marked CA
+    // (see studioApplyMappingAndAdd / studioSetContentTypeSelected / editSetContentType) so every CA
+    // question gets a one-year relevance window without the admin having to set it by hand. There is
+    // deliberately no separate "archived"/"lapsed" boolean — "lapsed, pending review" is computed on
+    // the fly as contentType==='ca' && !retired && relevantUntil && relevantUntil < today (see
+    // isCaLapsedPendingReview below). Once the admin Accepts (→ becomes permanent static, relevantUntil
+    // cleared) or Rejects (→ retired, same as the existing Retire mechanism) a lapsed question in the
+    // Archive review panel (renderCoverageAndCaReview, js/11d_study_planner_admin_csv.js), it naturally
+    // falls out of that computed set — no extra bookkeeping needed.
     // askedInYears is an admin-entered list of years this question (or a close variant) appeared in a
     // real exam — used to show students "asked before" and to prioritize sampling in Generate-from-
     // Bank. retired excludes a question from the question bank / Topic Builder / Generate-from-Bank
     // entirely (without deleting it or touching the paper it lives in) — the mechanism the CA review
-    // tool uses to retire a stale current-affairs question.
+    // tool uses to retire a stale current-affairs question. isCaLapsedPendingReview (below) is excluded
+    // the same way, from the same two sampling sites, until the admin decides on it.
+
+    // A CA question's relevance window, in days, before it's considered lapsed and routed to the
+    // Archive review queue. One year, per policy — change here only, everything else derives from it.
+    const CA_RELEVANCE_WINDOW_DAYS = 365;
+
+    function studioTodayIso() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function studioAddDaysIso(isoDate, days) {
+      const d = new Date(isoDate + 'T00:00:00Z');
+      d.setUTCDate(d.getUTCDate() + days);
+      return d.toISOString().slice(0, 10);
+    }
+
+    function studioDefaultRelevantUntil() {
+      return studioAddDaysIso(studioTodayIso(), CA_RELEVANCE_WINDOW_DAYS);
+    }
+
+    // True exactly when q is a Current-Affairs question whose relevance window has passed and no
+    // admin decision (Accept/Reject in the Archive panel) has been made yet. Used to exclude such
+    // questions from the question bank / Topic Builder / Generate-from-Bank, mirroring `retired`.
+    function isCaLapsedPendingReview(q) {
+      return q && q.contentType === 'ca' && !q.retired && !!q.relevantUntil && q.relevantUntil < studioTodayIso();
+    }
     let studioState = null;
     let studioLangMode = 'en';      // 'en' | 'kn' | 'both'
     let studioInputMode = 'csv';    // 'csv' | 'paste' | 'manual' | 'bank'
@@ -62,6 +99,9 @@
       'contenttype': 'contentType', 'type': 'contentType', 'nature': 'contentType', 'static': 'contentType',
       // Relevant period — only meaningful for Current Affairs rows; ignored for Static ones
       'relevantperiod': 'relevantPeriod', 'period': 'relevantPeriod', 'caperiod': 'relevantPeriod', 'month': 'relevantPeriod',
+      // Relevant until — structured expiry date (CA only); auto-defaulted to +1yr if left blank
+      'relevantuntil': 'relevantUntil', 'until': 'relevantUntil', 'expiry': 'relevantUntil', 'expires': 'relevantUntil',
+      'validuntil': 'relevantUntil', 'validtill': 'relevantUntil', 'relevanttill': 'relevantUntil',
       // Asked in (years) — comma/space separated list of years this exact question appeared in a real exam
       'askedinyears': 'askedInYears', 'askedyears': 'askedInYears', 'pyq': 'askedInYears', 'previouslyasked': 'askedInYears', 'years': 'askedInYears'
     };
@@ -76,6 +116,7 @@
       subject: 'Subject / Topic Tag',  image_url: 'Image URL',
       difficulty: 'Difficulty (1-5)',
       contentType: 'Type (Static/Current Affairs)', relevantPeriod: 'Relevant Period (CA only)',
+      relevantUntil: 'Relevant Until (CA only, YYYY-MM-DD)',
       askedInYears: 'Asked In (years)',
       _ignore: '— Ignore this column —'
     };
@@ -252,6 +293,7 @@
             image_url: q.image_url || '',
             contentType: q.contentType === 'ca' ? 'ca' : 'static',
             relevantPeriod: q.relevantPeriod || '',
+            relevantUntil: q.relevantUntil || '',
             askedInYears: Array.isArray(q.askedInYears) ? q.askedInYears : [],
             retired: !!q.retired,
             // Carry forward the bank-generation lineage tag, if any (see studioGenerateFromBank) — without
@@ -358,6 +400,7 @@
       candidatePapers.forEach(p => {
         (p.questions || []).forEach(q => {
           if (q.retired) return;
+          if (isCaLapsedPendingReview(q)) return;
           studioBankPool.push({
             paperId: p.id, paperTitle: p.title, q, subject: subjectOf(q),
             contentType: q.contentType === 'ca' ? 'ca' : 'static',
@@ -653,7 +696,7 @@
       const newlyAddedForDupCheck = [];
       let added = 0;
       rows.forEach((row, i) => {
-        const q = { id: startId + i, q_en: '', q_kn: '', options_en: ['', '', '', ''], options_kn: ['', '', '', ''], correct: 'A', exp: '', exp_kn: '', subject: '', difficulty: null, image_url: '', contentType: 'static', relevantPeriod: '', askedInYears: [] };
+        const q = { id: startId + i, q_en: '', q_kn: '', options_en: ['', '', '', ''], options_kn: ['', '', '', ''], correct: 'A', exp: '', exp_kn: '', subject: '', difficulty: null, image_url: '', contentType: 'static', relevantPeriod: '', relevantUntil: '', askedInYears: [] };
         for (const [colName, field] of Object.entries(mapping)) {
           const val = row[colName];
           if (val == null || field === '_unknown' || field === '_ignore') continue;
@@ -704,6 +747,10 @@
             q.contentType = /^(ca|current|currentaffairs|dynamic|c)$/.test(raw) ? 'ca' : 'static';
           }
           else if (field === 'relevantPeriod') q.relevantPeriod = String(val).trim();
+          else if (field === 'relevantUntil') {
+            const raw = String(val).trim();
+            q.relevantUntil = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : '';
+          }
           else if (field === 'askedInYears') {
             // Accept any of "2018, 2021, 2023" / "2018 2021 2023" / "2018;2021" — split on anything
             // that isn't a run of digits, keep 4-digit-looking tokens, drop the rest silently rather
@@ -713,6 +760,10 @@
         }
         // Skip completely blank rows
         if (!q.q_en && !q.q_kn && !q.options_en.some(Boolean)) return;
+        // Every CA question gets a one-year relevance window by default -- only fill it in when the
+        // sheet didn't already specify one, so an admin's explicit date (e.g. re-uploading an edited
+        // export) is never overwritten.
+        if (q.contentType === 'ca' && !q.relevantUntil) q.relevantUntil = studioDefaultRelevantUntil();
         studioState.questions.push(q);
         newlyAddedForDupCheck.push(q);
         added++;
@@ -733,7 +784,7 @@
     // Exact header row the CSV upload path round-trips cleanly (every one of these names is a key
     // in STUDIO_HEADER_ALIASES above) -- used by both the blank sample template and the real
     // paper-export functions below, so a downloaded paper always re-uploads without a remapping step.
-    const STUDIO_CSV_HEADERS = ['Question_EN', 'Question_KN', 'Opt_A_EN', 'Opt_B_EN', 'Opt_C_EN', 'Opt_D_EN', 'Opt_A_KN', 'Opt_B_KN', 'Opt_C_KN', 'Opt_D_KN', 'Correct', 'Explanation', 'Explanation_KN', 'Subject', 'Difficulty', 'Type', 'Relevant_Period', 'Asked_In_Years', 'Image_URL'];
+    const STUDIO_CSV_HEADERS = ['Question_EN', 'Question_KN', 'Opt_A_EN', 'Opt_B_EN', 'Opt_C_EN', 'Opt_D_EN', 'Opt_A_KN', 'Opt_B_KN', 'Opt_C_KN', 'Opt_D_KN', 'Correct', 'Explanation', 'Explanation_KN', 'Subject', 'Difficulty', 'Type', 'Relevant_Period', 'Asked_In_Years', 'Image_URL', 'Relevant_Until'];
 
     function studioRowsToCsv(rows) {
       return rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -769,7 +820,8 @@
           q.contentType === 'ca' ? 'Current Affairs' : 'Static',
           q.relevantPeriod || '',
           years,
-          q.image_url || ''
+          q.image_url || '',
+          q.relevantUntil || ''
         ];
       });
       return studioRowsToCsv([STUDIO_CSV_HEADERS, ...rows]);
@@ -783,9 +835,9 @@
     function studioDownloadTemplate() {
       const sample = [
         STUDIO_CSV_HEADERS,
-        ['Which article of the Indian Constitution deals with Fundamental Duties?', 'ಭಾರತೀಯ ಸಂವಿಧಾನದ ಯಾವ ಆರ್ಟಿಕಲ್ ಮೂಲಭೂತ ಕರ್ತವ್ಯಗಳ ಬಗ್ಗೆ ಇದೆ?', 'Article 51A', 'Article 32', 'Article 21', 'Article 14', 'ಆರ್ಟಿಕಲ್ 51A', 'ಆರ್ಟಿಕಲ್ 32', 'ಆರ್ಟಿಕಲ್ 21', 'ಆರ್ಟಿಕಲ್ 14', 'A', 'Article 51A was added by the 42nd Amendment (1976).', 'ಆರ್ಟಿಕಲ್ 51A ಅನ್ನು 42ನೇ ತಿದ್ದುಪಡಿಯ (1976) ಮೂಲಕ ಸೇರಿಸಲಾಯಿತು.', 'Polity', '2', 'Static', '', '2018, 2021, 2023', ''],
-        ['The capital of Karnataka is:', 'ಕರ್ನಾಟಕದ ರಾಜಧಾನಿ:', 'Mysuru', 'Bengaluru', 'Hubballi', 'Mangaluru', 'ಮೈಸೂರು', 'ಬೆಂಗಳೂರು', 'ಹುಬ್ಬಳ್ಳಿ', 'ಮಂಗಳೂರು', 'B', 'Bengaluru has been the capital of Karnataka since the state was formed in 1956.', '1956ರಲ್ಲಿ ರಾಜ್ಯ ರಚನೆಯಾದಾಗಿನಿಂದ ಬೆಂಗಳೂರು ಕರ್ನಾಟಕದ ರಾಜಧಾನಿಯಾಗಿದೆ.', 'Geography', '1', 'Static', '', '', ''],
-        ['Which state topped NITI Aayog\'s latest SDG India Index?', 'ಇತ್ತೀಚಿನ NITI ಆಯೋಗ್ SDG ಇಂಡಿಯಾ ಇಂಡೆಕ್ಸ್‌ನಲ್ಲಿ ಯಾವ ರಾಜ್ಯ ಅಗ್ರಸ್ಥಾನದಲ್ಲಿದೆ?', 'Kerala', 'Karnataka', 'Tamil Nadu', 'Punjab', 'ಕೇರಳ', 'ಕರ್ನಾಟಕ', 'ತಮಿಳುನಾಡು', 'ಪಂಜಾಬ್', 'A', 'Released by NITI Aayog; ranking current as of this edition of the index.', 'NITI ಆಯೋಗ್ ಬಿಡುಗಡೆ ಮಾಡಿದೆ; ಈ ಆವೃತ್ತಿಯ ಶ್ರೇಯಾಂಕ.', 'Current Affairs', '2', 'Current Affairs', 'Sep 2026', '', '']
+        ['Which article of the Indian Constitution deals with Fundamental Duties?', 'ಭಾರತೀಯ ಸಂವಿಧಾನದ ಯಾವ ಆರ್ಟಿಕಲ್ ಮೂಲಭೂತ ಕರ್ತವ್ಯಗಳ ಬಗ್ಗೆ ಇದೆ?', 'Article 51A', 'Article 32', 'Article 21', 'Article 14', 'ಆರ್ಟಿಕಲ್ 51A', 'ಆರ್ಟಿಕಲ್ 32', 'ಆರ್ಟಿಕಲ್ 21', 'ಆರ್ಟಿಕಲ್ 14', 'A', 'Article 51A was added by the 42nd Amendment (1976).', 'ಆರ್ಟಿಕಲ್ 51A ಅನ್ನು 42ನೇ ತಿದ್ದುಪಡಿಯ (1976) ಮೂಲಕ ಸೇರಿಸಲಾಯಿತು.', 'Polity', '2', 'Static', '', '2018, 2021, 2023', '', ''],
+        ['The capital of Karnataka is:', 'ಕರ್ನಾಟಕದ ರಾಜಧಾನಿ:', 'Mysuru', 'Bengaluru', 'Hubballi', 'Mangaluru', 'ಮೈಸೂರು', 'ಬೆಂಗಳೂರು', 'ಹುಬ್ಬಳ್ಳಿ', 'ಮಂಗಳೂರು', 'B', 'Bengaluru has been the capital of Karnataka since the state was formed in 1956.', '1956ರಲ್ಲಿ ರಾಜ್ಯ ರಚನೆಯಾದಾಗಿನಿಂದ ಬೆಂಗಳೂರು ಕರ್ನಾಟಕದ ರಾಜಧಾನಿಯಾಗಿದೆ.', 'Geography', '1', 'Static', '', '', '', ''],
+        ['Which state topped NITI Aayog\'s latest SDG India Index?', 'ಇತ್ತೀಚಿನ NITI ಆಯೋಗ್ SDG ಇಂಡಿಯಾ ಇಂಡೆಕ್ಸ್‌ನಲ್ಲಿ ಯಾವ ರಾಜ್ಯ ಅಗ್ರಸ್ಥಾನದಲ್ಲಿದೆ?', 'Kerala', 'Karnataka', 'Tamil Nadu', 'Punjab', 'ಕೇರಳ', 'ಕರ್ನಾಟಕ', 'ತಮಿಳುನಾಡು', 'ಪಂಜಾಬ್', 'A', 'Released by NITI Aayog; ranking current as of this edition of the index.', 'NITI ಆಯೋಗ್ ಬಿಡುಗಡೆ ಮಾಡಿದೆ; ಈ ಆವೃತ್ತಿಯ ಶ್ರೇಯಾಂಕ.', 'Current Affairs', '2', 'Current Affairs', 'Sep 2026', '', '', '2027-09-30']
       ];
       studioTriggerCsvDownload(studioRowsToCsv(sample), 'gritpro_question_template.csv');
     }
@@ -802,7 +854,7 @@
 
     // ---- Add / clear / renumber ----
     function studioAddBlankQuestion() {
-      const q = { id: studioState.questions.length + 1, q_en: '', q_kn: '', options_en: ['', '', '', ''], options_kn: ['', '', '', ''], correct: 'A', exp: '', exp_kn: '', subject: '', difficulty: null, image_url: '', contentType: 'static', relevantPeriod: '', askedInYears: [], _isNew: true };
+      const q = { id: studioState.questions.length + 1, q_en: '', q_kn: '', options_en: ['', '', '', ''], options_kn: ['', '', '', ''], correct: 'A', exp: '', exp_kn: '', subject: '', difficulty: null, image_url: '', contentType: 'static', relevantPeriod: '', relevantUntil: '', askedInYears: [], _isNew: true };
       studioState.questions.push(q);
       studioRenderList();
       // Open edit modal immediately for the new blank question
@@ -893,7 +945,14 @@
         q.contentType = type === 'ca' ? 'ca' : 'static';
         // relevantPeriod is documented as "CA only" -- clear it when a question stops being CA so
         // a stale period doesn't linger and mislead the Coverage dashboard after a re-tag.
-        if (q.contentType !== 'ca') q.relevantPeriod = '';
+        if (q.contentType !== 'ca') {
+          q.relevantPeriod = '';
+          q.relevantUntil = '';
+        } else if (!q.relevantUntil) {
+          // Newly marked CA and no relevance window set yet -- give it the standard one-year default
+          // rather than leaving it blank (which would make it look "lapsed" immediately).
+          q.relevantUntil = studioDefaultRelevantUntil();
+        }
       });
       studioRenderList();
     }
@@ -1034,6 +1093,7 @@
       populateEditSubjectSelect(q.subject || '');
       document.getElementById('edit-exp').value = q.exp || '';
       document.getElementById('edit-exp-kn').value = q.exp_kn || '';
+      document.getElementById('edit-relevant-until').value = q.relevantUntil || '';
       editSetContentType(q.contentType === 'ca' ? 'ca' : 'static');
       document.getElementById('edit-relevant-period').value = q.relevantPeriod || '';
       document.getElementById('edit-asked-years').value = (Array.isArray(q.askedInYears) ? q.askedInYears : []).join(', ');
@@ -1062,6 +1122,7 @@
       q.exp_kn = document.getElementById('edit-exp-kn').value.trim();
       q.contentType = editCurrentContentType;
       q.relevantPeriod = q.contentType === 'ca' ? document.getElementById('edit-relevant-period').value.trim() : '';
+      q.relevantUntil = q.contentType === 'ca' ? document.getElementById('edit-relevant-until').value.trim() : '';
       q.askedInYears = document.getElementById('edit-asked-years').value
         .split(/[^0-9]+/).map(s => s.trim()).filter(s => /^(19|20)\d{2}$/.test(s));
       q.retired = document.getElementById('edit-retired').checked;
@@ -1083,9 +1144,18 @@
       const inactiveCls = 'flex-1 px-2 py-1.5 text-xs font-bold bg-white text-slate-500 hover:bg-slate-50';
       document.getElementById('edit-type-static').className = editCurrentContentType === 'static' ? activeCls : inactiveCls;
       document.getElementById('edit-type-ca').className = (editCurrentContentType === 'ca' ? activeCls : inactiveCls) + ' border-l';
-      // Relevant period only makes sense for Current Affairs — hide it for Static so it isn't
-      // half-filled-in on a question it doesn't apply to.
+      // Relevant period/until only make sense for Current Affairs — hide them for Static so they
+      // aren't half-filled-in on a question they don't apply to.
       document.getElementById('edit-relevant-period-wrap').classList.toggle('hidden', editCurrentContentType !== 'ca');
+      const untilInput = document.getElementById('edit-relevant-until');
+      if (untilInput) {
+        untilInput.closest('.studio-edit-relevant-until-wrap') &&
+          untilInput.closest('.studio-edit-relevant-until-wrap').classList.toggle('hidden', editCurrentContentType !== 'ca');
+        // Switching a question INTO CA with no window set yet gets the standard one-year default,
+        // same as the CSV import and bulk "Mark CA" paths — never left blank (which would make a
+        // freshly-tagged question look "lapsed" the instant it's saved).
+        if (editCurrentContentType === 'ca' && !untilInput.value) untilInput.value = studioDefaultRelevantUntil();
+      }
     }
 
     function editDeleteQuestion() {
@@ -1180,6 +1250,7 @@
         image_url: q.image_url || '',
         contentType: q.contentType === 'ca' ? 'ca' : 'static',
         relevantPeriod: q.relevantPeriod || '',
+        relevantUntil: q.relevantUntil || '',
         askedInYears: Array.isArray(q.askedInYears) ? q.askedInYears : [],
         retired: !!q.retired,
         // See studioGenerateFromBank / getQuestionBank — omitted entirely for ordinary questions, so
