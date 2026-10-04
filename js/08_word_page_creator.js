@@ -269,19 +269,32 @@
       placeCaretInNode(ensureTrailingParagraphAfter(inserted));
     }
 
+    // True when a collapsed selection ending at (range.endContainer, range.endOffset) has nothing
+    // but whitespace between it and the end of `p`'s content -- i.e. the caret is at the very end
+    // of that paragraph's text, not just inside it somewhere.
+    function isCaretAtEndOfParagraph(p, range) {
+      const tail = document.createRange();
+      tail.selectNodeContents(p);
+      tail.setStart(range.endContainer, range.endOffset);
+      return tail.toString().trim() === '';
+    }
+
     // Pressing Enter inside a multi-column block's last paragraph, like pressing Enter in a table
-    // cell, normally just adds another line WITHIN that same column -- correct and needed for
-    // columns with more than one paragraph of text. But unlike a table, a column reads as plain
-    // text to an admin, so when they're actually done writing and expect Enter to carry on below
-    // the whole block, getting stuck adding blank line after blank line inside the last column
-    // reads as "the cursor won't go below the columns" (reported after the insertion-order bug
-    // above was already fixed -- that fix guarantees a paragraph exists after the block for a
-    // click or Down-arrow to land in, but doesn't change what Enter itself does while still inside
-    // the block). Fixed with the same "double-Enter exits the nested block" convention several
-    // editors use for lists/blockquotes: the FIRST Enter on real text still just adds a normal new
-    // line in the column (unchanged); a SECOND Enter on what is now an already-empty trailing line
-    // in the block's LAST column escapes the whole block instead of adding yet another blank line
-    // trapped inside it, landing the caret in (or creating) the paragraph right after the block.
+    // cell, would otherwise just add another line WITHIN that same column forever -- but unlike a
+    // table, a column reads as plain text to an admin, so when they're actually done writing and
+    // press Enter expecting to continue below the whole block, every Enter instead piles up another
+    // blank line trapped inside the last column with no way out. (An earlier attempt at this fix
+    // required a SECOND Enter on an already-blank line to escape -- discovered, from an admin's
+    // actual saved page, that this was effectively undiscoverable: once the block is the last thing
+    // on the page, there's no visible blank space below it to signal that a second press would do
+    // anything different, so a single Enter just silently looked like nothing happened.)
+    //
+    // Fixed by escaping on the very FIRST Enter whenever the caret is at the true END of the last
+    // column's content -- Enter pressed in the middle or at the start of that paragraph's text still
+    // splits it normally (unambiguous mid-text editing, not "I'm done with this block"). Multi-line
+    // content within the last column itself still works via Shift+Enter (a soft line break), same
+    // as it always has. Enter in an earlier (non-last) column, or anywhere outside a columns block,
+    // is completely untouched.
     function handleColsBlockEnterKey(e) {
       if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
       const sel = window.getSelection();
@@ -296,12 +309,11 @@
       // list, or a paragraph with more column content after it all keep completely normal Enter
       // behavior.
       if (!curP || curP.parentElement !== colDiv || curP !== colDiv.lastElementChild) return;
-      if (curP.textContent.trim() !== '') return; // first Enter on real text -- let it add the new line normally
       const block = colDiv.closest('.kb-cols, .kb-cols-3, .kb-cols-4');
       const cols = [...block.children].filter(c => c.tagName === 'DIV');
       if (cols[cols.length - 1] !== colDiv) return; // only escape from the block's LAST column
+      if (!isCaretAtEndOfParagraph(curP, sel.getRangeAt(0))) return; // mid-text Enter still splits the paragraph normally
       e.preventDefault();
-      if (colDiv.children.length > 1) curP.remove(); // tidy up the now-unused blank line (keeps the heading etc.)
       placeCaretInNode(ensureTrailingParagraphAfter(block));
     }
     const _wordEditorCanvasEl = document.getElementById('word-editor-canvas');
