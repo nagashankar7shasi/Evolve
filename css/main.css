@@ -299,8 +299,13 @@
     .word-canvas .kb-resource-cta.page { background: #2563eb; }
     .word-canvas .kb-resource-cta.page:hover  { background: #1d4ed8; }
 
-    /* editor-only guides for resource cards */
-    #word-editor-canvas .kb-resource-card { position: relative; outline: 1px dashed #cbd5e1; outline-offset: 3px; }
+    /* editor-only guides for resource cards. The card's own public-render rule
+       (.word-canvas .kb-resource-card, above) sets overflow:hidden so the thumbnail's corners
+       clip to the card's rounded border -- but that same rule clips this ::before badge too,
+       since it's a child of the card, straddling the top edge at top:-10px to read as a ribbon
+       tag. Overriding overflow back to visible here (editor-only) lets the badge sit fully above
+       the border instead of having its top half sliced off. */
+    #word-editor-canvas .kb-resource-card { position: relative; overflow: visible; outline: 1px dashed #cbd5e1; outline-offset: 3px; }
     #word-editor-canvas .kb-resource-card::before {
       content: attr(data-editor-label); position: absolute; top: -10px; left: 8px;
       font-size: 10px; font-weight: 800; background: #f59e0b; color: #0f172a;
