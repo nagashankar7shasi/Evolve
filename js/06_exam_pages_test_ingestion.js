@@ -209,6 +209,7 @@
             </div>
             <div class="flex items-center gap-1 shrink-0">
               <button onclick="openStudio('${p.id}')" class="px-2 py-1 border border-amber-300 hover:bg-amber-100 text-amber-800 font-bold rounded" title="Open in studio to edit">✎</button>
+              <button onclick="downloadTestPaperCsv('${p.id}')" class="px-2 py-1 border border-emerald-300 hover:bg-emerald-100 text-emerald-700 font-bold rounded" title="Download this paper's questions as CSV — fix mistakes in a spreadsheet, then re-upload">⬇</button>
               <button onclick="openStudio('${p.id}', true)" class="px-2 py-1 border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold rounded" title="Duplicate as a new paper">⎘</button>
               <button onclick="toggleTestPaperActive('${p.id}')" class="px-2 py-1 border ${isInactive ? 'border-emerald-300 hover:bg-emerald-100 text-emerald-700' : 'border-slate-300 hover:bg-slate-100 text-slate-700'} font-bold rounded" title="${isInactive ? 'Reactivate — visible and openable again' : 'Deactivate — hides it and blocks opening for everyone'}">${isInactive ? '▶' : '⏸'}</button>
               <button onclick="editTestPaperPrice('${p.id}')" class="px-2 py-1 border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold rounded" title="Change price">₹</button>
@@ -218,6 +219,19 @@
           </div>
         </div>`;
       }).join('');
+    }
+
+    // Downloads a published (or draft-saved) paper's questions as the same CSV shape the upload
+    // path accepts, so an admin can fix a mistagged subject, wrong answer key, or typo in a
+    // spreadsheet and re-upload the corrected file via "New paper (guided studio)" -- the row
+    // already flags common problems (missing Correct letter, no marking scheme, etc.) with a
+    // "Re-upload the CSV to fix" hint; this button is the other half of that workflow.
+    async function downloadTestPaperCsv(paperId) {
+      const p = testsCatalog.find(x => x.id === paperId);
+      if (!p) return;
+      await ensurePaperQuestionsLoaded(p);
+      if (!Array.isArray(p.questions) || !p.questions.length) return alert(`"${p.title || 'This paper'}" has no questions to export.`);
+      studioTriggerCsvDownload(studioQuestionsToCsv(p.questions), `${studioFilenameFromTitle(p.title)}.csv`);
     }
 
     async function editTestPaperTitle(paperId) {

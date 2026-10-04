@@ -726,20 +726,72 @@
       alert(msg);
     }
 
+    // Exact header row the CSV upload path round-trips cleanly (every one of these names is a key
+    // in STUDIO_HEADER_ALIASES above) -- used by both the blank sample template and the real
+    // paper-export functions below, so a downloaded paper always re-uploads without a remapping step.
+    const STUDIO_CSV_HEADERS = ['Question_EN', 'Question_KN', 'Opt_A_EN', 'Opt_B_EN', 'Opt_C_EN', 'Opt_D_EN', 'Opt_A_KN', 'Opt_B_KN', 'Opt_C_KN', 'Opt_D_KN', 'Correct', 'Explanation', 'Explanation_KN', 'Subject', 'Difficulty', 'Type', 'Relevant_Period', 'Asked_In_Years', 'Image_URL'];
+
+    function studioRowsToCsv(rows) {
+      return rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    }
+
+    function studioTriggerCsvDownload(csvText, filename) {
+      const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    // Turns a paper's (or studioState's) question objects back into the same CSV shape the upload
+    // path expects -- lets an admin download a published paper, fix a typo/mistagged subject/wrong
+    // answer key in a spreadsheet, and re-upload the corrected CSV via "New paper (guided studio)"
+    // rather than hand-editing each question through the UI one at a time.
+    function studioQuestionsToCsv(questions) {
+      const rows = (questions || []).map(q => {
+        const optsEn = Array.isArray(q.options_en) ? q.options_en : [];
+        const optsKn = Array.isArray(q.options_kn) ? q.options_kn : [];
+        const years = Array.isArray(q.askedInYears) ? q.askedInYears.join(', ') : '';
+        const difficulty = (Number.isInteger(q.difficulty) && q.difficulty >= 1 && q.difficulty <= 5) ? q.difficulty : '';
+        return [
+          q.q_en || '', q.q_kn || '',
+          optsEn[0] || '', optsEn[1] || '', optsEn[2] || '', optsEn[3] || '',
+          optsKn[0] || '', optsKn[1] || '', optsKn[2] || '', optsKn[3] || '',
+          (q.correct || '').toUpperCase(),
+          q.exp || '', q.exp_kn || '',
+          q.subject || '',
+          difficulty,
+          q.contentType === 'ca' ? 'Current Affairs' : 'Static',
+          q.relevantPeriod || '',
+          years,
+          q.image_url || ''
+        ];
+      });
+      return studioRowsToCsv([STUDIO_CSV_HEADERS, ...rows]);
+    }
+
+    // Turns a title into a safe filename: letters/digits/spaces only, collapsed to underscores.
+    function studioFilenameFromTitle(title) {
+      return (String(title || '').trim().replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '').slice(0, 60) || 'paper');
+    }
+
     function studioDownloadTemplate() {
       const sample = [
-        ['Question_EN', 'Question_KN', 'Opt_A_EN', 'Opt_B_EN', 'Opt_C_EN', 'Opt_D_EN', 'Opt_A_KN', 'Opt_B_KN', 'Opt_C_KN', 'Opt_D_KN', 'Correct', 'Explanation', 'Explanation_KN', 'Subject', 'Difficulty', 'Type', 'Relevant_Period', 'Asked_In_Years', 'Image_URL'],
+        STUDIO_CSV_HEADERS,
         ['Which article of the Indian Constitution deals with Fundamental Duties?', 'ಭಾರತೀಯ ಸಂವಿಧಾನದ ಯಾವ ಆರ್ಟಿಕಲ್ ಮೂಲಭೂತ ಕರ್ತವ್ಯಗಳ ಬಗ್ಗೆ ಇದೆ?', 'Article 51A', 'Article 32', 'Article 21', 'Article 14', 'ಆರ್ಟಿಕಲ್ 51A', 'ಆರ್ಟಿಕಲ್ 32', 'ಆರ್ಟಿಕಲ್ 21', 'ಆರ್ಟಿಕಲ್ 14', 'A', 'Article 51A was added by the 42nd Amendment (1976).', 'ಆರ್ಟಿಕಲ್ 51A ಅನ್ನು 42ನೇ ತಿದ್ದುಪಡಿಯ (1976) ಮೂಲಕ ಸೇರಿಸಲಾಯಿತು.', 'Polity', '2', 'Static', '', '2018, 2021, 2023', ''],
         ['The capital of Karnataka is:', 'ಕರ್ನಾಟಕದ ರಾಜಧಾನಿ:', 'Mysuru', 'Bengaluru', 'Hubballi', 'Mangaluru', 'ಮೈಸೂರು', 'ಬೆಂಗಳೂರು', 'ಹುಬ್ಬಳ್ಳಿ', 'ಮಂಗಳೂರು', 'B', 'Bengaluru has been the capital of Karnataka since the state was formed in 1956.', '1956ರಲ್ಲಿ ರಾಜ್ಯ ರಚನೆಯಾದಾಗಿನಿಂದ ಬೆಂಗಳೂರು ಕರ್ನಾಟಕದ ರಾಜಧಾನಿಯಾಗಿದೆ.', 'Geography', '1', 'Static', '', '', ''],
         ['Which state topped NITI Aayog\'s latest SDG India Index?', 'ಇತ್ತೀಚಿನ NITI ಆಯೋಗ್ SDG ಇಂಡಿಯಾ ಇಂಡೆಕ್ಸ್‌ನಲ್ಲಿ ಯಾವ ರಾಜ್ಯ ಅಗ್ರಸ್ಥಾನದಲ್ಲಿದೆ?', 'Kerala', 'Karnataka', 'Tamil Nadu', 'Punjab', 'ಕೇರಳ', 'ಕರ್ನಾಟಕ', 'ತಮಿಳುನಾಡು', 'ಪಂಜಾಬ್', 'A', 'Released by NITI Aayog; ranking current as of this edition of the index.', 'NITI ಆಯೋಗ್ ಬಿಡುಗಡೆ ಮಾಡಿದೆ; ಈ ಆವೃತ್ತಿಯ ಶ್ರೇಯಾಂಕ.', 'Current Affairs', '2', 'Current Affairs', 'Sep 2026', '', '']
       ];
-      const csv = sample.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'gritpro_question_template.csv';
-      link.click();
-      URL.revokeObjectURL(link.href);
+      studioTriggerCsvDownload(studioRowsToCsv(sample), 'gritpro_question_template.csv');
+    }
+
+    // Exports whatever is currently open in the Studio editor -- works for a paper mid-edit (so an
+    // admin can grab a CSV of their in-progress changes too), not just already-published ones.
+    function studioDownloadCurrentCsv() {
+      if (!studioState || !studioState.questions.length) return alert('No questions to export yet.');
+      const title = (document.getElementById('studio-paper-title').value || '').trim();
+      studioTriggerCsvDownload(studioQuestionsToCsv(studioState.questions), `${studioFilenameFromTitle(title)}.csv`);
     }
 
     function studioShowFormatHelp() { openModal('studio-help-modal'); }
