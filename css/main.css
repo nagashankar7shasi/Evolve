@@ -175,6 +175,8 @@
     .word-canvas details.kb-faq { border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.6rem 0.9rem; margin: 0.5rem 0; background: #fff; }
     .word-canvas details.kb-faq summary { font-weight: 700; cursor: pointer; }
     .word-canvas details.kb-faq[open] summary { margin-bottom: 0.4rem; }
+    .word-canvas hr.kb-divider { border: none; border-top: 2px solid #e2e8f0; margin: 1.5rem 0; }
+    .word-canvas blockquote { margin: 1rem 0; padding: 0.4rem 1rem; border-left: 4px solid #cbd5e1; color: #475569; font-style: italic; background: #f8fafc; }
     /* editor-only guides */
     #word-editor-canvas .kb-cols > div { outline: 1px dashed #cbd5e1; outline-offset: 4px; min-height: 2rem; }
     #word-editor-canvas .kb-pagelink { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 6px 30px 6px 10px; margin: 4px 0; border: 1px dashed #f59e0b; border-radius: 8px; background: #fffbeb; font-size: 12px; font-weight: 700; color: #78350f; }

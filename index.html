@@ -55,7 +55,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
   <!-- Add Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="css/main.css?v=9">
+  <link rel="stylesheet" href="css/main.css?v=10">
 
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col select-none">
@@ -844,11 +844,35 @@
             <button type="button" onclick="formatWordText('bold')" class="px-2.5 py-1 bg-white border rounded font-bold hover:bg-slate-50">B</button>
             <button type="button" onclick="formatWordText('italic')" class="px-2.5 py-1 bg-white border rounded italic hover:bg-slate-50">I</button>
             <button type="button" onclick="formatWordText('underline')" class="px-2.5 py-1 bg-white border rounded underline hover:bg-slate-50">U</button>
+            <button type="button" title="Strikethrough" onclick="formatWordText('strikeThrough')" class="px-2.5 py-1 bg-white border rounded line-through hover:bg-slate-50">S</button>
+            <button type="button" title="Superscript" onclick="formatWordText('superscript')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">x²</button>
+            <button type="button" title="Subscript" onclick="formatWordText('subscript')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">x₂</button>
+            <button type="button" title="Clear formatting" onclick="formatWordText('removeFormat')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-slate-500">Tx</button>
             <span class="text-slate-300">|</span>
             <button type="button" onclick="formatWordText('formatBlock', 'H1')" class="px-2 py-1 bg-white border rounded font-extrabold hover:bg-slate-50">H1</button>
             <button type="button" onclick="formatWordText('formatBlock', 'H2')" class="px-2 py-1 bg-white border rounded font-bold hover:bg-slate-50">H2</button>
             <button type="button" onclick="formatWordText('formatBlock', 'H3')" class="px-2 py-1 bg-white border rounded font-semibold hover:bg-slate-50">H3</button>
             <button type="button" onclick="formatWordText('formatBlock', 'P')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">¶ Normal</button>
+            <button type="button" title="Quote block" onclick="formatWordText('formatBlock', 'BLOCKQUOTE')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">❝ Quote</button>
+            <span class="text-slate-300">|</span>
+            <select onchange="setEditorTextColor(this.value); this.value=''" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 cursor-pointer" title="Text color">
+              <option value="">Text color…</option>
+              <option value="#0f172a">⬛ Default</option>
+              <option value="#dc2626">🟥 Red</option>
+              <option value="#2563eb">🟦 Blue</option>
+              <option value="#16a34a">🟩 Green</option>
+              <option value="#d97706">🟧 Amber</option>
+              <option value="#7c3aed">🟪 Purple</option>
+            </select>
+            <select onchange="setEditorHighlight(this.value); this.value=''" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 cursor-pointer" title="Highlight color">
+              <option value="">Highlight…</option>
+              <option value="none">◽ Remove highlight</option>
+              <option value="#fef08a">🟨 Yellow</option>
+              <option value="#bbf7d0">🟩 Green</option>
+              <option value="#bfdbfe">🟦 Blue</option>
+              <option value="#fecaca">🟥 Red</option>
+              <option value="#e9d5ff">🟪 Purple</option>
+            </select>
             <span class="text-slate-300">|</span>
             <select onchange="setEditorFont(this.value); this.value=''" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 cursor-pointer" title="Font family">
               <option value="">Font…</option>
@@ -898,6 +922,7 @@
             <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('warn')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">⚠️ Warning</button>
             <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('facts')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">📌 Key facts</button>
             <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('table')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">▦ Table</button>
+            <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('hr')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50" title="Horizontal divider line">➖ Divider</button>
             <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('cols')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">◫ 2 columns</button>
             <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('cols3')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">◫ 3 columns</button>
             <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('cols4')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">◫ 4 columns</button>
@@ -942,6 +967,9 @@
           <!-- Document Canvas -->
           <div class="p-4 bg-white border border-t-0 border-slate-200 rounded-b-lg shadow-inner">
             <div id="word-editor-canvas" contenteditable="true" class="word-canvas" placeholder="Type or paste your page content here. You can also paste or drag pictures in."></div>
+          </div>
+          <div class="flex justify-end pt-1 text-[11px] text-slate-400">
+            <span id="word-char-count">0 words · 0 characters</span>
           </div>
 
           <div class="flex justify-between items-center pt-2">
@@ -2757,36 +2785,36 @@
   </footer>
 
   <!-- ================= JAVASCRIPT ARCHITECTURE ================= -->
-  <script src="js/00_supabase_init.js?v=9"></script>
-  <script src="js/01_exam_category_master.js?v=9"></script>
-  <script src="js/02_pricing_master_storage.js?v=9"></script>
-  <script src="js/02a_bundles.js?v=9"></script>
-  <script src="js/03_pricing_checkout.js?v=9"></script>
-  <script src="js/03a_site_branding.js?v=9"></script>
-  <script src="js/03b_dev_console.js?v=9"></script>
-  <script src="js/03c_bundles_admin_editor.js?v=9"></script>
-  <script src="js/03d_payment_claims.js?v=9"></script>
-  <script src="js/03e_feedback.js?v=9"></script>
-  <script src="js/04_access_permission_checkers.js?v=9"></script>
-  <script src="js/05_student_entitlements_desk.js?v=9"></script>
-  <script src="js/06_exam_pages_test_ingestion.js?v=9"></script>
-  <script src="js/06a_test_paper_studio.js?v=9"></script>
-  <script src="js/07_pdf_vault.js?v=9"></script>
-  <script src="js/07a_pdf_publishing_wizard.js?v=9"></script>
-  <script src="js/08_word_page_creator.js?v=9"></script>
-  <script src="js/09_navigation_granular_controls.js?v=9"></script>
-  <script src="js/09a_site_search.js?v=9"></script>
-  <script src="js/10_omr_exam_engine.js?v=9"></script>
-  <script src="js/11_dashboard_review_modal.js?v=9"></script>
-  <script src="js/11a_study_planners.js?v=9"></script>
-  <script src="js/11c_dashboard_access_layers.js?v=9"></script>
-  <script src="js/11d_study_planner_admin_csv.js?v=9"></script>
-  <script src="js/11b_practice_mistakes_topic_builder.js?v=9"></script>
-  <script src="js/12_authentication_export.js?v=9"></script>
-  <script src="js/12a_email.js?v=9"></script>
-  <script src="js/12b_home_page_configuration.js?v=9"></script>
-  <script src="js/13_announcements.js?v=9"></script>
-  <script src="js/14_student_directory_admin.js?v=9"></script>
-  <script src="js/15_backup_export_restore.js?v=9"></script>
+  <script src="js/00_supabase_init.js?v=10"></script>
+  <script src="js/01_exam_category_master.js?v=10"></script>
+  <script src="js/02_pricing_master_storage.js?v=10"></script>
+  <script src="js/02a_bundles.js?v=10"></script>
+  <script src="js/03_pricing_checkout.js?v=10"></script>
+  <script src="js/03a_site_branding.js?v=10"></script>
+  <script src="js/03b_dev_console.js?v=10"></script>
+  <script src="js/03c_bundles_admin_editor.js?v=10"></script>
+  <script src="js/03d_payment_claims.js?v=10"></script>
+  <script src="js/03e_feedback.js?v=10"></script>
+  <script src="js/04_access_permission_checkers.js?v=10"></script>
+  <script src="js/05_student_entitlements_desk.js?v=10"></script>
+  <script src="js/06_exam_pages_test_ingestion.js?v=10"></script>
+  <script src="js/06a_test_paper_studio.js?v=10"></script>
+  <script src="js/07_pdf_vault.js?v=10"></script>
+  <script src="js/07a_pdf_publishing_wizard.js?v=10"></script>
+  <script src="js/08_word_page_creator.js?v=10"></script>
+  <script src="js/09_navigation_granular_controls.js?v=10"></script>
+  <script src="js/09a_site_search.js?v=10"></script>
+  <script src="js/10_omr_exam_engine.js?v=10"></script>
+  <script src="js/11_dashboard_review_modal.js?v=10"></script>
+  <script src="js/11a_study_planners.js?v=10"></script>
+  <script src="js/11c_dashboard_access_layers.js?v=10"></script>
+  <script src="js/11d_study_planner_admin_csv.js?v=10"></script>
+  <script src="js/11b_practice_mistakes_topic_builder.js?v=10"></script>
+  <script src="js/12_authentication_export.js?v=10"></script>
+  <script src="js/12a_email.js?v=10"></script>
+  <script src="js/12b_home_page_configuration.js?v=10"></script>
+  <script src="js/13_announcements.js?v=10"></script>
+  <script src="js/14_student_directory_admin.js?v=10"></script>
+  <script src="js/15_backup_export_restore.js?v=10"></script>
 </body>
 </html>

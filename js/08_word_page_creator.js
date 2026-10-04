@@ -119,7 +119,8 @@
       grid: '<div class="kb-grid"><p>Insert Resource cards (or any content) here — this grid auto-flows into as many columns as fit.</p></div>',
       stats: '<div class="kb-stats"><div><b>64%</b><span>Services share of GSVA</span></div><div><b>31</b><span>Districts in Karnataka</span></div><div><b>1956</b><span>State reorganisation</span></div></div>',
       timeline: '<ol class="kb-timeline"><li><b>1336</b>Event or ruler</li><li><b>1565</b>Next event</li><li><b>1799</b>Next event</li></ol>',
-      faq: '<details class="kb-faq" open><summary>Write the question here?</summary><p>Write the answer here.</p></details>'
+      faq: '<details class="kb-faq" open><summary>Write the question here?</summary><p>Write the answer here.</p></details>',
+      hr: '<hr class="kb-divider">'
     };
 
     function insertBlock(kind) {
@@ -287,6 +288,36 @@
     function ensureWordLikeParagraphs() {
       try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (_) {}
     }
+
+    // Live word/character count shown under the canvas. Character count excludes whitespace,
+    // matching how most word processors report it.
+    function updateWordCount() {
+      const canvas = document.getElementById('word-editor-canvas');
+      const el = document.getElementById('word-char-count');
+      if (!canvas || !el) return;
+      const text = canvas.innerText || '';
+      const words = (text.trim().match(/\S+/g) || []).length;
+      const chars = text.replace(/\s/g, '').length;
+      el.textContent = `${words} word${words === 1 ? '' : 's'} · ${chars} character${chars === 1 ? '' : 's'}`;
+    }
+
+    (function wireWordCount() {
+      const canvas = document.getElementById('word-editor-canvas');
+      if (!canvas) return;
+      // A MutationObserver (rather than hooking every insertBlock/resetWordEditorToNew/
+      // loadPageIntoWordEditor call individually) catches every way content can change --
+      // typing, paste, programmatic block inserts, column/table edits, loading an existing page --
+      // without needing to remember to call this everywhere content changes.
+      let scheduled = false;
+      const schedule = () => {
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(() => { scheduled = false; updateWordCount(); });
+      };
+      new MutationObserver(schedule).observe(canvas, { childList: true, subtree: true, characterData: true });
+      canvas.addEventListener('input', schedule);
+      schedule();
+    })();
 
     (function wireEditorImages() {
       const canvas = document.getElementById('word-editor-canvas');
@@ -528,6 +559,33 @@
       }
       try { document.execCommand('styleWithCSS', false, true); } catch (_) {}
       document.execCommand('fontName', false, fontStack);
+    }
+
+    // Font color on the current selection. Same styleWithCSS approach as setEditorFont, so this
+    // also persists as inline CSS rather than deprecated <font color> tags.
+    function setEditorTextColor(color) {
+      if (!color) return;
+      const canvas = document.getElementById('word-editor-canvas');
+      canvas.focus();
+      const sel = window.getSelection();
+      if (!sel.rangeCount || sel.isCollapsed) return alert('Select some text first, then pick a color.');
+      try { document.execCommand('styleWithCSS', false, true); } catch (_) {}
+      document.execCommand('foreColor', false, color);
+    }
+
+    // Highlight (background color) on the current selection. hiliteColor is the cross-browser
+    // command once styleWithCSS is on; backColor is the Chrome-only fallback some older engines
+    // need instead.
+    function setEditorHighlight(color) {
+      if (!color) return;
+      const canvas = document.getElementById('word-editor-canvas');
+      canvas.focus();
+      const sel = window.getSelection();
+      if (!sel.rangeCount || sel.isCollapsed) return alert('Select some text first, then pick a highlight.');
+      try { document.execCommand('styleWithCSS', false, true); } catch (_) {}
+      const value = color === 'none' ? 'transparent' : color;
+      try { document.execCommand('hiliteColor', false, value); }
+      catch (_) { document.execCommand('backColor', false, value); }
     }
 
     // Load any existing page (e.g. Current Affairs) into the Word editor, by page ID
