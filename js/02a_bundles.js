@@ -313,6 +313,7 @@ window.onload = async function() {
       await Promise.all([
         (async () => { await ensureExamCategoriesSeeded(); await fetchCloudExamCategories(); })(),
         fetchCloudExamSubjects(),
+        fetchCloudSubjectGroups(), // subject-group mappings for the Weakness/Strength dashboard -- needed by students, not just admin
         (async () => { await fetchCloudContent(); await ensureLegalPagesExist(); })(),
         fetchCloudPayments(),
         fetchCloudAttempts(),

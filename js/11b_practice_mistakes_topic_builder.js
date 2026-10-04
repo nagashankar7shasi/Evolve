@@ -222,39 +222,52 @@
       }
     }
 
-    function startMistakePractice(subject) {
+    // Accepts either a single subject name or an array of them (a grouped Weakness/Strength row
+    // folds several raw subjects into one; practising it should pull from all of them, not just
+    // whichever one happened to be first) -- normalized to an array once, here, so every caller
+    // and every other function below can treat "one subject" as just the single-element case.
+    function normalizeSubjectArg(subjectOrList) {
+      if (subjectOrList == null) return null;
+      const arr = Array.isArray(subjectOrList) ? subjectOrList : [subjectOrList];
+      return arr.filter(Boolean);
+    }
+
+    function startMistakePractice(subjectOrList) {
       const student = getCurrentStudent();
       if (!student || !canUseFeature('mistakes')) return;
+      const subjects = normalizeSubjectArg(subjectOrList);
       const includeSkipped = document.getElementById('mistakes-include-skipped').checked;
       let items = getMistakes(student.email, includeSkipped);
-      if (subject) items = items.filter(m => subjectOf(m.q) === subject);
+      if (subjects && subjects.length) items = items.filter(m => subjects.includes(subjectOf(m.q)));
       if (!items.length) return;
       startPractice({
-        title: subject ? `Mistakes: ${subject}` : 'Practise my mistakes',
+        title: subjects && subjects.length ? `Mistakes: ${subjects.join(', ')}` : 'Practise my mistakes',
         source: 'mistakes',
-        subject: subject || null,
+        subject: subjects && subjects.length === 1 ? subjects[0] : null,
+        subjects: subjects && subjects.length ? subjects : null, // lets practiseRemaining() re-apply a multi-subject filter; subject above stays single-value for existing readers
         items: items.slice(0, 20).map(m => ({ key: m.key, q: m.q }))
       });
     }
 
     // From the "Practise" link on a weak subject: mistakes first, otherwise a topic practice
-    function practiseSubject(subject) {
+    function practiseSubject(subjectOrList) {
       const student = getCurrentStudent();
       if (!student) return;
+      const subjects = normalizeSubjectArg(subjectOrList) || [];
       if (!canUseFeature('mistakes') && !canUseFeature('topic_builder')) {
         return document.getElementById('dash-practice-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
       if (!canUseFeature('mistakes')) {
-        const bank = getQuestionBank().filter(b => b.subject === subject);
-        if (bank.length) { builderState.category = bank[0].category; builderState.subjects = new Set([subject]); renderTopicBuilder(); }
+        const bank = getQuestionBank().filter(b => subjects.includes(b.subject));
+        if (bank.length) { builderState.category = bank[0].category; builderState.subjects = new Set(subjects); renderTopicBuilder(); }
         return document.getElementById('topic-builder-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
       const includeSkipped = document.getElementById('mistakes-include-skipped').checked;
-      if (getMistakes(student.email, includeSkipped).some(m => subjectOf(m.q) === subject)) return startMistakePractice(subject);
-      const bank = getQuestionBank().filter(b => b.subject === subject);
+      if (getMistakes(student.email, includeSkipped).some(m => subjects.includes(subjectOf(m.q)))) return startMistakePractice(subjects);
+      const bank = getQuestionBank().filter(b => subjects.includes(b.subject));
       if (bank.length) {
         builderState.category = bank[0].category;
-        builderState.subjects = new Set([subject]);
+        builderState.subjects = new Set(subjects);
         renderTopicBuilder();
       }
       document.getElementById('topic-builder-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -744,9 +757,12 @@
     }
 
     function practiseRemaining() {
-      const subject = practice ? practice.subject : null;
+      // Prefer the multi-subject list (set by startMistakePractice for a grouped row) over the
+      // single `subject` field, which is deliberately null whenever more than one subject was
+      // practised -- falling back to it covers every other, single-subject-or-none caller.
+      const subjectArg = (practice && practice.subjects && practice.subjects.length) ? practice.subjects : (practice ? practice.subject : null);
       closeModal('practice-modal');
-      startMistakePractice(subject || undefined);
+      startMistakePractice(subjectArg || undefined);
     }
 
     // Keyboard answers while practising

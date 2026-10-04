@@ -325,3 +325,73 @@
       saveExamSubjects(categoryId, next);
     }
 
+    // ---- Subject groups ----
+    // Lets the admin merge several registry subjects (above) into one named group per category --
+    // e.g. "History" + "Art & Culture" -> "Humanities" -- purely for display/practice purposes.
+    // Unlike the cleanup tool's merge (applySubjectMerge, which rewrites q.subject permanently and
+    // is irreversible), this never touches a single question's own subject tag -- it's a separate,
+    // editable mapping consulted at render time, so ungrouping a subject is just as easy as grouping
+    // it. Driven from Dev Console → Exam Categories → each category's "📚 Subjects" panel.
+    // Stored as { [categoryId]: [{ name, members: [subjectName, ...] }, ...] }. A subject belongs to
+    // at most one group within its category (enforced by the admin UI, not here).
+    let subjectGroups = JSON.parse(localStorage.getItem('kas_subject_groups') || 'null') || {};
+
+    async function fetchCloudSubjectGroups() {
+      try {
+        const { data, error } = await supabaseClient.from('subject_groups').select('*');
+        if (error) throw error;
+        const next = {};
+        (data || []).forEach(r => {
+          next[r.category_id] = next[r.category_id] || [];
+          next[r.category_id].push({ name: r.group_name, members: Array.isArray(r.member_subjects) ? r.member_subjects : [] });
+        });
+        subjectGroups = next;
+        localStorage.setItem('kas_subject_groups', JSON.stringify(subjectGroups));
+      } catch (err) {
+        console.error('fetchCloudSubjectGroups failed:', fmtErr(err));
+      }
+    }
+
+    async function saveSubjectGroup(categoryId, groupName, members) {
+      const list = subjectGroups[categoryId] || [];
+      const idx = list.findIndex(g => g.name === groupName);
+      subjectGroups[categoryId] = idx >= 0
+        ? list.map((g, i) => i === idx ? { name: groupName, members } : g)
+        : [...list, { name: groupName, members }];
+      localStorage.setItem('kas_subject_groups', JSON.stringify(subjectGroups));
+      try {
+        const { error } = await supabaseClient.from('subject_groups').upsert(
+          { category_id: categoryId, group_name: groupName, member_subjects: members, updated_at: new Date().toISOString() },
+          { onConflict: 'category_id,group_name' }
+        );
+        if (error) throw error;
+        return true;
+      } catch (err) {
+        alert('Saved locally, but cloud sync failed: ' + err.message);
+        return false;
+      }
+    }
+
+    async function deleteSubjectGroup(categoryId, groupName) {
+      subjectGroups[categoryId] = (subjectGroups[categoryId] || []).filter(g => g.name !== groupName);
+      localStorage.setItem('kas_subject_groups', JSON.stringify(subjectGroups));
+      try {
+        const { error } = await supabaseClient.from('subject_groups').delete().eq('category_id', categoryId).eq('group_name', groupName);
+        if (error) throw error;
+      } catch (err) {
+        alert('Removed locally, but cloud sync failed: ' + err.message);
+      }
+    }
+
+    // Returns the group name a raw subject belongs to within a category, or the raw subject
+    // itself unchanged if it isn't in any group (case/whitespace-insensitive match, same leniency
+    // as canonicalizeSubject -- an old attempt's frozen subject text shouldn't fail to match just
+    // because of a casing difference from whatever the registry calls it today).
+    function subjectGroupNameFor(categoryId, rawSubject) {
+      const trimmed = String(rawSubject || '').trim();
+      if (!trimmed) return rawSubject;
+      const groups = subjectGroups[categoryId] || [];
+      const hit = groups.find(g => g.members.some(m => m.toLowerCase() === trimmed.toLowerCase()));
+      return hit ? hit.name : rawSubject;
+    }
+
