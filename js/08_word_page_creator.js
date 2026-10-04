@@ -1318,6 +1318,16 @@
     }
 
     function routeFromHash() {
+      // The Admin/Staff login no longer has a visible link on the public page (kept off the main
+      // page by design -- RLS is the real access boundary either way, see CLAUDE.md's
+      // access-control chain notes; this is just decluttering, not a security measure). It's
+      // reached only via this direct, bookmarkable URL. One-shot action like the PDF deep link
+      // below, so drop the hash immediately -- a refresh shouldn't re-open the modal.
+      if (location.hash === '#/admin-login') {
+        history.replaceState(null, '', location.pathname + location.search);
+        openModal('admin-login-modal');
+        return;
+      }
       // A shared PDF deep link (from the Publishing Wizard's "Shareable link"): open the file
       // through the normal, paywall-gated path, then drop the hash so a refresh doesn't re-fire it.
       const pdfMatch = location.hash.match(/^#\/pdf\/([^?#]+)/);
