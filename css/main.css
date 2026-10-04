@@ -159,8 +159,11 @@
     .word-canvas .kb-table th, .word-canvas .kb-table td { border-bottom: 1px solid #e2e8f0; border-right: 1px solid #f1f5f9; padding: 0.5rem 0.7rem; text-align: left; vertical-align: top; min-width: 80px; }
     .word-canvas .kb-table th { background: #f1f5f9; font-weight: 700; color: #0f172a; }
     .word-canvas .kb-table tbody tr:nth-child(even) td { background: #fafafa; }
-    .word-canvas .kb-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; }
-    @media (max-width: 640px) { .word-canvas .kb-cols { grid-template-columns: minmax(0, 1fr); } }
+    .word-canvas .kb-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; position: relative; }
+    /* !important so a column count set dynamically via inline style (columnsAction() in
+       08_word_page_creator.js, for the "add/remove columns after the fact" feature) still
+       collapses to one column on phones -- the inline style otherwise wins over this breakpoint. */
+    @media (max-width: 640px) { .word-canvas .kb-cols { grid-template-columns: minmax(0, 1fr) !important; } }
     .word-canvas .kb-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin: 1rem 0; }
     .word-canvas .kb-stats > div { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.8rem; }
     .word-canvas .kb-stats b { display: block; font-size: 1.5rem; font-weight: 900; color: #0f172a; line-height: 1.2; }
@@ -201,6 +204,13 @@
        toolbar that appears while the cursor sits in a cell -- easy to miss, and the only block
        type here without the same obvious ✕ every other block got. */
     #word-editor-canvas .kb-table-wrap .kb-block-delete { top: 6px; right: 6px; }
+    /* Same overlay, on a multi-column block -- the block itself (.kb-cols/-3/-4) stays normal
+       editable content (each column's text is typed into directly), only the button is an
+       island. An absolutely-positioned grid child like this is taken out of normal grid flow, so
+       it doesn't consume a column slot or disturb the layout. */
+    #word-editor-canvas .kb-cols .kb-block-delete,
+    #word-editor-canvas .kb-cols-3 .kb-block-delete,
+    #word-editor-canvas .kb-cols-4 .kb-block-delete { top: 6px; right: 6px; }
     #word-editor-canvas details.kb-faq { display: block; }
     #word-editor-canvas details.kb-faq > *:not(summary) { display: block; }
     /* A blank page should read like a blank Word/Docs page, not an unlabeled empty box. Targets
@@ -226,10 +236,12 @@
     .word-canvas .kb-align-justify{ text-align: justify; }
 
     /* ---------- New: extra column variants (existing .kb-cols is 2-col, kept) ---------- */
-    .word-canvas .kb-cols-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; }
-    .word-canvas .kb-cols-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; }
-    @media (max-width: 900px) { .word-canvas .kb-cols-3, .word-canvas .kb-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @media (max-width: 640px) { .word-canvas .kb-cols-3, .word-canvas .kb-cols-4 { grid-template-columns: minmax(0, 1fr); } }
+    .word-canvas .kb-cols-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; position: relative; }
+    .word-canvas .kb-cols-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; position: relative; }
+    /* !important for the same reason as the .kb-cols breakpoint above -- a dynamic column count
+       set via inline style must still collapse on tablet/phone widths. */
+    @media (max-width: 900px) { .word-canvas .kb-cols-3, .word-canvas .kb-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+    @media (max-width: 640px) { .word-canvas .kb-cols-3, .word-canvas .kb-cols-4 { grid-template-columns: minmax(0, 1fr) !important; } }
 
     /* ---------- New: magazine / resource grid (auto-flow of cards) ---------- */
     .word-canvas .kb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin: 1rem 0; }

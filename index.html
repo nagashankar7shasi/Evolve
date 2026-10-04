@@ -55,7 +55,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
   <!-- Add Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="css/main.css?v=8">
+  <link rel="stylesheet" href="css/main.css?v=9">
 
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col select-none">
@@ -931,6 +931,11 @@
               <button type="button" onmousedown="event.preventDefault()" onclick="tableAction('delRow')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">− Row</button>
               <button type="button" onmousedown="event.preventDefault()" onclick="tableAction('delCol')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">− Column</button>
               <button type="button" onmousedown="event.preventDefault()" onclick="tableAction('delTable')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-rose-600">Delete table</button>
+            </span>
+            <span id="cols-tools" class="hidden items-center gap-1 ml-1 pl-2 border-l border-slate-300">
+              <span class="font-bold text-slate-500">Columns</span>
+              <button type="button" onmousedown="event.preventDefault()" onclick="columnsAction('addCol')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">+ Column</button>
+              <button type="button" onmousedown="event.preventDefault()" onclick="columnsAction('delCol')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">− Column</button>
             </span>
           </div>
 
@@ -2752,36 +2757,36 @@
   </footer>
 
   <!-- ================= JAVASCRIPT ARCHITECTURE ================= -->
-  <script src="js/00_supabase_init.js?v=8"></script>
-  <script src="js/01_exam_category_master.js?v=8"></script>
-  <script src="js/02_pricing_master_storage.js?v=8"></script>
-  <script src="js/02a_bundles.js?v=8"></script>
-  <script src="js/03_pricing_checkout.js?v=8"></script>
-  <script src="js/03a_site_branding.js?v=8"></script>
-  <script src="js/03b_dev_console.js?v=8"></script>
-  <script src="js/03c_bundles_admin_editor.js?v=8"></script>
-  <script src="js/03d_payment_claims.js?v=8"></script>
-  <script src="js/03e_feedback.js?v=8"></script>
-  <script src="js/04_access_permission_checkers.js?v=8"></script>
-  <script src="js/05_student_entitlements_desk.js?v=8"></script>
-  <script src="js/06_exam_pages_test_ingestion.js?v=8"></script>
-  <script src="js/06a_test_paper_studio.js?v=8"></script>
-  <script src="js/07_pdf_vault.js?v=8"></script>
-  <script src="js/07a_pdf_publishing_wizard.js?v=8"></script>
-  <script src="js/08_word_page_creator.js?v=8"></script>
-  <script src="js/09_navigation_granular_controls.js?v=8"></script>
-  <script src="js/09a_site_search.js?v=8"></script>
-  <script src="js/10_omr_exam_engine.js?v=8"></script>
-  <script src="js/11_dashboard_review_modal.js?v=8"></script>
-  <script src="js/11a_study_planners.js?v=8"></script>
-  <script src="js/11c_dashboard_access_layers.js?v=8"></script>
-  <script src="js/11d_study_planner_admin_csv.js?v=8"></script>
-  <script src="js/11b_practice_mistakes_topic_builder.js?v=8"></script>
-  <script src="js/12_authentication_export.js?v=8"></script>
-  <script src="js/12a_email.js?v=8"></script>
-  <script src="js/12b_home_page_configuration.js?v=8"></script>
-  <script src="js/13_announcements.js?v=8"></script>
-  <script src="js/14_student_directory_admin.js?v=8"></script>
-  <script src="js/15_backup_export_restore.js?v=8"></script>
+  <script src="js/00_supabase_init.js?v=9"></script>
+  <script src="js/01_exam_category_master.js?v=9"></script>
+  <script src="js/02_pricing_master_storage.js?v=9"></script>
+  <script src="js/02a_bundles.js?v=9"></script>
+  <script src="js/03_pricing_checkout.js?v=9"></script>
+  <script src="js/03a_site_branding.js?v=9"></script>
+  <script src="js/03b_dev_console.js?v=9"></script>
+  <script src="js/03c_bundles_admin_editor.js?v=9"></script>
+  <script src="js/03d_payment_claims.js?v=9"></script>
+  <script src="js/03e_feedback.js?v=9"></script>
+  <script src="js/04_access_permission_checkers.js?v=9"></script>
+  <script src="js/05_student_entitlements_desk.js?v=9"></script>
+  <script src="js/06_exam_pages_test_ingestion.js?v=9"></script>
+  <script src="js/06a_test_paper_studio.js?v=9"></script>
+  <script src="js/07_pdf_vault.js?v=9"></script>
+  <script src="js/07a_pdf_publishing_wizard.js?v=9"></script>
+  <script src="js/08_word_page_creator.js?v=9"></script>
+  <script src="js/09_navigation_granular_controls.js?v=9"></script>
+  <script src="js/09a_site_search.js?v=9"></script>
+  <script src="js/10_omr_exam_engine.js?v=9"></script>
+  <script src="js/11_dashboard_review_modal.js?v=9"></script>
+  <script src="js/11a_study_planners.js?v=9"></script>
+  <script src="js/11c_dashboard_access_layers.js?v=9"></script>
+  <script src="js/11d_study_planner_admin_csv.js?v=9"></script>
+  <script src="js/11b_practice_mistakes_topic_builder.js?v=9"></script>
+  <script src="js/12_authentication_export.js?v=9"></script>
+  <script src="js/12a_email.js?v=9"></script>
+  <script src="js/12b_home_page_configuration.js?v=9"></script>
+  <script src="js/13_announcements.js?v=9"></script>
+  <script src="js/14_student_directory_admin.js?v=9"></script>
+  <script src="js/15_backup_export_restore.js?v=9"></script>
 </body>
 </html>
