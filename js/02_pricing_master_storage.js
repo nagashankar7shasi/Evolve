@@ -4,7 +4,17 @@
     const initialPricingMaster = {
       upiId: 'yourkasacademy@upi',
       payeeName: "Evolve+",
-      whatsappNumber: '',    // 10-digit Indian number without +91. Empty = WhatsApp buttons hidden.
+      whatsappNumber: '',      // 10-digit Indian number without +91. Used when whatsappMode is 'number'.
+      whatsappId: '',          // wa.me/message/<id> short-link code (from WhatsApp Business app ->
+                                // Settings -> Business tools -> Short link). Used when whatsappMode is
+                                // 'id' -- the point of this mode is the real number never appears
+                                // anywhere on the page or in this link, only WhatsApp's own servers see it.
+      whatsappMode: 'number',  // 'number' | 'id' -- which of the two fields above builds the checkout link.
+      whatsappEnabled: true,   // Whole-feature show/hide, independent of whether a number/id is set --
+                                // lets the admin turn the button off temporarily without clearing it.
+      telegramUsername: '',    // t.me/<username> -- already just a username, so no phone number is
+                                // ever involved on this path.
+      telegramEnabled: false,  // Off by default (new feature, nothing configured yet on upgrade).
       watermarkTemplate: '', // NEW: '' = use the built-in default format. Tokens: {{institute}} {{email}} {{date}}
       qrImageDataUrl: '',    // NEW: admin-uploaded payment QR (data URL). Empty = auto-generate from UPI ID at checkout.
       allAccessPrice: 1499,
@@ -144,7 +154,11 @@
     ];
 
     // ================= STORAGE RETRIEVAL WITH AUTO-MIGRATOR =================
-    let pricingMaster = JSON.parse(localStorage.getItem('kas_pricing_master')) || initialPricingMaster;
+    // Merged with initialPricingMaster (not just a fallback for when nothing is saved at all) so an
+    // install with an older-shaped saved object still picks up new fields added here later (e.g.
+    // whatsappMode/whatsappId/whatsappEnabled/telegram*) as their defaults, the same way
+    // fetchCloudPricingMaster() already merges the cloud copy.
+    let pricingMaster = { ...initialPricingMaster, ...(JSON.parse(localStorage.getItem('kas_pricing_master')) || {}) };
     let navStructure = JSON.parse(localStorage.getItem('kas_nav_menu')) || initialNav;
     let pdfVault = JSON.parse(localStorage.getItem('kas_pdf_vault')) || initialPdfs;
     let testsCatalog = JSON.parse(localStorage.getItem('kas_tests_catalog')) || initialPapersCatalog;
