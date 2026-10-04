@@ -379,8 +379,12 @@
     // ---- Test paper card (clickable, always-live preview of an uploaded test paper) ----
     function openTestPaperCardPicker() {
       const sel = document.getElementById('testpapercard-select');
+      // Delisted papers (hidden from the Test Papers browse grid/search, see Studio's "Delist"
+      // toggle) are intentionally still offered here and still work normally once inserted — a page
+      // card is exactly how a delisted paper stays reachable without re-listing it everywhere.
+      // Inactive ones are excluded, same as everywhere else, since they can't be opened by anyone.
       sel.innerHTML = testsCatalog.filter(p => p.active !== false).map(p =>
-        `<option value="${p.id}">${escapeHtml(p.title)}</option>`).join('');
+        `<option value="${p.id}">${escapeHtml(p.title)}${p.delisted ? ' (delisted)' : ''}</option>`).join('');
       if (!sel.options.length) return alert('Upload a test paper first.');
       openModal('testpapercard-modal');
     }

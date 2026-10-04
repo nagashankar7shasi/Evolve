@@ -100,6 +100,7 @@
         extraCategories: [...document.querySelectorAll('.studio-extracat-cb:checked')].map(cb => cb.value),
         alsoListCategories: [...document.querySelectorAll('.studio-alsolist-cb:checked')].map(cb => cb.value),
         active: document.getElementById('studio-active').checked,
+        delisted: document.getElementById('studio-delisted').checked,
         price: document.getElementById('studio-price').value,
         scheduledFor: document.getElementById('studio-scheduled-for').value,
         markCorrect: document.getElementById('studio-mark-correct').value,
@@ -144,6 +145,7 @@
       studioRefreshExtraCategoryOptions(Array.isArray(draft.extraCategories) ? draft.extraCategories : []);
       studioRefreshAlsoListCategoryOptions(Array.isArray(draft.alsoListCategories) ? draft.alsoListCategories : []);
       document.getElementById('studio-active').checked = draft.active !== false;
+      document.getElementById('studio-delisted').checked = !!draft.delisted;
       document.getElementById('studio-price').value = draft.price || 99;
       document.getElementById('studio-scheduled-for').value = draft.scheduledFor || '';
       if (draft.markCorrect != null) document.getElementById('studio-mark-correct').value = draft.markCorrect;
@@ -179,6 +181,7 @@
       document.getElementById('studio-price').value = 99;
       document.getElementById('studio-scheduled-for').value = '';
       document.getElementById('studio-active').checked = true;
+      document.getElementById('studio-delisted').checked = false;
       studioApplyCategoryDefaults(firstCatId);
       studioRefreshExtraCategoryOptions([]);
       studioRefreshAlsoListCategoryOptions([]);
@@ -215,6 +218,7 @@
           studioRefreshExtraCategoryOptions(p.extraCategories || []);
           studioRefreshAlsoListCategoryOptions(p.alsoListCategories || []);
           document.getElementById('studio-active').checked = p.active !== false;
+          document.getElementById('studio-delisted').checked = !!p.delisted;
           // SECURITY FIX: if p.price is undefined/null/NaN (older rows, direct DB edits, or any
           // upload path that didn't set it), assigning it straight to .value leaves the field blank.
           // On save, parseInt("") is NaN, which the old publish code silently coerced to 0 — meaning
@@ -1133,6 +1137,7 @@
       const extraCategories = [...document.querySelectorAll('.studio-extracat-cb:checked')].map(cb => cb.value).filter(c => c !== category);
       const alsoListCategories = [...document.querySelectorAll('.studio-alsolist-cb:checked')].map(cb => cb.value).filter(c => c !== category);
       const active = document.getElementById('studio-active').checked;
+      const delisted = document.getElementById('studio-delisted').checked;
       // SECURITY FIX: previously `parseInt(rawValue, 10) || 0` treated a BLANK/invalid field exactly
       // the same as an admin explicitly typing 0 — meaning a stray cleared field silently published a
       // paid paper as free, with no warning. Now those two cases are told apart: blank/invalid requires
@@ -1188,12 +1193,12 @@
 
       try {
         const { error } = await supabaseClient.from('tests_catalog').upsert({
-          id: paperId, category, extra_categories: extraCategories, also_list_categories: alsoListCategories, active, title, price, scheme, questions: cleanQuestions, question_count: cleanQuestions.length, scheduled_for: scheduledFor
+          id: paperId, category, extra_categories: extraCategories, also_list_categories: alsoListCategories, active, delisted, title, price, scheme, questions: cleanQuestions, question_count: cleanQuestions.length, scheduled_for: scheduledFor
         });
         if (error) throw error;
 
         // Update local catalog
-        const runtimePaper = { id: paperId, category, extraCategories, alsoListCategories, active, title, price, scheme, questions: cleanQuestions, questionCount: cleanQuestions.length, scheduled_for: scheduledFor };
+        const runtimePaper = { id: paperId, category, extraCategories, alsoListCategories, active, delisted, title, price, scheme, questions: cleanQuestions, questionCount: cleanQuestions.length, scheduled_for: scheduledFor };
         const existingIdx = testsCatalog.findIndex(p => p.id === paperId);
         if (existingIdx >= 0) testsCatalog[existingIdx] = runtimePaper;
         else testsCatalog.push(runtimePaper);
