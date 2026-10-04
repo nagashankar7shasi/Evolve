@@ -376,6 +376,56 @@
       );
     }
 
+    // ---- Test paper card (clickable, always-live preview of an uploaded test paper) ----
+    function openTestPaperCardPicker() {
+      const sel = document.getElementById('testpapercard-select');
+      sel.innerHTML = testsCatalog.filter(p => p.active !== false).map(p =>
+        `<option value="${p.id}">${escapeHtml(p.title)}</option>`).join('');
+      if (!sel.options.length) return alert('Upload a test paper first.');
+      openModal('testpapercard-modal');
+    }
+
+    function insertTestPaperCard() {
+      const id = document.getElementById('testpapercard-select').value;
+      const p = testsCatalog.find(x => x.id === id);
+      closeModal('testpapercard-modal');
+      if (!p) return;
+      placeCaretInEditor();
+      insertHtmlWithIntegrityCheck(
+        `<div class="kb-pagelink" contenteditable="false" data-paper="${p.id}">` +
+          `<button type="button" class="kb-block-delete" title="Delete this test paper card" onclick="event.preventDefault(); event.stopPropagation(); if (confirm('Delete this test paper card?')) this.closest('.kb-pagelink').remove();">✕</button>` +
+          `📝 Test paper card: ${escapeHtml(p.title)}` +
+        `</div><p><br></p>`,
+        el => el.innerHTML.includes('Test paper card:'),
+        'test paper card'
+      );
+    }
+
+    // Rich, always-current preview tile for a test paper embedded in a custom page. Rebuilt from
+    // testsCatalog on every public render (hydratePageCards), so the title/price/lock-status shown
+    // always match reality even if the paper's price changed after the page was saved. Clicking it
+    // calls launchExamPaper() directly -- same entry point the Exam Hub uses -- which re-checks
+    // access itself and routes to checkout if the viewer doesn't have it, so there's no separate
+    // locked-state click handler to keep in sync here.
+    function testPaperCardHtml(p) {
+      const isUnlocked = isTestUnlockedForUser(p.id);
+      const s = p.scheme || {};
+      const priceLabel = p.price === 0 ? 'FREE' : `₹${p.price}`;
+      const metaBits = [
+        p.questionCount ? `${p.questionCount} Qs` : '',
+        s.duration ? `${s.duration} min` : ''
+      ].filter(Boolean).join(' • ');
+      return `<a href="javascript:void(0)" onclick="launchExamPaper('${p.id}')" class="kb-paper-card">
+        <div class="kb-paper-card-head">
+          ${s.examBadge ? `<span class="kb-paper-card-badge">${escapeHtml(s.examBadge)}</span>` : '<span></span>'}
+          <span class="kb-paper-card-price${p.price === 0 ? ' is-free' : ''}">${priceLabel}</span>
+        </div>
+        <span class="kb-paper-card-title">📝 ${escapeHtml(p.title)}</span>
+        ${metaBits ? `<span class="kb-paper-card-meta">${metaBits}</span>` : ''}
+        <span class="kb-paper-card-cta">${isUnlocked ? 'Start Test →' : `🔒 Unlock Paper (${priceLabel})`}</span>
+      </a>`;
+    }
+
     // ---- Resource card (image + text bundled with a PDF or page link) ----
     let resourceCardThumbDataUrl = '';
     let editingResourceCardEl = null; // the .kb-resource-card node being edited, or null when inserting a new one
@@ -1212,6 +1262,18 @@
         const wrap = document.createElement('div');
         wrap.className = 'my-3 max-w-xl not-prose';
         wrap.innerHTML = pageTileHtml(p, 'list');
+        el.replaceWith(wrap);
+      });
+
+      // Test paper cards: same placeholder-swap pattern as page cards, above. An inactive paper
+      // is hidden for everyone (matching the Exam Hub's own catalog filter, which does the same),
+      // since an admin reviewing/re-enabling it belongs in the Studio, not a half-broken public card.
+      root.querySelectorAll('.kb-pagelink[data-paper]').forEach(el => {
+        const p = testsCatalog.find(x => x.id === el.dataset.paper);
+        if (!p || p.active === false) { el.remove(); return; }
+        const wrap = document.createElement('div');
+        wrap.className = 'my-3 max-w-xl not-prose';
+        wrap.innerHTML = testPaperCardHtml(p);
         el.replaceWith(wrap);
       });
 
