@@ -197,6 +197,64 @@
       hr: '<hr class="kb-divider">'
     };
 
+    // Inserts a block-level template (columns, info/tip/warn/facts boxes, grid, stats, timeline,
+    // FAQ, divider, table) at the caret and guarantees an empty paragraph lands right after it, so
+    // there's always somewhere to put the cursor to keep writing below the block.
+    //
+    // This used to be a single document.execCommand('insertHTML', false, html + '<p><br></p>') call
+    // -- the same execCommand reparse fragility already documented and fixed above for resource/
+    // page/test-paper cards (insertHtmlWithIntegrityCheck), but this call site was missed when that
+    // fix went in. For a *single* inserted node the browser's paste pipeline usually recovers fine,
+    // which is why that bug went unnoticed here for a while; for a two-piece insert (the block, PLUS
+    // a trailing paragraph, both in the one HTML string) it can restructure things outright. Caught
+    // in testing: inserting a 2-column block into a fresh page's single empty starter paragraph
+    // landed the trailing "fresh line" paragraph BEFORE the columns block instead of after it, and
+    // nested invalidly inside the original paragraph (`<p><p><br></p></p><div class="kb-cols">…`) --
+    // so the columns block ended up as the LAST thing in the canvas with no paragraph after it at
+    // all. That's exactly "can't move the cursor to a fresh line below the columns": there was
+    // nothing there to move it into. Same bug for 3- and 4-column blocks, and (same code path)
+    // tables, info/tip/warn boxes, stat blocks, timelines, and FAQ entries.
+    //
+    // Fixed the same way as the card insert: parse `html` once into real nodes via a <template>,
+    // splice that already-correct tree in with Range.insertNode (no second reparse to reshuffle
+    // it), then explicitly check what landed right after the inserted block and only add a new
+    // empty paragraph if one isn't already sitting there -- reusing the canvas's own trailing
+    // placeholder paragraph when present, instead of piling up extra blank lines every insert.
+    function insertBlockWithTrailingParagraph(html) {
+      const canvas = document.getElementById('word-editor-canvas');
+      const sel = window.getSelection();
+      if (!sel.rangeCount) return;
+      const original = sel.getRangeAt(0);
+      if (!canvas.contains(original.startContainer)) return;
+
+      const template = document.createElement('template');
+      template.innerHTML = html;
+      const inserted = template.content.firstElementChild;
+      if (!inserted) return;
+
+      original.deleteContents();
+      const { container, offset } = escapeToBlockBoundary(original, canvas);
+      const range = document.createRange();
+      range.setStart(container, offset);
+      range.collapse(true);
+      range.insertNode(template.content);
+
+      const isEmptyParagraph = n => !!n && n.nodeType === 1 && n.tagName === 'P' &&
+        (n.textContent.trim() === '') && !n.querySelector('img, iframe, .kb-resource-card, .kb-page-card, .kb-testpaper-card');
+      let trailing = inserted.nextSibling;
+      if (!isEmptyParagraph(trailing)) {
+        trailing = document.createElement('p');
+        trailing.innerHTML = '<br>';
+        inserted.parentNode.insertBefore(trailing, inserted.nextSibling);
+      }
+
+      const after = document.createRange();
+      after.selectNodeContents(trailing);
+      after.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(after);
+    }
+
     function insertBlock(kind) {
       let html = BLOCK_TEMPLATES[kind];
       if (kind === 'table') {
@@ -220,7 +278,7 @@
       }
       if (!html) return;
       placeCaretInEditor();
-      document.execCommand('insertHTML', false, html + '<p><br></p>');
+      insertBlockWithTrailingParagraph(html);
     }
 
     // Keeps the table tools working after the cell holding the cursor is removed
