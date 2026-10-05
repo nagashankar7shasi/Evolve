@@ -320,7 +320,7 @@
               <span class="text-[11px] text-slate-400 font-mono">${activeTest.scheme.examBadge}</span>
             </span>
           </div>
-          <div class="text-sm font-medium text-slate-900 mb-4 whitespace-pre-line leading-relaxed">${qText}</div>
+          <div class="text-sm font-medium text-slate-900 mb-4 leading-relaxed">${renderQuestionTextHtml(qText)}</div>
           ${isRealImageUrl(qImageUrl) ? `<img src="${escapeHtml(qImageUrl)}" alt="Question diagram" class="max-w-full max-h-80 rounded-lg border border-slate-200 mb-4 mx-auto block" />` : ''}
           <div class="space-y-2">${optHtml}</div>
         `;
@@ -564,8 +564,8 @@ async function evaluateOMRSubmission() {
           ${isRight ? `+${s.marksCorrect.toFixed(2)}` : (choice === 'Skipped' ? '0.00' : `-${s.marksWrong.toFixed(2)}`)}
         </span>
       </div>
-      <p class="text-slate-700 mb-1.5">${q.q_en}</p>
-      ${q.q_kn && q.q_kn !== q.q_en ? `<p class="text-slate-500 mb-1.5" style="font-family:'Noto Sans Kannada',sans-serif">${q.q_kn}</p>` : ''}
+      <div class="text-slate-700 mb-1.5">${renderQuestionTextHtml(q.q_en)}</div>
+      ${q.q_kn && q.q_kn !== q.q_en ? `<div class="text-slate-500 mb-1.5" style="font-family:'Noto Sans Kannada',sans-serif">${renderQuestionTextHtml(q.q_kn)}</div>` : ''}
       <div class="text-[11px] mb-1">Your Bubble: <b>${choice}</b> | Answer Key: <b class="text-emerald-700 font-bold">${q.correct}</b> ${askedBadgeHtml(q)}</div>
       <div class="p-2 bg-white rounded border border-slate-100 text-[11px] text-slate-600">
         <b>Explanation:</b> ${q.exp || ''}

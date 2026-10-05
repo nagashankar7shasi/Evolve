@@ -55,7 +55,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
   <!-- Add Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="css/main.css?v=33">
+  <link rel="stylesheet" href="css/main.css?v=34">
 
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col select-none">
@@ -2539,6 +2539,15 @@
         <div><b>Image URL (Kannada-only override):</b> Image_KN, Image_URL_KN, Diagram_KN — leave blank to reuse the English image for Kannada too</div>
       </div>
       <p class="text-[11px] text-slate-500 pt-2 border-t">If your file uses different names, the studio will show a mapping dialog after upload.</p>
+      <div class="pt-2 border-t space-y-1.5">
+        <p class="text-slate-700 font-bold">"Match the following" questions</p>
+        <p class="text-slate-500">Don't try to line up columns with spaces — that breaks on screen and in print. Instead, put each matched pair on its own line in the question text, with the two lists separated by a <b>|</b>:</p>
+        <pre class="font-mono text-[10.5px] bg-slate-50 border rounded-lg p-2 whitespace-pre-wrap">Match List I with List II and select the correct code:
+List I | List II
+A. Article 356 | 1. President's Rule
+B. Article 360 | 2. Financial Emergency</pre>
+        <p class="text-slate-500">Any run of consecutive lines containing a "|" is shown as a real two-column table wherever the question appears (exam screen, Practice Mode, review, PDF). Lines without a "|" render as normal text. Options and the Correct answer work exactly as usual — e.g. options like "A-1, B-2".</p>
+      </div>
       <div class="flex justify-end pt-2">
         <button onclick="closeModal('studio-help-modal')" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg">Got it</button>
       </div>
@@ -2898,36 +2907,36 @@
   </footer>
 
   <!-- ================= JAVASCRIPT ARCHITECTURE ================= -->
-  <script src="js/00_supabase_init.js?v=33"></script>
-  <script src="js/01_exam_category_master.js?v=33"></script>
-  <script src="js/02_pricing_master_storage.js?v=33"></script>
-  <script src="js/02a_bundles.js?v=33"></script>
-  <script src="js/03_pricing_checkout.js?v=33"></script>
-  <script src="js/03a_site_branding.js?v=33"></script>
-  <script src="js/03b_dev_console.js?v=33"></script>
-  <script src="js/03c_bundles_admin_editor.js?v=33"></script>
-  <script src="js/03d_payment_claims.js?v=33"></script>
-  <script src="js/03e_feedback.js?v=33"></script>
-  <script src="js/04_access_permission_checkers.js?v=33"></script>
-  <script src="js/05_student_entitlements_desk.js?v=33"></script>
-  <script src="js/06_exam_pages_test_ingestion.js?v=33"></script>
-  <script src="js/06a_test_paper_studio.js?v=33"></script>
-  <script src="js/07_pdf_vault.js?v=33"></script>
-  <script src="js/07a_pdf_publishing_wizard.js?v=33"></script>
-  <script src="js/08_word_page_creator.js?v=33"></script>
-  <script src="js/09_navigation_granular_controls.js?v=33"></script>
-  <script src="js/09a_site_search.js?v=33"></script>
-  <script src="js/10_omr_exam_engine.js?v=33"></script>
-  <script src="js/11_dashboard_review_modal.js?v=33"></script>
-  <script src="js/11a_study_planners.js?v=33"></script>
-  <script src="js/11c_dashboard_access_layers.js?v=33"></script>
-  <script src="js/11d_study_planner_admin_csv.js?v=33"></script>
-  <script src="js/11b_practice_mistakes_topic_builder.js?v=33"></script>
-  <script src="js/12_authentication_export.js?v=33"></script>
-  <script src="js/12a_email.js?v=33"></script>
-  <script src="js/12b_home_page_configuration.js?v=33"></script>
-  <script src="js/13_announcements.js?v=33"></script>
-  <script src="js/14_student_directory_admin.js?v=33"></script>
-  <script src="js/15_backup_export_restore.js?v=33"></script>
+  <script src="js/00_supabase_init.js?v=34"></script>
+  <script src="js/01_exam_category_master.js?v=34"></script>
+  <script src="js/02_pricing_master_storage.js?v=34"></script>
+  <script src="js/02a_bundles.js?v=34"></script>
+  <script src="js/03_pricing_checkout.js?v=34"></script>
+  <script src="js/03a_site_branding.js?v=34"></script>
+  <script src="js/03b_dev_console.js?v=34"></script>
+  <script src="js/03c_bundles_admin_editor.js?v=34"></script>
+  <script src="js/03d_payment_claims.js?v=34"></script>
+  <script src="js/03e_feedback.js?v=34"></script>
+  <script src="js/04_access_permission_checkers.js?v=34"></script>
+  <script src="js/05_student_entitlements_desk.js?v=34"></script>
+  <script src="js/06_exam_pages_test_ingestion.js?v=34"></script>
+  <script src="js/06a_test_paper_studio.js?v=34"></script>
+  <script src="js/07_pdf_vault.js?v=34"></script>
+  <script src="js/07a_pdf_publishing_wizard.js?v=34"></script>
+  <script src="js/08_word_page_creator.js?v=34"></script>
+  <script src="js/09_navigation_granular_controls.js?v=34"></script>
+  <script src="js/09a_site_search.js?v=34"></script>
+  <script src="js/10_omr_exam_engine.js?v=34"></script>
+  <script src="js/11_dashboard_review_modal.js?v=34"></script>
+  <script src="js/11a_study_planners.js?v=34"></script>
+  <script src="js/11c_dashboard_access_layers.js?v=34"></script>
+  <script src="js/11d_study_planner_admin_csv.js?v=34"></script>
+  <script src="js/11b_practice_mistakes_topic_builder.js?v=34"></script>
+  <script src="js/12_authentication_export.js?v=34"></script>
+  <script src="js/12a_email.js?v=34"></script>
+  <script src="js/12b_home_page_configuration.js?v=34"></script>
+  <script src="js/13_announcements.js?v=34"></script>
+  <script src="js/14_student_directory_admin.js?v=34"></script>
+  <script src="js/15_backup_export_restore.js?v=34"></script>
 </body>
 </html>
