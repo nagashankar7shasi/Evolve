@@ -55,7 +55,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
   <!-- Add Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="css/main.css?v=29">
+  <link rel="stylesheet" href="css/main.css?v=30">
 
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col select-none">
@@ -2201,6 +2201,17 @@
           <b class="text-slate-500 uppercase tracking-wider text-[10px]">Category</b>
           <select id="studio-category" onchange="studioApplyCategoryDefaults(this.value); studioRefreshExtraCategoryOptions(); studioRefreshAlsoListCategoryOptions();" class="w-full mt-1 px-2 py-1.5 border rounded-lg bg-white"></select>
         </div>
+        <div class="border-t pt-3">
+          <b class="text-slate-500 uppercase tracking-wider text-[10px] block">Avoid repeats across a bundle (optional)</b>
+          <p class="text-[10px] text-slate-500 mt-0.5 mb-1">Only lists bundles built from an explicit paper list (a curated test series) — a category-wide or all-access pass has too many papers to usefully compare against.</p>
+          <select id="studio-bundle-check" class="w-full px-2 py-1.5 border rounded-lg bg-white text-[11px]"></select>
+          <label class="flex items-center gap-1.5 mt-1.5 cursor-pointer">
+            <input type="checkbox" id="studio-bank-exclude-bundle-dup" class="rounded" />
+            <span class="text-[11px] font-bold text-slate-600">Also skip these automatically when generating from the bank</span>
+          </label>
+          <button onclick="studioCheckBundleDuplicates()" class="w-full mt-1.5 px-2.5 py-1.5 border border-slate-300 hover:bg-slate-100 font-bold text-[11px] rounded-lg">🔁 Check this paper's questions</button>
+          <p class="text-[10px] text-slate-500 mt-1">Compares this paper's questions against every OTHER paper in the selected bundle, by exact bank origin and by text similarity. Warns only — nothing is changed automatically.</p>
+        </div>
         <div>
           <b class="text-slate-500 uppercase tracking-wider text-[10px] block">Feeds the question bank of (optional)</b>
           <p class="text-[10px] text-slate-500 mt-0.5 mb-1">This paper's questions become available to students of these exams too, in "Build a Topic Test". It does NOT make this paper itself visible or purchasable there — use "Also list as its own paper" below for that.</p>
@@ -2850,36 +2861,36 @@
   </footer>
 
   <!-- ================= JAVASCRIPT ARCHITECTURE ================= -->
-  <script src="js/00_supabase_init.js?v=29"></script>
-  <script src="js/01_exam_category_master.js?v=29"></script>
-  <script src="js/02_pricing_master_storage.js?v=29"></script>
-  <script src="js/02a_bundles.js?v=29"></script>
-  <script src="js/03_pricing_checkout.js?v=29"></script>
-  <script src="js/03a_site_branding.js?v=29"></script>
-  <script src="js/03b_dev_console.js?v=29"></script>
-  <script src="js/03c_bundles_admin_editor.js?v=29"></script>
-  <script src="js/03d_payment_claims.js?v=29"></script>
-  <script src="js/03e_feedback.js?v=29"></script>
-  <script src="js/04_access_permission_checkers.js?v=29"></script>
-  <script src="js/05_student_entitlements_desk.js?v=29"></script>
-  <script src="js/06_exam_pages_test_ingestion.js?v=29"></script>
-  <script src="js/06a_test_paper_studio.js?v=29"></script>
-  <script src="js/07_pdf_vault.js?v=29"></script>
-  <script src="js/07a_pdf_publishing_wizard.js?v=29"></script>
-  <script src="js/08_word_page_creator.js?v=29"></script>
-  <script src="js/09_navigation_granular_controls.js?v=29"></script>
-  <script src="js/09a_site_search.js?v=29"></script>
-  <script src="js/10_omr_exam_engine.js?v=29"></script>
-  <script src="js/11_dashboard_review_modal.js?v=29"></script>
-  <script src="js/11a_study_planners.js?v=29"></script>
-  <script src="js/11c_dashboard_access_layers.js?v=29"></script>
-  <script src="js/11d_study_planner_admin_csv.js?v=29"></script>
-  <script src="js/11b_practice_mistakes_topic_builder.js?v=29"></script>
-  <script src="js/12_authentication_export.js?v=29"></script>
-  <script src="js/12a_email.js?v=29"></script>
-  <script src="js/12b_home_page_configuration.js?v=29"></script>
-  <script src="js/13_announcements.js?v=29"></script>
-  <script src="js/14_student_directory_admin.js?v=29"></script>
-  <script src="js/15_backup_export_restore.js?v=29"></script>
+  <script src="js/00_supabase_init.js?v=30"></script>
+  <script src="js/01_exam_category_master.js?v=30"></script>
+  <script src="js/02_pricing_master_storage.js?v=30"></script>
+  <script src="js/02a_bundles.js?v=30"></script>
+  <script src="js/03_pricing_checkout.js?v=30"></script>
+  <script src="js/03a_site_branding.js?v=30"></script>
+  <script src="js/03b_dev_console.js?v=30"></script>
+  <script src="js/03c_bundles_admin_editor.js?v=30"></script>
+  <script src="js/03d_payment_claims.js?v=30"></script>
+  <script src="js/03e_feedback.js?v=30"></script>
+  <script src="js/04_access_permission_checkers.js?v=30"></script>
+  <script src="js/05_student_entitlements_desk.js?v=30"></script>
+  <script src="js/06_exam_pages_test_ingestion.js?v=30"></script>
+  <script src="js/06a_test_paper_studio.js?v=30"></script>
+  <script src="js/07_pdf_vault.js?v=30"></script>
+  <script src="js/07a_pdf_publishing_wizard.js?v=30"></script>
+  <script src="js/08_word_page_creator.js?v=30"></script>
+  <script src="js/09_navigation_granular_controls.js?v=30"></script>
+  <script src="js/09a_site_search.js?v=30"></script>
+  <script src="js/10_omr_exam_engine.js?v=30"></script>
+  <script src="js/11_dashboard_review_modal.js?v=30"></script>
+  <script src="js/11a_study_planners.js?v=30"></script>
+  <script src="js/11c_dashboard_access_layers.js?v=30"></script>
+  <script src="js/11d_study_planner_admin_csv.js?v=30"></script>
+  <script src="js/11b_practice_mistakes_topic_builder.js?v=30"></script>
+  <script src="js/12_authentication_export.js?v=30"></script>
+  <script src="js/12a_email.js?v=30"></script>
+  <script src="js/12b_home_page_configuration.js?v=30"></script>
+  <script src="js/13_announcements.js?v=30"></script>
+  <script src="js/14_student_directory_admin.js?v=30"></script>
+  <script src="js/15_backup_export_restore.js?v=30"></script>
 </body>
 </html>

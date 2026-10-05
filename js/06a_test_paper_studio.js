@@ -226,6 +226,7 @@
       studioApplyCategoryDefaults(firstCatId);
       studioRefreshExtraCategoryOptions([]);
       studioRefreshAlsoListCategoryOptions([]);
+      studioRefreshBundleCheckOptions();
 
       // Offer to resume a saved draft — only for brand-new papers (not editing/duplicating an
       // already-published one, where "draft" doesn't make sense as a concept).
@@ -519,17 +520,106 @@
       studioUpdateBankTotal();
     }
 
-    function studioGenerateFromBank() {
+    // ---- Avoid repeating a question across a bundle's other papers ----
+    // "The bundle's papers" isn't a stored reverse-lookup -- only an explicit `bundle.papers` list is
+    // a bounded, deliberate set of papers (a curated test series); a category-wide or all-access
+    // bundle resolves to every paper in that scope, which is both far too broad for a meaningful
+    // per-paper check and usually not what "repeats across the bundle" means to the admin building a
+    // series. So this only ever offers bundles with a real `papers` list, same rationale as the
+    // explicit-only decision documented when this feature was scoped.
+    function studioRefreshBundleCheckOptions() {
+      const sel = document.getElementById('studio-bundle-check');
+      if (!sel) return;
+      const eligible = (bundles || []).filter(b => Array.isArray(b.papers) && b.papers.length);
+      sel.innerHTML = '<option value="">— none selected —</option>' +
+        eligible.map(b => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.name)} (${b.papers.length} paper${b.papers.length === 1 ? '' : 's'})</option>`).join('');
+      document.getElementById('studio-bank-exclude-bundle-dup').checked = false;
+    }
+
+    // Every OTHER paper the selected bundle explicitly lists (never this paper itself, relevant when
+    // editing/duplicating an already-published member of the bundle).
+    function studioBundleSiblingPapers(bundleId) {
+      const b = getBundle(bundleId);
+      if (!b || !Array.isArray(b.papers)) return [];
+      const selfId = studioState.originalId || null;
+      return testsCatalog.filter(p => b.papers.includes(p.id) && p.id !== selfId);
+    }
+
+    // Is `q` already present in one of `otherPapers`? Two signals, since there's no identity key
+    // reliably shared across every authoring path (see the sourceQuestionId note in the file header):
+    // an exact bank-lineage match (both copies trace back to the same original bank question) first,
+    // then the same word-overlap similarity check used for CSV-ingest duplicate warnings, which also
+    // catches two independently-typed or independently-pasted copies of the same question that share
+    // no id at all.
+    function studioFindBundleMatch(q, otherPapers) {
+      const rootId = q.sourceQuestionId || null;
+      const tokens = q.q_en ? studioSimilarityTokens(q.q_en) : new Set();
+      for (const p of otherPapers) {
+        for (const other of (p.questions || [])) {
+          if (rootId && other.sourceQuestionId && other.sourceQuestionId === rootId) {
+            return { paper: p, text: other.q_en, score: 1, reason: 'same bank question' };
+          }
+          if (tokens.size >= STUDIO_DUP_MIN_WORDS && other.q_en) {
+            const score = studioJaccard(tokens, studioSimilarityTokens(other.q_en));
+            if (score >= STUDIO_DUP_THRESHOLD) return { paper: p, text: other.q_en, score, reason: 'similar text' };
+          }
+        }
+      }
+      return null;
+    }
+
+    // Manual, on-demand audit — covers questions added ANY way (manual, CSV/paste, or bank-generated),
+    // unlike the bank-generation exclusion below which only ever prevents NEW bank picks from
+    // repeating. Warns only, same posture as every other duplicate check in Studio: a false positive
+    // here costs a glance, and the admin is always the one who decides whether to edit or delete.
+    async function studioCheckBundleDuplicates() {
+      const bundleId = (document.getElementById('studio-bundle-check') || {}).value;
+      if (!bundleId) return alert('Pick a bundle to check against first.');
+      const b = getBundle(bundleId);
+      const siblings = studioBundleSiblingPapers(bundleId);
+      if (!siblings.length) return alert(`"${b ? b.name : bundleId}" has no other papers to compare against yet.`);
+      await Promise.all(siblings.map(ensurePaperQuestionsLoaded));
+      const hits = [];
+      studioState.questions.forEach(q => {
+        const match = studioFindBundleMatch(q, siblings);
+        if (match) hits.push({ q, match });
+      });
+      if (!hits.length) {
+        return alert(`✓ No repeats found — none of this paper's ${studioState.questions.length} question(s) match anything in "${b.name}"'s other ${siblings.length} paper(s).`);
+      }
+      const lines = hits.slice(0, 10).map(({ q, match }) =>
+        `• "${(q.q_en || '(no English text)').slice(0, 80)}"\n   ${Math.round(match.score * 100)}% match (${match.reason}) in "${match.paper.title}": "${(match.text || '').slice(0, 80)}"`
+      ).join('\n');
+      alert(`⚠️ ${hits.length} question${hits.length === 1 ? '' : 's'} in this paper look like repeats from elsewhere in "${b.name}":\n\n${lines}` +
+        (hits.length > 10 ? `\n…and ${hits.length - 10} more.` : '') +
+        `\n\nNothing was changed — review and edit/delete as needed, then re-check.`);
+    }
+
+    async function studioGenerateFromBank() {
+      // Preload the bundle's other papers up front (one await) rather than inside the per-subject
+      // sampling loop below, so the loop itself stays synchronous and easy to follow.
+      const excludeBundleDup = document.getElementById('studio-bank-exclude-bundle-dup').checked;
+      const bundleId = (document.getElementById('studio-bundle-check') || {}).value;
+      let siblings = [];
+      if (excludeBundleDup && bundleId) {
+        siblings = studioBundleSiblingPapers(bundleId);
+        await Promise.all(siblings.map(ensurePaperQuestionsLoaded));
+      }
       const bySubject = studioBankBySubjectAndType();
       const prioritizePyq = document.getElementById('studio-bank-prioritize-pyq').checked;
       const rows = [...document.querySelectorAll('[data-bank-subject]')];
-      let added = 0;
+      let added = 0, skippedAsBundleDup = 0;
       const difficultyCounts = {}, typeCounts = { static: 0, ca: 0 };
       rows.forEach(el => {
         const subject = el.dataset.bankSubject, type = el.dataset.bankType;
         const want = parseInt(el.value, 10) || 0;
         if (!want) return;
-        const pool = ((bySubject[subject] || {})[type] || []).slice();
+        let pool = ((bySubject[subject] || {})[type] || []).slice();
+        if (siblings.length) {
+          const before = pool.length;
+          pool = pool.filter(b => !studioFindBundleMatch(b.q, siblings));
+          skippedAsBundleDup += before - pool.length;
+        }
         // Sampling without replacement, PYQ-first when requested: shuffle the "asked before" and
         // "never asked" questions separately, then take PYQ ones first up to `want` before falling
         // back to the rest — so a generation that asks for fewer questions than are PYQ-tagged still
@@ -556,12 +646,17 @@
           difficultyCounts[d] = (difficultyCounts[d] || 0) + 1;
         });
       });
-      if (!added) return alert('Set a count greater than 0 for at least one subject first.');
+      if (!added) {
+        return alert(skippedAsBundleDup
+          ? `All ${skippedAsBundleDup} matching question(s) in the subjects you picked were already used elsewhere in the bundle, so none were added. Try different subjects/counts, or turn off the bundle-skip checkbox to allow repeats.`
+          : 'Set a count greater than 0 for at least one subject first.');
+      }
       studioRenumber();
       studioRenderList();
       studioSetInputMode('manual'); // switch to reviewing the generated list, same as any other add path
       const diffSummary = Object.keys(difficultyCounts).sort().map(d => `${d === 'unrated' ? 'Unrated' : 'Lvl ' + d}: ${difficultyCounts[d]}`).join(', ');
-      alert(`${added} question${added === 1 ? '' : 's'} generated from the bank (Static: ${typeCounts.static}, Current Affairs: ${typeCounts.ca}).\nDifficulty mix — ${diffSummary}.\n\nReview them below — you can edit or delete any of them — then Publish when ready.`);
+      const bundleNote = skippedAsBundleDup ? `\n🔁 Skipped ${skippedAsBundleDup} question(s) already used elsewhere in the selected bundle.` : '';
+      alert(`${added} question${added === 1 ? '' : 's'} generated from the bank (Static: ${typeCounts.static}, Current Affairs: ${typeCounts.ca}).\nDifficulty mix — ${diffSummary}.${bundleNote}\n\nReview them below — you can edit or delete any of them — then Publish when ready.`);
     }
 
     function studioSetLangMode(mode) {
