@@ -390,11 +390,16 @@
       const members = [...container.querySelectorAll('input[type=checkbox][data-subject]')]
         .filter(cb => cb.checked).map(cb => cb.dataset.subject);
       const oldName = g.name;
-      await saveSubjectGroup(catId, newName, members);
+      const ok = await saveSubjectGroup(catId, newName, members);
       // Renamed: the old-named row is a separate (category_id, group_name) primary key in Supabase,
       // so it has to be deleted explicitly too, or it'd linger as a stale duplicate.
       if (oldName !== newName) await deleteSubjectGroup(catId, oldName);
       renderCategorySubjectsAdmin(catId); // full re-render so other groups' disabled checkboxes reflect the new membership
+      // Re-saving an unchanged group leaves the screen looking identical, with nothing to signal
+      // the click actually did anything -- so, same as applySubjectMerge's confirmation above,
+      // give an explicit on-success alert here too (saveSubjectGroup already alerts on failure,
+      // so skip this one then to avoid a confusing double popup).
+      if (ok) alert(`Saved "${newName}" (${members.length} subject${members.length === 1 ? '' : 's'}).`);
     }
 
     function deleteSubjectGroupUi(catId, name) {
