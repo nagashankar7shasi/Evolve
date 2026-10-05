@@ -948,7 +948,13 @@
         STUDIO_CSV_HEADERS,
         ['Which article of the Indian Constitution deals with Fundamental Duties?', 'ಭಾರತೀಯ ಸಂವಿಧಾನದ ಯಾವ ಆರ್ಟಿಕಲ್ ಮೂಲಭೂತ ಕರ್ತವ್ಯಗಳ ಬಗ್ಗೆ ಇದೆ?', 'Article 51A', 'Article 32', 'Article 21', 'Article 14', 'ಆರ್ಟಿಕಲ್ 51A', 'ಆರ್ಟಿಕಲ್ 32', 'ಆರ್ಟಿಕಲ್ 21', 'ಆರ್ಟಿಕಲ್ 14', 'A', 'Article 51A was added by the 42nd Amendment (1976).', 'ಆರ್ಟಿಕಲ್ 51A ಅನ್ನು 42ನೇ ತಿದ್ದುಪಡಿಯ (1976) ಮೂಲಕ ಸೇರಿಸಲಾಯಿತು.', 'Polity', '2', 'Static', '', '2018, 2021, 2023', '', '', ''],
         ['The capital of Karnataka is:', 'ಕರ್ನಾಟಕದ ರಾಜಧಾನಿ:', 'Mysuru', 'Bengaluru', 'Hubballi', 'Mangaluru', 'ಮೈಸೂರು', 'ಬೆಂಗಳೂರು', 'ಹುಬ್ಬಳ್ಳಿ', 'ಮಂಗಳೂರು', 'B', 'Bengaluru has been the capital of Karnataka since the state was formed in 1956.', '1956ರಲ್ಲಿ ರಾಜ್ಯ ರಚನೆಯಾದಾಗಿನಿಂದ ಬೆಂಗಳೂರು ಕರ್ನಾಟಕದ ರಾಜಧಾನಿಯಾಗಿದೆ.', 'Geography', '1', 'Static', '', '', '', '', ''],
-        ['Which state topped NITI Aayog\'s latest SDG India Index?', 'ಇತ್ತೀಚಿನ NITI ಆಯೋಗ್ SDG ಇಂಡಿಯಾ ಇಂಡೆಕ್ಸ್‌ನಲ್ಲಿ ಯಾವ ರಾಜ್ಯ ಅಗ್ರಸ್ಥಾನದಲ್ಲಿದೆ?', 'Kerala', 'Karnataka', 'Tamil Nadu', 'Punjab', 'ಕೇರಳ', 'ಕರ್ನಾಟಕ', 'ತಮಿಳುನಾಡು', 'ಪಂಜಾಬ್', 'A', 'Released by NITI Aayog; ranking current as of this edition of the index.', 'NITI ಆಯೋಗ್ ಬಿಡುಗಡೆ ಮಾಡಿದೆ; ಈ ಆವೃತ್ತಿಯ ಶ್ರೇಯಾಂಕ.', 'Current Affairs', '2', 'Current Affairs', 'Sep 2026', '', '', '2027-09-30', '']
+        ['Which state topped NITI Aayog\'s latest SDG India Index?', 'ಇತ್ತೀಚಿನ NITI ಆಯೋಗ್ SDG ಇಂಡಿಯಾ ಇಂಡೆಕ್ಸ್‌ನಲ್ಲಿ ಯಾವ ರಾಜ್ಯ ಅಗ್ರಸ್ಥಾನದಲ್ಲಿದೆ?', 'Kerala', 'Karnataka', 'Tamil Nadu', 'Punjab', 'ಕೇರಳ', 'ಕರ್ನಾಟಕ', 'ತಮಿಳುನಾಡು', 'ಪಂಜಾಬ್', 'A', 'Released by NITI Aayog; ranking current as of this edition of the index.', 'NITI ಆಯೋಗ್ ಬಿಡುಗಡೆ ಮಾಡಿದೆ; ಈ ಆವೃತ್ತಿಯ ಶ್ರೇಯಾಂಕ.', 'Current Affairs', '2', 'Current Affairs', 'Sep 2026', '', '', '2027-09-30', ''],
+        // "Match the following" questions: put each paired row on its own line in Question_EN (and
+        // Question_KN, if translated), with the two lists separated by "|". The exam engine renders
+        // any consecutive "|"-containing lines as a real two-column table -- see the help button
+        // (studioShowFormatHelp) for the full syntax. No other column changes; Correct/options still
+        // work exactly as for any other MCQ, using the usual A/B/C/D code-combination answers.
+        ["Match List I with List II and select the correct code:\nList I | List II\nA. Article 356 | 1. President's Rule\nB. Article 360 | 2. Financial Emergency", '', 'A-1, B-2', 'A-2, B-1', 'A-1, B-1', 'A-2, B-2', '', '', '', '', 'A', "Article 356 empowers the President to impose President's Rule in a state; Article 360 deals with a Financial Emergency.", '', 'Polity', '3', 'Static', '', '', '', '', '']
       ];
       studioTriggerCsvDownload(studioRowsToCsv(sample), 'gritpro_question_template.csv');
     }
@@ -1116,7 +1122,7 @@
         const opts = lang === 'en' ? q.options_en : q.options_kn;
         if (!qText && !opts.some(Boolean)) return `<div class="qtext text-slate-300 italic">(empty ${lang === 'en' ? 'English' : 'Kannada'})</div>`;
         return `
-          <div class="qtext">${escapeHtml(qText || '(empty)')}</div>
+          <div class="qtext">${qText ? renderQuestionTextHtml(qText) : '(empty)'}</div>
           <div class="qopts">
             ${['A','B','C','D'].map((L, j) => `<span class="${j === cIdx ? 'correct' : ''}">${L}. ${escapeHtml(opts[j] || '—')}</span>`).join(' &nbsp;·&nbsp; ')}
           </div>

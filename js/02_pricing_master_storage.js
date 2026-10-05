@@ -204,6 +204,42 @@
       return v.includes('.') || v.includes('/');
     }
 
+    // "Match the following" questions were previously handled by typing manually-spaced columns
+    // into the question text, relying on CSS white-space:pre-line to preserve the layout. That never
+    // actually worked -- pre-line collapses repeated spaces, and the question font isn't monospace
+    // anyway, so the columns always drifted. This renders question text as real HTML instead: any
+    // run of consecutive lines containing a "|" is treated as a match-the-following table (one row
+    // per line, one column per "|"-separated segment -- typically "List I item | List II item"),
+    // and every other line becomes its own paragraph. Plain questions with no "|" in them render
+    // exactly as before (each line as a paragraph), so nothing already in the question bank needs
+    // to change to keep working. Every cell/line is escaped, so this is also the first place this
+    // text has ever been HTML-escaped before display (it previously went in raw).
+    function renderQuestionTextHtml(text) {
+      const raw = String(text ?? '');
+      if (!raw.trim()) return '';
+      const lines = raw.split(/\r?\n/);
+      let html = '';
+      let tableRows = [];
+      const flushTable = () => {
+        if (!tableRows.length) return;
+        html += '<table class="match-table">' + tableRows.map(cells =>
+          '<tr>' + cells.map(c => `<td>${escapeHtml(c.trim())}</td>`).join('') + '</tr>'
+        ).join('') + '</table>';
+        tableRows = [];
+      };
+      lines.forEach(line => {
+        if (line.includes('|')) {
+          tableRows.push(line.split('|'));
+        } else {
+          flushTable();
+          const trimmed = line.trim();
+          if (trimmed) html += `<p class="qtext-line">${escapeHtml(trimmed)}</p>`;
+        }
+      });
+      flushTable();
+      return html;
+    }
+
     // Accepts a page ID, its current link, or any link it used to have.
     function findPage(ref) {
       if (!ref) return null;

@@ -587,7 +587,7 @@
           <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">${escapeHtml(subjectOf(q))}</span>
           ${practice.source === 'mistakes' ? '<span class="px-2 py-0.5 rounded bg-rose-50 text-rose-700 font-medium">You missed this before</span>' : ''}
         </div>
-        <p class="font-medium text-slate-900 leading-relaxed mb-4 whitespace-pre-line">${escapeHtml(text)}</p>
+        <div class="font-medium text-slate-900 leading-relaxed mb-4">${renderQuestionTextHtml(text)}</div>
         <div class="space-y-2">
           ${['A', 'B', 'C', 'D'].map((l, i) => {
             let cls = 'border-slate-200 hover:bg-slate-50 cursor-pointer';
@@ -931,8 +931,8 @@
           <section class="q">
             <div class="qhead"><b>Q${i + 1}</b>${q.subject ? ` <span class="subj">${escapeHtml(q.subject)}</span>` : ''}
               <span class="st ${status}">${status === 'right' ? 'Correct' : status === 'wrong' ? 'Wrong' : 'Not answered'} · ${marks}</span></div>
-            <p class="qt">${escapeHtml(q.q_en || '')}</p>
-            ${hasKn ? `<p class="qt kn">${escapeHtml(q.q_kn)}</p>` : ''}
+            <div class="qt">${renderQuestionTextHtml(q.q_en || '')}</div>
+            ${hasKn ? `<div class="qt kn">${renderQuestionTextHtml(q.q_kn)}</div>` : ''}
             ${opts}
             <p class="ans">Your answer: <b>${c || '—'}</b> · Correct answer: <b>${escapeHtml(q.correct)}</b>${(Array.isArray(q.askedInYears) && q.askedInYears.length) ? `<span class="pyq">⭐ Asked in ${escapeHtml(q.askedInYears.join(', '))}</span>` : ''}</p>
             ${q.exp ? `<div class="exp"><b>Explanation:</b> ${escapeHtml(q.exp)}</div>` : ''}
@@ -951,6 +951,13 @@
           .qhead { display: flex; gap: 8px; align-items: center; } .subj { font-size: 10px; background: #f1f5f9; padding: 1px 6px; border-radius: 4px; }
           .st { margin-left: auto; font-weight: 700; font-size: 11px; } .st.right { color: #047857; } .st.wrong { color: #be123c; } .st.skipped { color: #64748b; }
           .qt { margin: 4px 0; font-weight: 600; } .kn { font-weight: 400; color: #334155; }
+          /* renderQuestionTextHtml() output (js/02_pricing_master_storage.js) -- this is a standalone
+             printable document with no access to css/main.css, so its .qtext-line/.match-table rules
+             are duplicated here rather than shared. */
+          .qtext-line { margin: 0 0 4px; } .qtext-line:last-child { margin-bottom: 0; }
+          .match-table { border-collapse: collapse; margin: 4px 0; width: 100%; max-width: 420px; }
+          .match-table td { border: 1px solid #cbd5e1; padding: 3px 8px; vertical-align: top; }
+          .match-table tr:first-child td { background: #f8fafc; }
           .pyq { display: inline-block; padding: 1px 5px; border-radius: 4px; background: #fef3c7; color: #92400e; font-weight: 700; font-size: 10px; margin-left: 4px; }
           .opt { padding: 2px 6px; border-radius: 4px; margin: 1px 0; } .opt.key { background: #d1fae5; } .opt.picked { background: #ffe4e6; }
           .mark { font-weight: 700; } .ans { margin: 4px 0; color: #334155; }
@@ -1123,8 +1130,8 @@
               ${isRight ? `Correct (+${s.marksCorrect})` : (isSkipped ? 'Unattempted (0.00)' : `Incorrect (-${s.marksWrong})`)}
             </span>
           </div>
-          <p class="font-medium text-slate-900 mb-1 leading-relaxed">${q.q_en}</p>
-          <p class="text-slate-600 font-kannada text-xs mb-3 leading-relaxed">${q.q_kn || ''}</p>
+          <div class="font-medium text-slate-900 mb-1 leading-relaxed">${renderQuestionTextHtml(q.q_en)}</div>
+          <div class="text-slate-600 font-kannada text-xs mb-3 leading-relaxed">${renderQuestionTextHtml(q.q_kn || '')}</div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">${optsHtml}</div>
           <div class="p-2.5 bg-white rounded-lg border border-slate-200 text-[11px] text-slate-600">
             <b class="text-slate-800">Official Solution & Syllabus Note:</b> ${q.exp}

@@ -38,6 +38,20 @@
     /* Difficult Mode: a question's non-chosen bubbles once it's answered -- see renderOMR/selectAnswer */
     .omr-bubble-locked { cursor: not-allowed; opacity: .35; pointer-events: none; }
     .omr-bubble-locked:hover { background-color: #ffffff; border-color: #475569; }
+    /* renderQuestionTextHtml() output -- see js/02_pricing_master_storage.js. .qtext-line is a plain
+       paragraph line of question text; .match-table is a "match the following" List I/List II grid
+       built from consecutive "|"-separated lines. Scoped narrowly (not full-bleed) since it sits
+       inside question cards of very different widths across the exam engine, Practice Mode, the
+       review modal and Studio's compact row preview. */
+    .qtext-line { margin: 0 0 0.35em; }
+    .qtext-line:last-child { margin-bottom: 0; }
+    .match-table { border-collapse: collapse; margin: 0.35em 0; width: 100%; max-width: 480px; }
+    .match-table td { border: 1px solid #cbd5e1; padding: 4px 10px; font-size: inherit; vertical-align: top; }
+    .match-table tr:first-child td { background: #f8fafc; }
+    /* Studio's compact per-question row preview is much denser than a real exam card, so the table
+       needs smaller padding to avoid blowing out the row height. */
+    .studio-qrow .match-table { font-size: 12px; max-width: 100%; }
+    .studio-qrow .match-table td { padding: 2px 6px; }
     .omr-row-unanswered { background-color: #fff1f2; border-radius: 6px; box-shadow: inset 3px 0 0 #fb7185; }
     .omr-row-answered { background-color: #ecfdf5; border-radius: 6px; box-shadow: inset 3px 0 0 #10b981; }
     .omr-row-marked { background-color: #f3e8ff; border-radius: 6px; box-shadow: inset 3px 0 0 #a855f7; }
