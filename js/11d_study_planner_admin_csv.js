@@ -298,12 +298,53 @@
       Object.keys(EXAM_CATEGORIES).forEach(renderCategorySubjectsAdmin);
     }
 
+    // Non-blocking success toast for admin confirmations (Dev Console only) -- replaces a plain
+    // alert() for "it worked, nothing else to do" cases. Two reasons alert() is the wrong tool here:
+    // (1) once this browser tab has shown a few alert()s in a row (easy to do -- e.g. clicking Save
+    // a few times on an already-saved group), Chrome offers "Prevent this page from creating
+    // additional dialogs"; if that ever gets ticked, every later alert() on the page silently does
+    // nothing -- no error, no visible failure, a save that fully succeeds just "doesn't pop". That's
+    // what happened here: Supabase's logs showed every save landing with a 2xx, but the confirmation
+    // never appeared. (2) a blocking modal interrupts the scroll position on an already-long admin
+    // panel. Error alerts (validation failures, cloud-sync failures) stay as alert() since those are
+    // rare and should demand attention -- this is only for "it worked" confirmations.
+    function showAdminToast(message) {
+      let host = document.getElementById('admin-toast-host');
+      if (!host) {
+        host = document.createElement('div');
+        host.id = 'admin-toast-host';
+        host.style.cssText = 'position:fixed;bottom:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none;';
+        document.body.appendChild(host);
+      }
+      const toast = document.createElement('div');
+      toast.textContent = message;
+      toast.style.cssText = 'background:#0f172a;color:#fff;font-size:12px;font-weight:600;padding:9px 14px;border-radius:10px;box-shadow:0 10px 25px -8px rgba(15,23,42,.45);max-width:320px;opacity:0;transform:translateY(8px);transition:opacity .2s ease,transform .2s ease;';
+      host.appendChild(toast);
+      requestAnimationFrame(() => { toast.style.opacity = '1'; toast.style.transform = 'translateY(0)'; });
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(8px)';
+        setTimeout(() => toast.remove(), 220);
+      }, 3200);
+    }
+
+    // Collapse state for the two things in this panel that can grow long over time: the raw subject
+    // registry list (catId -> true once expanded; short lists just show, nothing to collapse) and
+    // each subject group's checklist (`${catId}::${groupName}` -> true while its checkboxes are
+    // shown). Both default to collapsed/summary so adding subjects or groups over time doesn't turn
+    // this into one long scroll -- same instinct as the existing cleanup tool, which is already
+    // hidden until its own button is clicked.
+    let subjectRegistryExpanded = {};
+    let expandedSubjectGroups = {};
+
     // ---- Subject registry admin (per category) ----
     function renderCategorySubjectsAdmin(catId) {
       const root = document.getElementById(`ec-subjects-${catId}`);
       if (!root) return;
       const list = (examSubjects[catId] || []).slice().sort((a, b) => a.localeCompare(b));
+      const showList = subjectRegistryExpanded[catId] || list.length <= 8;
       root.innerHTML = `
+        ${showList ? `
         <div class="space-y-1 mb-2">
           ${list.length ? list.map(s => `
             <div class="flex items-center gap-2 bg-slate-100 rounded-lg px-2 py-1">
@@ -315,6 +356,8 @@
               <button onclick="deleteSubjectFromRegistry('${catId}', '${escapeHtml(s).replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-rose-600" title="Remove from registry (existing questions keep their subject text)">✕</button>
             </div>`).join('') : '<p class="text-slate-400 text-[11px]">No subjects registered yet for this category.</p>'}
         </div>
+        ${list.length > 8 ? `<button onclick="toggleSubjectRegistryExpanded('${catId}', false)" class="text-[11px] text-slate-400 hover:underline mb-2 block">▲ Collapse list</button>` : ''}
+        ` : `<button onclick="toggleSubjectRegistryExpanded('${catId}', true)" class="text-[11px] font-bold text-slate-600 hover:underline mb-2 block">▼ ${list.length} subjects registered — show list</button>`}
         <div class="flex items-center gap-2 mb-2">
           <input type="text" id="ec-newsubject-${catId}" placeholder="New subject name" class="flex-1 px-2 py-1 border rounded-lg text-xs" onkeydown="if(event.key==='Enter'){event.preventDefault();addSubjectToRegistry('${catId}');}" />
           <button onclick="addSubjectToRegistry('${catId}')" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold rounded-lg">Add</button>
@@ -329,7 +372,17 @@
       renderSubjectGroupsAdmin(catId);
     }
 
+    function toggleSubjectRegistryExpanded(catId, open) {
+      subjectRegistryExpanded[catId] = open;
+      renderCategorySubjectsAdmin(catId);
+    }
+
     // ---- Subject groups admin (per category) ----
+    // Each group renders as a one-line summary (name + member count) with an "Edit" button, and only
+    // expands to its full checkbox grid on demand -- a category with several groups used to mean
+    // several full ~90-checkbox grids rendered at once, which is exactly what made this panel feel
+    // endless. New drafts (from "+ Add group") open immediately since there's nothing to summarize
+    // yet; a save collapses its group back to the summary row.
     function renderSubjectGroupsAdmin(catId) {
       const root = document.getElementById(`ec-subject-groups-${catId}`);
       if (!root) return;
@@ -338,11 +391,23 @@
       const groupedElsewhere = (subjName, exceptGroupName) =>
         groups.find(g => g.name !== exceptGroupName && g.members.includes(subjName));
       root.innerHTML = `
-        ${groups.length ? groups.map((g, gi) => `
+        ${groups.length ? groups.map((g, gi) => {
+          const expanded = !!expandedSubjectGroups[`${catId}::${g.name}`];
+          const delBtn = `<button onclick="deleteSubjectGroupUi('${catId}', ${JSON.stringify(g.name).replace(/"/g, '&quot;')})" class="text-rose-600 font-bold hover:underline">Delete${expanded ? ' group' : ''}</button>`;
+          if (!expanded) {
+            return `
+            <div class="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mb-2 text-[11px]">
+              <span class="flex-1 font-bold text-slate-700">📦 ${escapeHtml(g.name)} <span class="text-slate-400 font-normal">(${g.members.length} subject${g.members.length === 1 ? '' : 's'})</span></span>
+              <button onclick="toggleSubjectGroupExpanded('${catId}', ${JSON.stringify(g.name).replace(/"/g, '&quot;')}, true)" class="text-amber-700 font-bold hover:underline">Edit</button>
+              ${delBtn}
+            </div>`;
+          }
+          return `
           <div id="sg-group-${catId}-${gi}" class="p-2 bg-amber-50 border border-amber-200 rounded-lg text-[11px] mb-2">
             <div class="flex items-center gap-2 mb-1.5">
               <input type="text" class="sg-name-input flex-1 px-2 py-1 border rounded-lg font-bold" value="${escapeHtml(g.name)}" />
-              <button onclick="deleteSubjectGroupUi('${catId}', ${JSON.stringify(g.name).replace(/"/g, '&quot;')})" class="text-rose-600 font-bold hover:underline">Delete group</button>
+              <button onclick="toggleSubjectGroupExpanded('${catId}', ${JSON.stringify(g.name).replace(/"/g, '&quot;')}, false)" class="text-slate-500 font-bold hover:underline">Collapse</button>
+              ${delBtn}
             </div>
             <div class="flex flex-wrap gap-2">
               ${allSubjects.length ? allSubjects.map(s => {
@@ -356,12 +421,19 @@
               }).join('') : '<p class="text-slate-400">No subjects registered yet for this category.</p>'}
             </div>
             <button onclick="saveSubjectGroupUi('${catId}', ${gi})" class="mt-1.5 px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold rounded-lg">Save group</button>
-          </div>`).join('') : '<p class="text-slate-400 text-[11px] mb-2">No subject groups yet — ungrouped subjects show individually on the dashboard.</p>'}
+          </div>`;
+        }).join('') : '<p class="text-slate-400 text-[11px] mb-2">No subject groups yet — ungrouped subjects show individually on the dashboard.</p>'}
         <div class="flex items-center gap-2">
           <input type="text" id="sg-newname-${catId}" placeholder="New group name" class="flex-1 px-2 py-1 border rounded-lg text-xs" onkeydown="if(event.key==='Enter'){event.preventDefault();addSubjectGroupUi('${catId}');}" />
           <button onclick="addSubjectGroupUi('${catId}')" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold rounded-lg">+ Add group</button>
         </div>
       `;
+    }
+
+    function toggleSubjectGroupExpanded(catId, name, open) {
+      const key = `${catId}::${name}`;
+      if (open) expandedSubjectGroups[key] = true; else delete expandedSubjectGroups[key];
+      renderSubjectGroupsAdmin(catId);
     }
 
     function addSubjectGroupUi(catId) {
@@ -373,6 +445,7 @@
       // Draft only (local state) until "Save group" is clicked, same as every other admin form here --
       // lets the admin tick members before the first cloud write instead of creating an empty group.
       subjectGroups[catId] = [...groups, { name, members: [] }];
+      expandedSubjectGroups[`${catId}::${name}`] = true; // open right away -- nothing to summarize yet
       input.value = '';
       renderSubjectGroupsAdmin(catId);
     }
@@ -394,17 +467,20 @@
       // Renamed: the old-named row is a separate (category_id, group_name) primary key in Supabase,
       // so it has to be deleted explicitly too, or it'd linger as a stale duplicate.
       if (oldName !== newName) await deleteSubjectGroup(catId, oldName);
+      delete expandedSubjectGroups[`${catId}::${oldName}`];
+      delete expandedSubjectGroups[`${catId}::${newName}`]; // collapse back to the summary row once saved
       renderCategorySubjectsAdmin(catId); // full re-render so other groups' disabled checkboxes reflect the new membership
       // Re-saving an unchanged group leaves the screen looking identical, with nothing to signal
       // the click actually did anything -- so, same as applySubjectMerge's confirmation above,
-      // give an explicit on-success alert here too (saveSubjectGroup already alerts on failure,
-      // so skip this one then to avoid a confusing double popup).
-      if (ok) alert(`Saved "${newName}" (${members.length} subject${members.length === 1 ? '' : 's'}).`);
+      // give an explicit on-success confirmation here too (saveSubjectGroup already alerts on
+      // failure, so skip this one then to avoid a confusing double popup).
+      if (ok) showAdminToast(`Saved "${newName}" (${members.length} subject${members.length === 1 ? '' : 's'}).`);
     }
 
     function deleteSubjectGroupUi(catId, name) {
       if (!confirm(`Delete the "${name}" group? Its subjects will show individually on the dashboard again.`)) return;
       deleteSubjectGroup(catId, name);
+      delete expandedSubjectGroups[`${catId}::${name}`];
       renderCategorySubjectsAdmin(catId);
     }
 
@@ -506,7 +582,7 @@
           console.error(`Failed to save merged subjects for paper "${p.id}":`, fmtErr(err));
         }
       }
-      alert(`Merged ${changed} question${changed === 1 ? '' : 's'} across ${touchedPapers.length} paper(s) into "${canonical}".`);
+      showAdminToast(`Merged ${changed} question${changed === 1 ? '' : 's'} across ${touchedPapers.length} paper(s) into "${canonical}".`);
       renderCategorySubjectsAdmin(catId);
     }
 
