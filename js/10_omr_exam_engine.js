@@ -251,6 +251,10 @@
         const qNum = idx + 1;
         const qText = currentLang === 'en' ? q.q_en : (q.q_kn || q.q_en);
         const options = currentLang === 'en' ? q.options_en : (q.options_kn || q.options_en);
+        // Kannada falls back to the English image when no Kannada-specific one was set -- most images
+        // (charts, maps, diagrams) are language-agnostic, so only "match the following"-style questions
+        // that embed language-specific text in the image itself need a separate Kannada upload.
+        const qImageUrl = currentLang === 'en' ? q.image_url : (q.image_url_kn || q.image_url);
         const chosen = userSelections[qNum];
 
         const card = document.createElement('div');
@@ -277,8 +281,8 @@
             <span class="text-xs font-mono font-bold bg-slate-900 text-white px-2 py-0.5 rounded">QUESTION ${qNum}</span>
             <span class="text-[11px] text-slate-400 font-mono">${activeTest.scheme.examBadge}</span>
           </div>
-          ${q.image_url ? `<img src="${escapeHtml(q.image_url)}" alt="Question diagram" class="max-w-full max-h-80 rounded-lg border border-slate-200 mb-3 mx-auto block" />` : ''}
           <div class="text-sm font-medium text-slate-900 mb-4 whitespace-pre-line leading-relaxed">${qText}</div>
+          ${isRealImageUrl(qImageUrl) ? `<img src="${escapeHtml(qImageUrl)}" alt="Question diagram" class="max-w-full max-h-80 rounded-lg border border-slate-200 mb-4 mx-auto block" />` : ''}
           <div class="space-y-2">${optHtml}</div>
         `;
         container.appendChild(card);

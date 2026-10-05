@@ -5,9 +5,14 @@
     //   { mode: 'new'|'edit'|'duplicate', originalId, questions:[…], … }
     // Questions use the same shape the exam engine already renders:
     //   { id, q_en, q_kn, options_en:[4], options_kn:[4], correct, exp, exp_kn, subject, image_url,
-    //     contentType, relevantPeriod, relevantUntil, askedInYears, retired, sourceQuestionId }
+    //     image_url_kn, contentType, relevantPeriod, relevantUntil, askedInYears, retired, sourceQuestionId }
     // exp_kn (Kannada explanation) is optional and independent of exp (English) — a paper can have
     // English-only explanations, Kannada-only, both, or neither, same as q_en/q_kn.
+    // image_url is shown in English mode (and is the fallback for Kannada mode too); image_url_kn is
+    // optional and only needed when the Kannada rendering of a question needs a DIFFERENT image than
+    // English — e.g. a "match the following" question whose image is a table of language-specific
+    // text, not a language-agnostic chart/map/diagram. See isRealImageUrl (js/02_pricing_master_storage.js)
+    // for why a literal "N/A"/"-"/etc. typed into a CSV cell is treated as no image, not a broken one.
     // contentType ('static' | 'ca') separates a question's SHELF LIFE from its Subject — "Fundamental
     // Rights" (Polity, static) and "Budget 2026 allocations" (also Polity, but current-affairs and
     // time-bound) stay under the same Subject but are tagged differently, rather than forking Subject
@@ -92,8 +97,11 @@
       'subject': 'subject', 'topic': 'subject', 'category': 'subject', 'tag': 'subject',
       // Difficulty
       'difficulty': 'difficulty', 'level': 'difficulty', 'diff': 'difficulty', 'difficultylevel': 'difficulty',
-      // Image
+      // Image (English / default — shown in Kannada mode too when no Kannada-specific image is set)
       'image': 'image_url', 'imageurl': 'image_url', 'diagram': 'image_url', 'graph': 'image_url', 'graphurl': 'image_url', 'img': 'image_url',
+      'imageen': 'image_url', 'imageenglish': 'image_url',
+      // Image (Kannada-only override) — e.g. a "match the following" image whose text is language-specific
+      'imagekn': 'image_url_kn', 'imageurlkn': 'image_url_kn', 'imagekannada': 'image_url_kn', 'diagramkn': 'image_url_kn', 'imgkn': 'image_url_kn',
       // Content type (Static syllabus vs Current Affairs) — see studioQuestionProblem/getQuestionBank
       // comments near contentType for why this is a field of its own rather than folded into Subject.
       'contenttype': 'contentType', 'type': 'contentType', 'nature': 'contentType', 'static': 'contentType',
@@ -113,7 +121,8 @@
       d_en: 'Option D (English)',      d_kn: 'Option D (Kannada)',
       correct: 'Correct Answer',       exp: 'Explanation (English)',
       exp_kn: 'Explanation (Kannada)',
-      subject: 'Subject / Topic Tag',  image_url: 'Image URL',
+      subject: 'Subject / Topic Tag',  image_url: 'Image URL (English / default)',
+      image_url_kn: 'Image URL (Kannada-only override)',
       difficulty: 'Difficulty (1-5)',
       contentType: 'Type (Static/Current Affairs)', relevantPeriod: 'Relevant Period (CA only)',
       relevantUntil: 'Relevant Until (CA only, YYYY-MM-DD)',
@@ -292,6 +301,7 @@
             correct: (q.correct || 'A').toUpperCase(),
             exp: q.exp || '', exp_kn: q.exp_kn || '', subject: q.subject || '',
             image_url: q.image_url || '',
+            image_url_kn: q.image_url_kn || '',
             contentType: q.contentType === 'ca' ? 'ca' : 'static',
             relevantPeriod: q.relevantPeriod || '',
             relevantUntil: q.relevantUntil || '',
@@ -791,7 +801,7 @@
       const newlyAddedForDupCheck = [];
       let added = 0;
       rows.forEach((row, i) => {
-        const q = { id: startId + i, q_en: '', q_kn: '', options_en: ['', '', '', ''], options_kn: ['', '', '', ''], correct: 'A', exp: '', exp_kn: '', subject: '', difficulty: null, image_url: '', contentType: 'static', relevantPeriod: '', relevantUntil: '', askedInYears: [] };
+        const q = { id: startId + i, q_en: '', q_kn: '', options_en: ['', '', '', ''], options_kn: ['', '', '', ''], correct: 'A', exp: '', exp_kn: '', subject: '', difficulty: null, image_url: '', image_url_kn: '', contentType: 'static', relevantPeriod: '', relevantUntil: '', askedInYears: [] };
         for (const [colName, field] of Object.entries(mapping)) {
           const val = row[colName];
           if (val == null || field === '_unknown' || field === '_ignore') continue;
@@ -833,7 +843,12 @@
             const n = parseInt(String(val).trim(), 10);
             q.difficulty = (Number.isInteger(n) && n >= 1 && n <= 5) ? n : null;
           }
+          // isRealImageUrl-filtered at the normalizer, not here: a placeholder like "N/A" typed into
+          // the sheet's blank cell is kept as typed in studioState so a round-tripped CSV export still
+          // shows the admin exactly what they uploaded, but is never treated as an actual image by the
+          // exam engine or by the question-list thumbnail/badge (see isRealImageUrl call sites below).
           else if (field === 'image_url') q.image_url = String(val).trim();
+          else if (field === 'image_url_kn') q.image_url_kn = String(val).trim();
           else if (field === 'contentType') {
             // Strip spaces/hyphens before matching so "Current Affairs" (the column's own sample
             // value in the downloadable template) normalizes the same as "CurrentAffairs" or "CA" —
@@ -879,7 +894,7 @@
     // Exact header row the CSV upload path round-trips cleanly (every one of these names is a key
     // in STUDIO_HEADER_ALIASES above) -- used by both the blank sample template and the real
     // paper-export functions below, so a downloaded paper always re-uploads without a remapping step.
-    const STUDIO_CSV_HEADERS = ['Question_EN', 'Question_KN', 'Opt_A_EN', 'Opt_B_EN', 'Opt_C_EN', 'Opt_D_EN', 'Opt_A_KN', 'Opt_B_KN', 'Opt_C_KN', 'Opt_D_KN', 'Correct', 'Explanation', 'Explanation_KN', 'Subject', 'Difficulty', 'Type', 'Relevant_Period', 'Asked_In_Years', 'Image_URL', 'Relevant_Until'];
+    const STUDIO_CSV_HEADERS = ['Question_EN', 'Question_KN', 'Opt_A_EN', 'Opt_B_EN', 'Opt_C_EN', 'Opt_D_EN', 'Opt_A_KN', 'Opt_B_KN', 'Opt_C_KN', 'Opt_D_KN', 'Correct', 'Explanation', 'Explanation_KN', 'Subject', 'Difficulty', 'Type', 'Relevant_Period', 'Asked_In_Years', 'Image_URL', 'Relevant_Until', 'Image_URL_KN'];
 
     function studioRowsToCsv(rows) {
       return rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -916,7 +931,8 @@
           q.relevantPeriod || '',
           years,
           q.image_url || '',
-          q.relevantUntil || ''
+          q.relevantUntil || '',
+          q.image_url_kn || ''
         ];
       });
       return studioRowsToCsv([STUDIO_CSV_HEADERS, ...rows]);
@@ -930,9 +946,9 @@
     function studioDownloadTemplate() {
       const sample = [
         STUDIO_CSV_HEADERS,
-        ['Which article of the Indian Constitution deals with Fundamental Duties?', 'ಭಾರತೀಯ ಸಂವಿಧಾನದ ಯಾವ ಆರ್ಟಿಕಲ್ ಮೂಲಭೂತ ಕರ್ತವ್ಯಗಳ ಬಗ್ಗೆ ಇದೆ?', 'Article 51A', 'Article 32', 'Article 21', 'Article 14', 'ಆರ್ಟಿಕಲ್ 51A', 'ಆರ್ಟಿಕಲ್ 32', 'ಆರ್ಟಿಕಲ್ 21', 'ಆರ್ಟಿಕಲ್ 14', 'A', 'Article 51A was added by the 42nd Amendment (1976).', 'ಆರ್ಟಿಕಲ್ 51A ಅನ್ನು 42ನೇ ತಿದ್ದುಪಡಿಯ (1976) ಮೂಲಕ ಸೇರಿಸಲಾಯಿತು.', 'Polity', '2', 'Static', '', '2018, 2021, 2023', '', ''],
-        ['The capital of Karnataka is:', 'ಕರ್ನಾಟಕದ ರಾಜಧಾನಿ:', 'Mysuru', 'Bengaluru', 'Hubballi', 'Mangaluru', 'ಮೈಸೂರು', 'ಬೆಂಗಳೂರು', 'ಹುಬ್ಬಳ್ಳಿ', 'ಮಂಗಳೂರು', 'B', 'Bengaluru has been the capital of Karnataka since the state was formed in 1956.', '1956ರಲ್ಲಿ ರಾಜ್ಯ ರಚನೆಯಾದಾಗಿನಿಂದ ಬೆಂಗಳೂರು ಕರ್ನಾಟಕದ ರಾಜಧಾನಿಯಾಗಿದೆ.', 'Geography', '1', 'Static', '', '', '', ''],
-        ['Which state topped NITI Aayog\'s latest SDG India Index?', 'ಇತ್ತೀಚಿನ NITI ಆಯೋಗ್ SDG ಇಂಡಿಯಾ ಇಂಡೆಕ್ಸ್‌ನಲ್ಲಿ ಯಾವ ರಾಜ್ಯ ಅಗ್ರಸ್ಥಾನದಲ್ಲಿದೆ?', 'Kerala', 'Karnataka', 'Tamil Nadu', 'Punjab', 'ಕೇರಳ', 'ಕರ್ನಾಟಕ', 'ತಮಿಳುನಾಡು', 'ಪಂಜಾಬ್', 'A', 'Released by NITI Aayog; ranking current as of this edition of the index.', 'NITI ಆಯೋಗ್ ಬಿಡುಗಡೆ ಮಾಡಿದೆ; ಈ ಆವೃತ್ತಿಯ ಶ್ರೇಯಾಂಕ.', 'Current Affairs', '2', 'Current Affairs', 'Sep 2026', '', '', '2027-09-30']
+        ['Which article of the Indian Constitution deals with Fundamental Duties?', 'ಭಾರತೀಯ ಸಂವಿಧಾನದ ಯಾವ ಆರ್ಟಿಕಲ್ ಮೂಲಭೂತ ಕರ್ತವ್ಯಗಳ ಬಗ್ಗೆ ಇದೆ?', 'Article 51A', 'Article 32', 'Article 21', 'Article 14', 'ಆರ್ಟಿಕಲ್ 51A', 'ಆರ್ಟಿಕಲ್ 32', 'ಆರ್ಟಿಕಲ್ 21', 'ಆರ್ಟಿಕಲ್ 14', 'A', 'Article 51A was added by the 42nd Amendment (1976).', 'ಆರ್ಟಿಕಲ್ 51A ಅನ್ನು 42ನೇ ತಿದ್ದುಪಡಿಯ (1976) ಮೂಲಕ ಸೇರಿಸಲಾಯಿತು.', 'Polity', '2', 'Static', '', '2018, 2021, 2023', '', '', ''],
+        ['The capital of Karnataka is:', 'ಕರ್ನಾಟಕದ ರಾಜಧಾನಿ:', 'Mysuru', 'Bengaluru', 'Hubballi', 'Mangaluru', 'ಮೈಸೂರು', 'ಬೆಂಗಳೂರು', 'ಹುಬ್ಬಳ್ಳಿ', 'ಮಂಗಳೂರು', 'B', 'Bengaluru has been the capital of Karnataka since the state was formed in 1956.', '1956ರಲ್ಲಿ ರಾಜ್ಯ ರಚನೆಯಾದಾಗಿನಿಂದ ಬೆಂಗಳೂರು ಕರ್ನಾಟಕದ ರಾಜಧಾನಿಯಾಗಿದೆ.', 'Geography', '1', 'Static', '', '', '', '', ''],
+        ['Which state topped NITI Aayog\'s latest SDG India Index?', 'ಇತ್ತೀಚಿನ NITI ಆಯೋಗ್ SDG ಇಂಡಿಯಾ ಇಂಡೆಕ್ಸ್‌ನಲ್ಲಿ ಯಾವ ರಾಜ್ಯ ಅಗ್ರಸ್ಥಾನದಲ್ಲಿದೆ?', 'Kerala', 'Karnataka', 'Tamil Nadu', 'Punjab', 'ಕೇರಳ', 'ಕರ್ನಾಟಕ', 'ತಮಿಳುನಾಡು', 'ಪಂಜಾಬ್', 'A', 'Released by NITI Aayog; ranking current as of this edition of the index.', 'NITI ಆಯೋಗ್ ಬಿಡುಗಡೆ ಮಾಡಿದೆ; ಈ ಆವೃತ್ತಿಯ ಶ್ರೇಯಾಂಕ.', 'Current Affairs', '2', 'Current Affairs', 'Sep 2026', '', '', '2027-09-30', '']
       ];
       studioTriggerCsvDownload(studioRowsToCsv(sample), 'gritpro_question_template.csv');
     }
@@ -949,7 +965,7 @@
 
     // ---- Add / clear / renumber ----
     function studioAddBlankQuestion() {
-      const q = { id: studioState.questions.length + 1, q_en: '', q_kn: '', options_en: ['', '', '', ''], options_kn: ['', '', '', ''], correct: 'A', exp: '', exp_kn: '', subject: '', difficulty: null, image_url: '', contentType: 'static', relevantPeriod: '', relevantUntil: '', askedInYears: [], _isNew: true };
+      const q = { id: studioState.questions.length + 1, q_en: '', q_kn: '', options_en: ['', '', '', ''], options_kn: ['', '', '', ''], correct: 'A', exp: '', exp_kn: '', subject: '', difficulty: null, image_url: '', image_url_kn: '', contentType: 'static', relevantPeriod: '', relevantUntil: '', askedInYears: [], _isNew: true };
       studioState.questions.push(q);
       studioRenderList();
       // Open edit modal immediately for the new blank question
@@ -1116,7 +1132,11 @@
         body = `<div class="qbody">${renderCol('en')}`;
       }
       const askedCount = Array.isArray(q.askedInYears) ? q.askedInYears.length : 0;
-      body += `<div class="qmeta">${badge}<span>Correct: <b>${escapeHtml(q.correct)}</b></span>${q.subject ? `<span>· ${escapeHtml(q.subject)}</span>` : ''}${q.difficulty ? `<span>· Lvl ${q.difficulty}/5</span>` : ''}${q.image_url ? '<span>· 🖼️ image</span>' : ''}${q.contentType === 'ca' ? `<span>· 📰 CA${q.relevantPeriod ? ` (${escapeHtml(q.relevantPeriod)})` : ''}</span>` : ''}${askedCount ? `<span>· ⭐ Asked ${askedCount}×</span>` : ''}${q.retired ? '<span class="text-rose-500">· 🚫 retired</span>' : ''}${problem ? `<div class="qerr">⚠ ${escapeHtml(problem)}</div>` : ''}</div>`;
+      const hasImageEn = isRealImageUrl(q.image_url), hasImageKn = isRealImageUrl(q.image_url_kn);
+      const imageBadge = hasImageEn && hasImageKn ? '<span>· 🖼️ image (EN+KN)</span>'
+        : hasImageKn ? '<span>· 🖼️ image (KN only)</span>'
+        : hasImageEn ? '<span>· 🖼️ image</span>' : '';
+      body += `<div class="qmeta">${badge}<span>Correct: <b>${escapeHtml(q.correct)}</b></span>${q.subject ? `<span>· ${escapeHtml(q.subject)}</span>` : ''}${q.difficulty ? `<span>· Lvl ${q.difficulty}/5</span>` : ''}${imageBadge}${q.contentType === 'ca' ? `<span>· 📰 CA${q.relevantPeriod ? ` (${escapeHtml(q.relevantPeriod)})` : ''}</span>` : ''}${askedCount ? `<span>· ⭐ Asked ${askedCount}×</span>` : ''}${q.retired ? '<span class="text-rose-500">· 🚫 retired</span>' : ''}${problem ? `<div class="qerr">⚠ ${escapeHtml(problem)}</div>` : ''}</div>`;
       body += `</div>`;
 
       return `
@@ -1128,7 +1148,8 @@
             <button onclick="studioMoveQuestion(${i}, -1)" title="Move up">↑</button>
             <button onclick="studioMoveQuestion(${i},  1)" title="Move down">↓</button>
             <button onclick="studioEditQuestion(${i})" title="Edit">✎</button>
-            ${q.image_url ? `<img src="${escapeHtml(q.image_url)}" class="qthumb" alt="" />` : ''}
+            ${hasImageEn ? `<img src="${escapeHtml(q.image_url)}" class="qthumb" alt="" />` : ''}
+            ${hasImageKn ? `<img src="${escapeHtml(q.image_url_kn)}" class="qthumb" alt="" title="Kannada-only image" />` : ''}
           </div>
         </div>
       `;
@@ -1195,9 +1216,14 @@
       document.getElementById('edit-retired').checked = !!q.retired;
       document.getElementById('edit-image-url').value = q.image_url || '';
       const preview = document.getElementById('edit-image-preview');
-      if (q.image_url) { preview.src = q.image_url; preview.classList.remove('hidden'); }
+      if (isRealImageUrl(q.image_url)) { preview.src = q.image_url; preview.classList.remove('hidden'); }
       else { preview.classList.add('hidden'); }
       document.getElementById('edit-image-file').value = '';
+      document.getElementById('edit-image-url-kn').value = q.image_url_kn || '';
+      const previewKn = document.getElementById('edit-image-preview-kn');
+      if (isRealImageUrl(q.image_url_kn)) { previewKn.src = q.image_url_kn; previewKn.classList.remove('hidden'); }
+      else { previewKn.classList.add('hidden'); }
+      document.getElementById('edit-image-file-kn').value = '';
       openModal('studio-edit-modal');
     }
 
@@ -1222,6 +1248,7 @@
         .split(/[^0-9]+/).map(s => s.trim()).filter(s => /^(19|20)\d{2}$/.test(s));
       q.retired = document.getElementById('edit-retired').checked;
       q.image_url = document.getElementById('edit-image-url').value.trim();
+      q.image_url_kn = document.getElementById('edit-image-url-kn').value.trim();
       delete q._isNew;
       closeModal('studio-edit-modal');
       studioRenderList();
@@ -1273,20 +1300,24 @@
       if (expKn && !expKn.value.trim()) expKn.value = document.getElementById('edit-exp').value;
     }
 
-    async function editUploadImage(input) {
+    // suffix: '' for the English/default image field, 'Kn' for the Kannada-only override -- shared by
+    // both file inputs so the upload/storage/preview logic isn't duplicated per language.
+    async function editUploadImage(input, suffix) {
       if (!input.files || !input.files[0]) return;
       const file = input.files[0];
       if (file.size > 5 * 1024 * 1024) {
         input.value = '';
         return alert('Image is bigger than 5 MB. Compress it or paste a URL instead.');
       }
+      const urlFieldId = suffix === 'Kn' ? 'edit-image-url-kn' : 'edit-image-url';
+      const previewFieldId = suffix === 'Kn' ? 'edit-image-preview-kn' : 'edit-image-preview';
       const path = `question_images/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
       try {
         const { error } = await supabaseClient.storage.from('study_materials').upload(path, file, { cacheControl: '3600', upsert: false });
         if (error) throw error;
         const { data } = supabaseClient.storage.from('study_materials').getPublicUrl(path);
-        document.getElementById('edit-image-url').value = data.publicUrl;
-        const preview = document.getElementById('edit-image-preview');
+        document.getElementById(urlFieldId).value = data.publicUrl;
+        const preview = document.getElementById(previewFieldId);
         preview.src = data.publicUrl;
         preview.classList.remove('hidden');
       } catch (err) {
@@ -1343,6 +1374,7 @@
         options_en: q.options_en, options_kn: q.options_kn,
         correct: q.correct, exp: q.exp, exp_kn: q.exp_kn || '', subject: q.subject || '',
         image_url: q.image_url || '',
+        image_url_kn: q.image_url_kn || '',
         contentType: q.contentType === 'ca' ? 'ca' : 'static',
         relevantPeriod: q.relevantPeriod || '',
         relevantUntil: q.relevantUntil || '',

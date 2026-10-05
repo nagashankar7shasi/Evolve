@@ -188,6 +188,22 @@
       return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 
+    // Spreadsheet/CSV uploads routinely use "N/A", "NA", "-", "none", etc. in a blank image-URL cell
+    // to mean "no image" rather than leaving it truly empty. Those literal strings are non-empty, so
+    // `q.image_url ? <img>` checks still treated them as "there's an image" and rendered a broken-link
+    // icon on EVERY question that had one — this is the single normalizer both the Studio's CSV/manual
+    // ingestion AND the exam engine's rendering call, so a stray placeholder can never resurrect that
+    // bug from either direction (bad data in, or bad data already sitting in the DB from before this
+    // existed). Treats ANY value failing this as "no image" — not just the known placeholder words —
+    // because a real image URL always contains at least one '.' or '/' (domain or path separator);
+    // anything shorter/plainer than that is far more likely a stray label than a usable address.
+    function isRealImageUrl(url) {
+      const v = String(url || '').trim();
+      if (!v) return false;
+      if (/^(n\/?a|none|null|undefined|-+|tbd|pending)$/i.test(v)) return false;
+      return v.includes('.') || v.includes('/');
+    }
+
     // Accepts a page ID, its current link, or any link it used to have.
     function findPage(ref) {
       if (!ref) return null;
