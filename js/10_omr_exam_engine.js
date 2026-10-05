@@ -1,13 +1,44 @@
     /* ----------------------------------------------------
        10. OMR EXAM ENGINE & COMPLETE ATTEMPT SNAPSHOTTING
     ----------------------------------------------------- */
-    async function launchExamPaper(paperId) {
+    // Shown before a real (non-Practice) attempt starts -- the "Start Test"/"Launch OMR Mock Exam"/
+    // "Retake" buttons call this instead of launchExamPaper() directly now, so the candidate picks
+    // Easy or Difficult every time (deliberately not a saved/global preference -- a candidate may
+    // want Easy on a paper they're still learning and Difficult on one they're simulating the real
+    // exam with). Practice Mode's own button is untouched and still calls launchExamPaperPractice()
+    // straight away -- this picker only applies to the real, timed, scored OMR flow.
+    function openExamModePicker(paperId) {
+      pendingExamModePaperId = paperId;
+      openModal('exam-mode-picker-modal');
+    }
+
+    function chooseExamMode(mode) {
+      const paperId = pendingExamModePaperId;
+      pendingExamModePaperId = null;
+      closeModal('exam-mode-picker-modal');
+      if (!paperId) return;
+      launchExamPaper(paperId, mode);
+    }
+
+    // Backdrop click / Cancel button -- closes without starting anything.
+    function closeExamModePicker() {
+      pendingExamModePaperId = null;
+      closeModal('exam-mode-picker-modal');
+    }
+
+    // mode: 'easy' (default — an answer can be changed freely, same as this app has always worked)
+    // or 'difficult' (an answer locks the moment it's first chosen; see selectAnswer/clearQ below).
+    // Chosen by the student on the mode-picker modal (openExamModePicker/chooseExamMode) before this
+    // is called -- defaulting here too so a stray direct call (an old bookmark, a custom page link
+    // authored before this existed, a retry after login) still starts a perfectly normal attempt.
+    async function launchExamPaper(paperId, mode) {
       if (!currentUser) {
-        openLoginModal('Log in to take this test. Your score will be saved to your dashboard.', () => launchExamPaper(paperId));
+        openLoginModal('Log in to take this test. Your score will be saved to your dashboard.', () => launchExamPaper(paperId, mode));
         return;
       }
       activeTest = testsCatalog.find(p => p.id === paperId);
       if (!activeTest) return;
+      examMode = mode === 'difficult' ? 'difficult' : 'easy';
 
       if (!isTestUnlockedForUser(activeTest.id)) {
         openCheckout('paper', activeTest.id, activeTest.title, activeTest.price);
@@ -163,7 +194,7 @@
     function saveExamSession() {
       if (!examInProgress || !activeTest || !currentUser) return;
       localStorage.setItem('kas_exam_session', JSON.stringify({
-        email: normalizeEmail(currentUser.email), paperId: activeTest.id, selections: userSelections, markedForReview: markedForReview, endsAt: examEndsAt, lang: currentLang,
+        email: normalizeEmail(currentUser.email), paperId: activeTest.id, selections: userSelections, markedForReview: markedForReview, endsAt: examEndsAt, lang: currentLang, mode: examMode,
         customPaper: activeTest.isCustom ? activeTest : null
       }));
     }
@@ -182,6 +213,7 @@
       userSelections = saved.selections || {};
       markedForReview = saved.markedForReview || {};
       currentLang = saved.lang || 'en';
+      examMode = saved.mode === 'difficult' ? 'difficult' : 'easy';
       examEndsAt = saved.endsAt;
       if (Date.now() >= examEndsAt) {
         examInProgress = true;
@@ -256,6 +288,10 @@
         // that embed language-specific text in the image itself need a separate Kannada upload.
         const qImageUrl = currentLang === 'en' ? q.image_url : (q.image_url_kn || q.image_url);
         const chosen = userSelections[qNum];
+        // Difficult Mode: once chosen is set, every option on this question stops responding to
+        // clicks (selectAnswer/clearQ also guard this -- see their comment -- this is just the
+        // matching visual so it's obvious why nothing happens on tap, not a silent dead click).
+        const locked = examMode === 'difficult' && chosen != null;
 
         const card = document.createElement('div');
         card.id = `q-card-${qNum}`;
@@ -265,9 +301,9 @@
         ['A', 'B', 'C', 'D'].forEach((l, i) => {
           const isSelected = chosen === l;
           optHtml += `
-            <div onclick="selectAnswer(${qNum}, '${l}')" class="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer text-xs ${
+            <div ${locked ? '' : `onclick="selectAnswer(${qNum}, '${l}')"`} class="flex items-center space-x-3 p-3 rounded-lg border text-xs ${locked ? 'cursor-not-allowed' : 'cursor-pointer'} ${
               isSelected ? 'border-amber-600 bg-amber-50 font-bold' : 'border-slate-200 hover:bg-slate-50'
-            }">
+            } ${locked && !isSelected ? 'opacity-50' : ''}">
               <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold ${
                 isSelected ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 border'
               }">${l}</span>
@@ -279,7 +315,10 @@
         card.innerHTML = `
           <div class="flex justify-between border-b pb-2 mb-3">
             <span class="text-xs font-mono font-bold bg-slate-900 text-white px-2 py-0.5 rounded">QUESTION ${qNum}</span>
-            <span class="text-[11px] text-slate-400 font-mono">${activeTest.scheme.examBadge}</span>
+            <span class="flex items-center gap-1.5">
+              ${locked ? '<span class="text-[10px] font-bold text-rose-600" title="Difficult Mode: this answer is locked">🔒 Locked</span>' : ''}
+              <span class="text-[11px] text-slate-400 font-mono">${activeTest.scheme.examBadge}</span>
+            </span>
           </div>
           <div class="text-sm font-medium text-slate-900 mb-4 whitespace-pre-line leading-relaxed">${qText}</div>
           ${isRealImageUrl(qImageUrl) ? `<img src="${escapeHtml(qImageUrl)}" alt="Question diagram" class="max-w-full max-h-80 rounded-lg border border-slate-200 mb-4 mx-auto block" />` : ''}
@@ -297,6 +336,7 @@
         const qNum = idx + 1;
         const isMarked = !!markedForReview[qNum];
         const isAnswered = userSelections[qNum] != null;
+        const locked = examMode === 'difficult' && isAnswered;
         // Marking always wins visually, whether or not the question is answered — a flagged question
         // means "look at this again before submitting," which matters the same way either way. No
         // separate "not visited" state either: this engine shows all questions on one scrollable page,
@@ -310,14 +350,17 @@
         let bubbles = '';
         ['A', 'B', 'C', 'D'].forEach(l => {
           const filled = userSelections[qNum] === l;
-          bubbles += `<div onclick="selectAnswer(${qNum}, '${l}')" class="omr-bubble ${filled ? 'filled' : ''}">${l}</div>`;
+          const blocked = locked && !filled;
+          bubbles += `<div ${blocked ? '' : `onclick="selectAnswer(${qNum}, '${l}')"`} class="omr-bubble ${filled ? 'filled' : ''}${blocked ? ' omr-bubble-locked' : ''}">${l}</div>`;
         });
 
         row.innerHTML = `
           <div class="w-12 text-center font-bold text-slate-700 cursor-pointer underline" onclick="scrollToQ(${qNum})">${qNum}</div>
           <div class="flex-1 flex justify-around pl-2">${bubbles}</div>
           <div class="w-8 text-center"><button onclick="toggleMarkForReview(${qNum})" title="${isMarked ? 'Unmark for review' : 'Mark for review'}" class="omr-flag-btn${isMarked ? ' active' : ''}">🚩</button></div>
-          <div class="w-10 text-center"><button onclick="clearQ(${qNum})" class="text-slate-300 hover:text-rose-600 font-bold">&times;</button></div>
+          <div class="w-10 text-center">${locked
+            ? '<span class="text-slate-300" title="Difficult Mode: answer is locked">🔒</span>'
+            : `<button onclick="clearQ(${qNum})" class="text-slate-300 hover:text-rose-600 font-bold">&times;</button>`}</div>
         `;
         container.appendChild(row);
       });
@@ -327,8 +370,18 @@
       document.getElementById('omr-tally').innerText = `${filledCount} Filled · ${unansweredCount} Unanswered${markedCount ? ` · ${markedCount} for review` : ''}`;
     }
 
-    function selectAnswer(qNum, l) { userSelections[qNum] = l; renderPaper(); renderOMR(); saveExamSession(); }
-    function clearQ(qNum) { delete userSelections[qNum]; renderPaper(); renderOMR(); saveExamSession(); }
+    // Difficult Mode: once an option has been chosen for a question, it's final -- neither picking a
+    // different option nor clearing the response is allowed for that question again. Guarded here
+    // (not just visually in renderPaper/renderOMR) so it holds regardless of which UI surface the
+    // click came from, and survives a resumed session (examMode is restored in checkUnfinishedExam).
+    function selectAnswer(qNum, l) {
+      if (examMode === 'difficult' && userSelections[qNum] != null && userSelections[qNum] !== l) return;
+      userSelections[qNum] = l; renderPaper(); renderOMR(); saveExamSession();
+    }
+    function clearQ(qNum) {
+      if (examMode === 'difficult' && userSelections[qNum] != null) return;
+      delete userSelections[qNum]; renderPaper(); renderOMR(); saveExamSession();
+    }
     function toggleMarkForReview(qNum) {
       if (markedForReview[qNum]) delete markedForReview[qNum]; else markedForReview[qNum] = true;
       renderOMR();
@@ -442,7 +495,10 @@ async function evaluateOMRSubmission() {
     user_selections: { ...userSelections },
     questions_snapshot: JSON.parse(JSON.stringify(activeTest.questions)),
     scheme_snapshot: { ...s },
-    mode: 'standard'
+    // 'easy' or 'difficult' (see launchExamPaper/openExamModePicker) -- both are real, timed, scored
+    // attempts like the 'standard' tag used to mean before this existed; only 'practice' is excluded
+    // from peer-percentile comparisons (see getVisibleAttempts, js/11b_practice_mistakes_topic_builder.js).
+    mode: examMode
   };
 
   // Insert the record into the cloud database

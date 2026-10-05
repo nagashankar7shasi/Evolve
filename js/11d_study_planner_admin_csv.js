@@ -1088,7 +1088,7 @@
         tr.innerHTML = `
           <td class="py-3 text-slate-500 font-mono">${a.date}</td>
           ${admin ? `<td class="py-3 text-slate-700">${a.userEmail ? escapeHtml(a.userEmail) : '<span class="text-slate-400">Unknown (older attempt)</span>'}</td>` : ''}
-          <td class="py-3 font-bold text-slate-800">${escapeHtml(a.paperTitle)}${a.mode === 'practice' ? ' <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-100 text-amber-800 align-middle">Practice</span>' : ''}</td>
+          <td class="py-3 font-bold text-slate-800">${escapeHtml(a.paperTitle)}${a.mode === 'practice' ? ' <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-100 text-amber-800 align-middle">Practice</span>' : ''}${a.mode === 'difficult' ? ' <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-rose-100 text-rose-800 align-middle">Difficult</span>' : ''}</td>
           <td class="py-3 font-mono"><span class="px-2 py-0.5 bg-slate-100 rounded text-[10px]">${escapeHtml(a.badge)}</span></td>
           <td class="py-3 font-bold text-emerald-600 font-mono">${a.score} / ${a.maxMarks}</td>
           <td class="py-3 font-mono">${a.accuracy}%</td>

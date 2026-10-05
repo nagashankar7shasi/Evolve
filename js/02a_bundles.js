@@ -115,6 +115,13 @@
     let currentLang = 'en';
     let userSelections = {};
     let markedForReview = {};  // { qNum: true } — flagged during a live test to revisit before submitting
+    // Chosen on the mode-picker modal before a real (non-Practice) attempt starts -- 'easy' (today's
+    // long-standing behavior: an answer can be changed freely any time before submitting) or
+    // 'difficult' (an answer locks the moment it's first chosen; see selectAnswer/clearQ in
+    // js/10_omr_exam_engine.js). Practice Mode is unaffected by this -- it's always free to change,
+    // same as it always was, since it's meant for learning rather than simulating exam conditions.
+    let examMode = 'easy';
+    let pendingExamModePaperId = null; // set while the mode-picker modal is open; see openExamModePicker
     let timerSeconds = 0;
     let timerInterval = null;
 

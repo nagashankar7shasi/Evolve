@@ -604,7 +604,8 @@
     // Rich, always-current preview tile for a test paper embedded in a custom page. Rebuilt from
     // testsCatalog on every public render (hydratePageCards), so the title/price/lock-status shown
     // always match reality even if the paper's price changed after the page was saved. Clicking it
-    // calls launchExamPaper() directly -- same entry point the Exam Hub uses -- which re-checks
+    // calls openExamModePicker() -- same entry point the Exam Hub uses for its "Launch OMR Mock Exam"
+    // button -- which shows the Easy/Difficult picker and then calls launchExamPaper(), which re-checks
     // access itself and routes to checkout if the viewer doesn't have it, so there's no separate
     // locked-state click handler to keep in sync here.
     function testPaperCardHtml(p) {
@@ -615,7 +616,7 @@
         p.questionCount ? `${p.questionCount} Qs` : '',
         s.duration ? `${s.duration} min` : ''
       ].filter(Boolean).join(' • ');
-      return `<a href="javascript:void(0)" onclick="launchExamPaper('${p.id}')" class="kb-paper-card">
+      return `<a href="javascript:void(0)" onclick="openExamModePicker('${p.id}')" class="kb-paper-card">
         <div class="kb-paper-card-head">
           ${s.examBadge ? `<span class="kb-paper-card-badge">${escapeHtml(s.examBadge)}</span>` : '<span></span>'}
           <span class="kb-paper-card-price${p.price === 0 ? ' is-free' : ''}">${priceLabel}</span>
