@@ -489,29 +489,47 @@ window.onload = async function() {
     }
 
     async function fetchCloudContent() {
-  // Fetch tests — METADATA ONLY, via the tests_catalog_public view (PHASE 3b) rather than the base
-  // table. Deliberately excludes the `questions` column (every question's text, options AND correct
-  // answer) from this bulk, load-time fetch: previously this was `select('*')` on the base table,
-  // which meant the full answer key for every paper — including ones nobody has paid for — was
-  // downloaded to every visitor's browser on every page load. Now that the base table's own SELECT
-  // policy is scoped to student_can_access_paper() (see phase3b_row_scoping.sql), querying it
-  // directly here would ALSO only return papers the current viewer already has access to — wrong for
-  // a catalog listing, which needs to show every paper (title, price, paywall card) to everyone,
-  // entitled or not. The view has no such restriction (it's metadata-only, so there's nothing on it
-  // worth protecting) and always returns the full catalog. A paper's actual question content is
-  // fetched separately, on demand, straight from the (now-gated) base table, only once a signed-in
-  // student who's confirmed to hold it opens it (see ensurePaperQuestionsLoaded/
-  // ensureUnlockedPapersLoaded), or an admin manages it (see ensureFullTestsCatalogForAdmin).
-  // `question_count` is a plain number kept in sync by Studio on every publish — safe to ship in bulk
-  // since it carries no question content.
-  // BUG FIX: this select string previously omitted `also_list_categories` entirely (even though the
-  // mapping below already read `t.also_list_categories`) — the view had the same gap, so cross-listing
-  // a paper under alsoListCategories silently never worked via this bulk fetch; it always came back
-  // as [] here regardless of what was saved. Also now requests `delisted` (see the Studio "Delist"
-  // toggle), which hides a paper from the Test Papers browse grid/search while leaving it fully
-  // purchasable via a direct link or a page's Test paper card.
-  const { data: tests } = await supabaseClient.from('tests_catalog_public')
-    .select('id, category, extra_categories, also_list_categories, active, delisted, title, price, scheme, scheduled_for, question_count');
+  // PERFORMANCE FIX: these five reads are all independent (five different tables, none of their
+  // mappings below reads another's result), so they're fired together instead of one at a time. This
+  // function alone used to be 5 sequential Supabase round trips back to back -- exactly the kind of
+  // per-function sequential chain the comment on the outer boot-sequence Promise.all (see
+  // runStartupSequence) already called out and fixed one level up ("shows only the old setup for a few
+  // seconds"); fetchCloudContent is one of that outer list's own ~15 items, so being internally
+  // sequential made IT the single slowest item and put a floor of "sum of all 5" under the whole page's
+  // wait, regardless of how parallel everything around it already was. Reported in practice as the
+  // page showing cached/seed content for 7-8 seconds before repainting with real data -- consistent
+  // with 5 round trips at roughly 1.5s each. Now it's roughly the slowest of the five, not the sum.
+  const [testsRes, pagesRes, bdlRes, menuRes, pdfsRes] = await Promise.all([
+    // Tests — METADATA ONLY, via the tests_catalog_public view (PHASE 3b) rather than the base table.
+    // Deliberately excludes the `questions` column (every question's text, options AND correct
+    // answer) from this bulk, load-time fetch: previously this was `select('*')` on the base table,
+    // which meant the full answer key for every paper — including ones nobody has paid for — was
+    // downloaded to every visitor's browser on every page load. Now that the base table's own SELECT
+    // policy is scoped to student_can_access_paper() (see phase3b_row_scoping.sql), querying it
+    // directly here would ALSO only return papers the current viewer already has access to — wrong for
+    // a catalog listing, which needs to show every paper (title, price, paywall card) to everyone,
+    // entitled or not. The view has no such restriction (it's metadata-only, so there's nothing on it
+    // worth protecting) and always returns the full catalog. A paper's actual question content is
+    // fetched separately, on demand, straight from the (now-gated) base table, only once a signed-in
+    // student who's confirmed to hold it opens it (see ensurePaperQuestionsLoaded/
+    // ensureUnlockedPapersLoaded), or an admin manages it (see ensureFullTestsCatalogForAdmin).
+    // `question_count` is a plain number kept in sync by Studio on every publish — safe to ship in bulk
+    // since it carries no question content.
+    // BUG FIX: this select string previously omitted `also_list_categories` entirely (even though the
+    // mapping below already read `t.also_list_categories`) — the view had the same gap, so cross-listing
+    // a paper under alsoListCategories silently never worked via this bulk fetch; it always came back
+    // as [] here regardless of what was saved. Also now requests `delisted` (see the Studio "Delist"
+    // toggle), which hides a paper from the Test Papers browse grid/search while leaving it fully
+    // purchasable via a direct link or a page's Test paper card.
+    supabaseClient.from('tests_catalog_public')
+      .select('id, category, extra_categories, also_list_categories, active, delisted, title, price, scheme, scheduled_for, question_count'),
+    supabaseClient.from('custom_pages').select('*'),
+    supabaseClient.from('bundles').select('*'),
+    supabaseClient.from('nav_menu').select('*').order('order_num'),
+    supabaseClient.from('pdf_vault').select('*'),
+  ]);
+
+  const { data: tests } = testsRes;
   if (tests && tests.length > 0) {
     testsCatalog = tests.map(t => {
       // Defensive: Supabase may return jsonb columns as parsed objects, but if the
@@ -545,8 +563,8 @@ window.onload = async function() {
     });
   }
 
-  // Fetch pages
-  const { data: pages } = await supabaseClient.from('custom_pages').select('*');
+  // Pages
+  const { data: pages } = pagesRes;
   if (pages && pages.length > 0) {
     customPages = pages.map(p => ({
       id: p.id, slug: p.slug, title: p.title, isGated: p.is_gated, price: p.price, content: p.content,
@@ -555,8 +573,8 @@ window.onload = async function() {
     }));
   }
 
-  // Fetch bundles
-  const { data: bdl } = await supabaseClient.from('bundles').select('*');
+  // Bundles
+  const { data: bdl } = bdlRes;
   if (bdl && bdl.length > 0) {
     bundles = bdl.map(b => ({
       id: b.id, name: b.name, price: b.price, validityDays: b.validity_days, allAccess: b.all_access,
@@ -566,14 +584,14 @@ window.onload = async function() {
     }));
   }
 
-  // Fetch navigation menu
-  const { data: menu } = await supabaseClient.from('nav_menu').select('*').order('order_num');
+  // Navigation menu
+  const { data: menu } = menuRes;
   if (menu && menu.length > 0) {
     navStructure = menu.map(m => ({ id: m.id, label: m.label, action: m.action, autoChildren: m.auto_children, submenus: m.submenus || [] }));
   }
 
-  // Fetch PDF vault
-  const { data: pdfs } = await supabaseClient.from('pdf_vault').select('*');
+  // PDF vault
+  const { data: pdfs } = pdfsRes;
   if (pdfs && pdfs.length > 0) {
     pdfVault = pdfs.map(d => ({ id: d.id, title: d.title, category: d.category, access: d.access, price: d.price, url: d.url, bytes: d.bytes }));
   }
