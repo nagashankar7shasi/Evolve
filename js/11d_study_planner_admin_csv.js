@@ -581,6 +581,16 @@
       return Object.values(groups).sort((a, b) => b.total - a.total);
     }
 
+    // Whether each category's cleanup tool is showing every subject (catId -> true) or just the ones
+    // with a real spelling collision (the default). A subject with only one spelling in use isn't a
+    // duplicate to clean up -- see renderSubjectCleanupTool.
+    let cleanupShowAll = {};
+
+    function toggleCleanupShowAll(catId, showAll) {
+      cleanupShowAll[catId] = showAll;
+      renderSubjectCleanupTool(catId);
+    }
+
     async function renderSubjectCleanupTool(catId) {
       const root = document.getElementById(`ec-subject-cleanup-${catId}`);
       if (!root) return;
@@ -589,9 +599,26 @@
       // ensurePaperQuestionsLoaded) — load every paper in this category first so the scan below sees
       // the full picture, not just whichever papers happened to already be open in this session.
       await Promise.all(testsCatalog.filter(p => p.category === catId).map(ensurePaperQuestionsLoaded));
-      const groups = subjectCleanupScan(catId);
-      if (!groups.length) {
+      const allGroups = subjectCleanupScan(catId);
+      if (!allGroups.length) {
         root.innerHTML = '<p class="text-[11px] text-slate-400 mt-1">No questions with a subject tag found in this category yet.</p>';
+        return;
+      }
+      // A subject with only one spelling in use isn't a duplicate needing attention -- showing every
+      // subject here regardless (as this used to) meant a 90-subject category produced 90 rows, most
+      // with nothing to actually merge. Default to just the real collisions; "show everything" stays
+      // one click away for the rarer case of deliberately folding two genuinely different (but both
+      // already-clean) subjects into one via the same free-text box.
+      const showAll = !!cleanupShowAll[catId];
+      const groups = showAll ? allGroups : allGroups.filter(g => g.variants.size > 1);
+      const hiddenCount = allGroups.length - groups.length;
+      const toggleLine = hiddenCount
+        ? (showAll
+            ? `<button onclick="toggleCleanupShowAll('${catId}', false)" class="text-[11px] text-slate-400 hover:underline block mb-2">▲ Hide the ${hiddenCount} with only one spelling</button>`
+            : `<button onclick="toggleCleanupShowAll('${catId}', true)" class="text-[11px] text-slate-400 hover:underline block mb-2">▼ Show ${hiddenCount} more with just one spelling (clean, but still available for a manual rename)</button>`)
+        : '';
+      if (!groups.length) {
+        root.innerHTML = `<p class="text-[11px] text-emerald-700 mt-1 mb-1">✓ No spelling duplicates found — every subject already has one consistent spelling.</p>${toggleLine}`;
         return;
       }
       root.innerHTML = `<div class="mt-2 space-y-2 border-t pt-2">` + groups.map((g, gi) => {
@@ -607,7 +634,7 @@
             <button onclick="applySubjectMerge('${catId}', ${gi}, ${JSON.stringify(variants.map(v => v[0])).replace(/"/g, '&quot;')})" class="px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg">Merge → this spelling</button>
           </div>
         </div>`;
-      }).join('') + `</div>`;
+      }).join('') + `</div>` + toggleLine;
     }
 
     // Rewrites every question in this category whose subject matches any of `fromVariants` (exact
