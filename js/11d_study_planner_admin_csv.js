@@ -377,6 +377,32 @@
       renderCategorySubjectsAdmin(catId);
     }
 
+    // Every distinct subject text actually present on this category's questions (requires each
+    // paper's real content to already be loaded -- see ensurePaperQuestionsLoaded; a paper that's
+    // still metadata-only just contributes nothing here, same as the duplicate-cleanup scan above).
+    function usedSubjectsForCategory(catId) {
+      const set = new Set();
+      testsCatalog.filter(p => p.category === catId && Array.isArray(p.questions)).forEach(p => {
+        p.questions.forEach(q => { const s = (q.subject || '').trim(); if (s) set.add(s); });
+      });
+      return set;
+    }
+
+    // The subject REGISTRY (examSubjects) is often far smaller than what's actually tagged on
+    // questions -- it's only kept in sync when someone remembers to "+ Add" to it, while new
+    // questions and merges can introduce subject text that never gets registered. A group's
+    // checkbox grid used to be built from the registry alone, which silently hid any unregistered
+    // member -- no checkbox meant it could never show as checked, so re-saving a group whose members
+    // mostly weren't registered would wipe them. This unions the registry with what's actually used
+    // in questions AND every group's current members, so nothing a group already contains can ever
+    // disappear from the grid, however it got there.
+    function availableSubjectsForGroups(catId) {
+      const set = new Set(examSubjects[catId] || []);
+      usedSubjectsForCategory(catId).forEach(s => set.add(s));
+      (subjectGroups[catId] || []).forEach(g => g.members.forEach(m => set.add(m)));
+      return [...set].sort((a, b) => a.localeCompare(b));
+    }
+
     // ---- Subject groups admin (per category) ----
     // Each group renders as a one-line summary (name + member count) with an "Edit" button, and only
     // expands to its full checkbox grid on demand -- a category with several groups used to mean
@@ -387,7 +413,7 @@
       const root = document.getElementById(`ec-subject-groups-${catId}`);
       if (!root) return;
       const groups = subjectGroups[catId] || [];
-      const allSubjects = (examSubjects[catId] || []).slice().sort((a, b) => a.localeCompare(b));
+      const allSubjects = availableSubjectsForGroups(catId);
       const groupedElsewhere = (subjName, exceptGroupName) =>
         groups.find(g => g.name !== exceptGroupName && g.members.includes(subjName));
       root.innerHTML = `
@@ -398,7 +424,7 @@
             return `
             <div class="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mb-2 text-[11px]">
               <span class="flex-1 font-bold text-slate-700">📦 ${escapeHtml(g.name)} <span class="text-slate-400 font-normal">(${g.members.length} subject${g.members.length === 1 ? '' : 's'})</span></span>
-              <button onclick="toggleSubjectGroupExpanded('${catId}', ${JSON.stringify(g.name).replace(/"/g, '&quot;')}, true)" class="text-amber-700 font-bold hover:underline">Edit</button>
+              <button onclick="this.textContent='Loading…'; this.disabled=true; toggleSubjectGroupExpanded('${catId}', ${JSON.stringify(g.name).replace(/"/g, '&quot;')}, true)" class="text-amber-700 font-bold hover:underline disabled:opacity-50">Edit</button>
               ${delBtn}
             </div>`;
           }
@@ -430,13 +456,19 @@
       `;
     }
 
-    function toggleSubjectGroupExpanded(catId, name, open) {
+    async function toggleSubjectGroupExpanded(catId, name, open) {
       const key = `${catId}::${name}`;
-      if (open) expandedSubjectGroups[key] = true; else delete expandedSubjectGroups[key];
+      if (!open) { delete expandedSubjectGroups[key]; renderSubjectGroupsAdmin(catId); return; }
+      // Admin catalog rows only carry question CONTENT once loaded on demand -- load every paper in
+      // this category first so availableSubjectsForGroups() (and therefore this group's checkbox
+      // grid) sees every subject actually in use, not just whichever papers happened to already be
+      // open in this session.
+      await Promise.all(testsCatalog.filter(p => p.category === catId).map(ensurePaperQuestionsLoaded));
+      expandedSubjectGroups[key] = true;
       renderSubjectGroupsAdmin(catId);
     }
 
-    function addSubjectGroupUi(catId) {
+    async function addSubjectGroupUi(catId) {
       const input = document.getElementById(`sg-newname-${catId}`);
       const name = (input.value || '').trim();
       if (!name) return alert('Give the group a name.');
@@ -445,8 +477,11 @@
       // Draft only (local state) until "Save group" is clicked, same as every other admin form here --
       // lets the admin tick members before the first cloud write instead of creating an empty group.
       subjectGroups[catId] = [...groups, { name, members: [] }];
-      expandedSubjectGroups[`${catId}::${name}`] = true; // open right away -- nothing to summarize yet
       input.value = '';
+      // Load full question content first (see toggleSubjectGroupExpanded) so the new group's
+      // checklist offers every real subject, not just the registry.
+      await Promise.all(testsCatalog.filter(p => p.category === catId).map(ensurePaperQuestionsLoaded));
+      expandedSubjectGroups[`${catId}::${name}`] = true; // open right away -- nothing to summarize yet
       renderSubjectGroupsAdmin(catId);
     }
 
