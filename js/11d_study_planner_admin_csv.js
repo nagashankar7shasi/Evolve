@@ -362,6 +362,7 @@
           <input type="text" id="ec-newsubject-${catId}" placeholder="New subject name" class="flex-1 px-2 py-1 border rounded-lg text-xs" onkeydown="if(event.key==='Enter'){event.preventDefault();addSubjectToRegistry('${catId}');}" />
           <button onclick="addSubjectToRegistry('${catId}')" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold rounded-lg">Add</button>
         </div>
+        <button onclick="this.textContent='Scanning…'; this.disabled=true; syncSubjectRegistryFromQuestions('${catId}')" class="text-[11px] font-bold text-emerald-700 hover:underline disabled:opacity-50 block mb-1.5">🔄 Register every subject already used in this category's questions</button>
         <button onclick="renderSubjectCleanupTool('${catId}')" class="text-[11px] font-bold text-amber-700 hover:underline">🧹 Find & merge duplicate subjects in this category's questions</button>
         <div id="ec-subject-cleanup-${catId}" class="mt-2"></div>
         <div class="mt-3 border-t pt-2">
@@ -386,6 +387,30 @@
         p.questions.forEach(q => { const s = (q.subject || '').trim(); if (s) set.add(s); });
       });
       return set;
+    }
+
+    // One-click registry rationalization: the registry (examSubjects) only grows when someone
+    // remembers to "+ Add" to it, so it drifts far behind what's actually tagged on questions over
+    // time (confirmed live on kpsc_kas: 66 distinct subjects in use, 2 registered) -- which in turn
+    // starves the "+ Add subject" dropdown on new questions and the Generate-from-Bank weight picker
+    // of almost everything real. This scans the category's actual questions (same source as the
+    // duplicate-cleanup tool and availableSubjectsForGroups) and registers whatever's missing, in one
+    // batched write via registerSubjectsIfNew rather than one round-trip per subject.
+    async function syncSubjectRegistryFromQuestions(catId) {
+      await Promise.all(testsCatalog.filter(p => p.category === catId).map(ensurePaperQuestionsLoaded));
+      const used = usedSubjectsForCategory(catId);
+      const registered = new Set((examSubjects[catId] || []).map(s => s.toLowerCase()));
+      const missing = [...used].filter(s => !registered.has(s.toLowerCase()));
+      if (!missing.length) {
+        showAdminToast(`Registry already covers every subject in use (${(examSubjects[catId] || []).length}).`);
+        renderCategorySubjectsAdmin(catId);
+        return;
+      }
+      const ok = await registerSubjectsIfNew(catId, missing);
+      renderCategorySubjectsAdmin(catId);
+      // registerSubjectsIfNew/saveExamSubjects already alert on a cloud-sync failure, so only
+      // confirm here on the success path to avoid a confusing double popup.
+      if (ok) showAdminToast(`Registered ${missing.length} new subject${missing.length === 1 ? '' : 's'} (now ${(examSubjects[catId] || []).length} total).`);
     }
 
     // The subject REGISTRY (examSubjects) is often far smaller than what's actually tagged on

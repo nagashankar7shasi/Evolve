@@ -320,9 +320,9 @@
         have.add(key); // dedupe within this same batch too (two rows naming the same new subject)
         toAdd.push(trimmed);
       });
-      if (!toAdd.length) return;
+      if (!toAdd.length) return Promise.resolve(true); // nothing new -- treat as a clean no-op success
       const next = [...list, ...toAdd].sort((a, b) => a.localeCompare(b));
-      saveExamSubjects(categoryId, next);
+      return saveExamSubjects(categoryId, next); // returns the save's own success/failure so a caller can await it
     }
 
     // ---- Subject groups ----
