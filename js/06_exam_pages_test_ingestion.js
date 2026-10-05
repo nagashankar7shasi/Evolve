@@ -147,7 +147,7 @@
             </div>` : ''}
           </div>
           ${isUnlocked ? `
-            <button onclick="launchExamPaper('${paper.id}')" class="mt-6 w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg transition shadow">
+            <button onclick="openExamModePicker('${paper.id}')" class="mt-6 w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg transition shadow">
               Launch OMR Mock Exam
             </button>
             <button onclick="launchExamPaperPractice('${paper.id}')" class="mt-2 w-full py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-xs rounded-lg transition" title="Untimed, one question at a time, answer shown immediately">

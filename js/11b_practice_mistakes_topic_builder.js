@@ -849,7 +849,7 @@
                   <div class="text-[11px] text-slate-500">${status}</div>
                 </div>
                 <div class="shrink-0 flex flex-col gap-1.5 items-stretch">
-                  <button onclick="launchExamPaper('${p.id}')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-[11px]">
+                  <button onclick="openExamModePicker('${p.id}')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-[11px]">
                     ${tries.length ? 'Retake' : 'Start'}
                   </button>
                   <button onclick="launchExamPaperPractice('${p.id}')" class="px-3 py-1 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg font-bold text-[10px]" title="Untimed, one question at a time, answer shown immediately">
@@ -964,8 +964,8 @@
         </style></head><body>
         <img class="wm" src="${wmSrc}" alt="" />
         <div class="noprint">In the print window, choose <b>Save as PDF</b> as the printer (on phones: Share → Print → Save as PDF).</div>
-        <h1>${escapeHtml(a.paperTitle)}${a.mode === 'practice' ? ' <span style="font-size:11px;font-weight:700;color:#b45309;background:#fef3c7;border-radius:4px;padding:2px 7px;vertical-align:middle;">PRACTICE MODE</span>' : ''}</h1>
-        <p class="meta">${escapeHtml(who)}${who ? ' · ' : ''}Attempted ${escapeHtml(a.date)} · ${escapeHtml(a.schemeDesc || '')}${a.mode === 'practice' ? ' · Untimed, answer shown after each question' : ''}</p>
+        <h1>${escapeHtml(a.paperTitle)}${a.mode === 'practice' ? ' <span style="font-size:11px;font-weight:700;color:#b45309;background:#fef3c7;border-radius:4px;padding:2px 7px;vertical-align:middle;">PRACTICE MODE</span>' : ''}${a.mode === 'difficult' ? ' <span style="font-size:11px;font-weight:700;color:#9f1239;background:#ffe4e6;border-radius:4px;padding:2px 7px;vertical-align:middle;">DIFFICULT MODE</span>' : ''}</h1>
+        <p class="meta">${escapeHtml(who)}${who ? ' · ' : ''}Attempted ${escapeHtml(a.date)} · ${escapeHtml(a.schemeDesc || '')}${a.mode === 'practice' ? ' · Untimed, answer shown after each question' : ''}${a.mode === 'difficult' ? ' · Answers were locked once chosen' : ''}</p>
         <div class="sum">
           <div>Score<b>${a.score} / ${a.maxMarks}</b></div><div>Accuracy<b>${a.accuracy}%</b></div>
           <div>Correct<b>${right}</b></div><div>Wrong<b>${wrong}</b></div><div>Not answered<b>${skipped}</b></div>
