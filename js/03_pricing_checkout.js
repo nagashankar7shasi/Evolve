@@ -27,6 +27,10 @@
       renderContactConfigVisibility();
       const wm = document.getElementById('cfg-watermark-template');
       if (wm) wm.value = pricingMaster.watermarkTemplate || '';
+      const diffMode = document.getElementById('cfg-difficult-mode-enabled');
+      // Same default-true-unless-explicitly-off reasoning as whatsappEnabled above, for installs
+      // saved before this toggle existed.
+      if (diffMode) diffMode.checked = pricingMaster.difficultModeEnabled !== false;
       renderQrPreview();
       renderBundlesAdmin();
     }
@@ -177,6 +181,10 @@
 
       const wm = document.getElementById('cfg-watermark-template');
       if (wm) pricingMaster.watermarkTemplate = wm.value.trim();
+
+      const diffMode = document.getElementById('cfg-difficult-mode-enabled');
+      if (diffMode) pricingMaster.difficultModeEnabled = diffMode.checked;
+
       localStorage.setItem('kas_pricing_master', JSON.stringify(pricingMaster));
       saveCloudAppSetting('pricing_master', pricingMaster).then(ok => {
         if (!ok) console.warn('UPI settings saved locally but cloud sync failed — will retry next save.');
