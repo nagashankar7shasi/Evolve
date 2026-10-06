@@ -7,7 +7,17 @@
     // want Easy on a paper they're still learning and Difficult on one they're simulating the real
     // exam with). Practice Mode's own button is untouched and still calls launchExamPaperPractice()
     // straight away -- this picker only applies to the real, timed, scored OMR flow.
+    //
+    // Admin kill switch: pricingMaster.difficultModeEnabled (Pricing Master & UPI Gateway panel).
+    // When off, there's only one real choice left (Easy), so showing a picker with a single live
+    // option would just be an extra click for no reason -- skip it and launch straight into Easy
+    // Mode, exactly like every entry point here did before Difficult Mode existed. Checked once,
+    // centrally, so all three call sites (Exam Hub, planner "Retake", custom-page test paper cards)
+    // get this for free without each needing their own guard.
     function openExamModePicker(paperId) {
+      if (pricingMaster.difficultModeEnabled === false) {
+        return launchExamPaper(paperId, 'easy');
+      }
       pendingExamModePaperId = paperId;
       openModal('exam-mode-picker-modal');
     }

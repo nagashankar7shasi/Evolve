@@ -17,6 +17,11 @@
       telegramEnabled: false,  // Off by default (new feature, nothing configured yet on upgrade).
       watermarkTemplate: '', // NEW: '' = use the built-in default format. Tokens: {{institute}} {{email}} {{date}}
       qrImageDataUrl: '',    // NEW: admin-uploaded payment QR (data URL). Empty = auto-generate from UPI ID at checkout.
+      difficultModeEnabled: true, // Whole-feature show/hide for the Easy/Difficult mode picker shown before a
+                                   // real OMR attempt (see openExamModePicker). Defaults true so existing
+                                   // behavior is unchanged for everyone until the admin turns it off -- doing
+                                   // so skips the picker entirely and launches straight into Easy Mode, same
+                                   // as the app worked before Difficult Mode existed.
       allAccessPrice: 1499,
       categoryPasses: {
         kpsc_kas: 699,
