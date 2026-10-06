@@ -1683,3 +1683,71 @@
       window.open(url, '_blank', 'noopener');
     }
 
+    // Admin-only export button on the Word Page Editor screen (Dev Console) -- lets the admin grab
+    // a PDF of whatever is currently in the editor canvas, including unsaved changes, without
+    // leaving the page or needing it published first. Not shown to students; the live public page
+    // (renderDynamicCustomPage) has no download button of its own.
+    //
+    // Reuses the same print-to-PDF pattern as the exam result sheet (attemptSheetHtml in
+    // js/11b_practice_mistakes_topic_builder.js) rather than a PDF-generation library, since the
+    // browser's own "Save as PDF" print target already does this for free. Also reuses
+    // hydratePageCards() -- the same step renderDynamicCustomPage() runs before showing a page to a
+    // reader -- so page/test-paper/resource cards in the export show their live tile (title, price,
+    // lock status) instead of the raw placeholder div the editor stores, and strips the editor's own
+    // ✎/✕ overlay buttons the same way the public page does.
+    function downloadWordEditorPagePdf() {
+      const canvas = document.getElementById('word-editor-canvas');
+      if (!canvas.textContent.trim() && !canvas.querySelector('img, table, .kb-pagelink, .kb-resource-card')) {
+        return alert('This page has no content yet to export.');
+      }
+      const title = (document.getElementById('page-title-input').value || '').trim() || 'Untitled page';
+      const icon = document.getElementById('page-icon-input').value || '';
+
+      const temp = document.createElement('div');
+      temp.innerHTML = canvas.innerHTML;
+      temp.querySelectorAll('.kb-block-delete').forEach(btn => btn.remove());
+      hydratePageCards(temp);
+
+      const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${escapeHtml(title)}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;700&display=swap" rel="stylesheet">
+        <style>
+          @page { size: A4; margin: 16mm; }
+          body { font-family: system-ui, "Noto Sans Kannada", sans-serif; color: #0f172a; font-size: 13px; line-height: 1.6; margin: 0; }
+          h1 { font-size: 20px; margin: 0 0 14px; }
+          .noprint { background: #fffbeb; border: 1px solid #fde68a; padding: 8px 10px; border-radius: 6px; margin-bottom: 14px; font-size: 12px; }
+          @media print { .noprint { display: none; } }
+          img { max-width: 100%; }
+          table { border-collapse: collapse; }
+          td, th { border: 1px solid #cbd5e1; padding: 4px 8px; }
+          .foot { color: #94a3b8; font-size: 10px; margin-top: 20px; }
+        </style></head><body>
+        <div class="noprint">In the print window, choose <b>Save as PDF</b> as the printer (on phones: Share → Print → Save as PDF). This is an admin preview export -- students never see this button.</div>
+        <h1>${icon && icon !== '📄' ? escapeHtml(icon) + ' ' : ''}${escapeHtml(title)}</h1>
+        ${temp.innerHTML}
+        <p class="foot">${escapeHtml(pricingMaster.payeeName || 'Evolve+')} · Exported ${new Date().toLocaleString('en-IN')} · Dev Console admin export.</p>
+        </body></html>`;
+
+      const printDoc = w => {
+        const go = () => { try { w.focus(); w.print(); } catch (err) { /* admin can still print manually */ } };
+        if (w.document.fonts && w.document.fonts.ready) w.document.fonts.ready.then(() => setTimeout(go, 250));
+        else setTimeout(go, 600);
+      };
+      const win = window.open('', '_blank');
+      if (win) {
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
+        printDoc(win);
+        return;
+      }
+      // pop-ups blocked: print from a hidden frame instead
+      const frame = document.createElement('iframe');
+      frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+      document.body.appendChild(frame);
+      frame.contentDocument.open();
+      frame.contentDocument.write(html);
+      frame.contentDocument.close();
+      printDoc(frame.contentWindow);
+      setTimeout(() => frame.remove(), 60000);
+    }
+
