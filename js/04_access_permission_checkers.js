@@ -66,7 +66,11 @@
       // strict === would otherwise fail to recognize it as free, or (worse, in other spots) a stray
       // truthy-string check could recognize it as free when it shouldn't be. Being explicit here closes
       // that whole class of risk.
-      if (paper && Number(paper.price) === 0) return true;
+      // bundleOnly papers skip this shortcut entirely, even if price is 0/blank -- they're deliberately
+      // never "free for everyone", only reachable via a covering bundle or an explicit admin grant
+      // below. Without this guard, a bundle-only paper with no standalone price set would otherwise
+      // unlock for every visitor, defeating the whole point of marking it bundle-only.
+      if (paper && !paper.bundleOnly && Number(paper.price) === 0) return true;
       if (isAdmin()) return true;
       const student = getCurrentStudent();
       if (!student) return false;
