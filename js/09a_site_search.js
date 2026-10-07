@@ -92,6 +92,10 @@
         navigate('tests');
         filterExamCategory(paper.category);
         setTimeout(() => {
+          // A locked paper now renders inside a collapsed bundle (or "Individual Papers") group
+          // rather than always as its own flat card -- open that group first, or the scroll below
+          // would land on a hidden element.
+          expandTestGroupContainingPaper(id);
           const el = document.getElementById('paper-card-' + id);
           if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
