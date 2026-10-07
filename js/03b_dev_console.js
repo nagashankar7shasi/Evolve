@@ -38,6 +38,13 @@
       if (id === 'examcats') renderExamCategoriesAdmin();
       if (id === 'feedback') renderFeedbackAdmin();
       if (id === 'branding') hydrateBrandingAdmin();
+      // Each tab only knows what it fetched at load time (no realtime sync) -- a payment approved
+      // or access edited on another device/tab wouldn't show up here otherwise, which is exactly
+      // what the manual "Refresh from cloud" button on this panel exists for (see
+      // refreshStudentDataFromCloud in 03e_feedback.js). Doing it automatically on every visit to
+      // this tab removes the need to remember to click it first. The button stays, for a manual
+      // re-check while already on the tab.
+      if (id === 'entitlements' && typeof refreshStudentDataFromCloud === 'function') refreshStudentDataFromCloud();
       const view = document.getElementById('view-admin');
       if (view && !view.classList.contains('hidden')) window.scrollTo(0, 0);
     }
