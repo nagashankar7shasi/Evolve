@@ -302,6 +302,12 @@
       // that haven't set one.
       const qrApi = pricingMaster.qrImageDataUrl || `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiUrl)}`;
       document.getElementById('checkout-qr-img').src = qrApi;
+      // Same upi://pay string as the QR, but as a tappable deep link -- on the phone you're paying
+      // from, that's the only usable option (you can't scan a QR on the screen it's displayed on).
+      // Works regardless of whether a static QR image is uploaded, since it's independent of the
+      // <img> src above. On desktop this just does nothing (no upi:// handler) -- harmless.
+      document.getElementById('checkout-upi-app-btn').href = upiUrl;
+      document.getElementById('checkout-upi-app-btn-label').innerText = `Pay ₹${price} via UPI App`;
 
       openModal('checkout-modal');
     }
