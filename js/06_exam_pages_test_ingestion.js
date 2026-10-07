@@ -119,23 +119,94 @@
         return;
       }
 
+      // ---- Split into unlocked (shown flat, exactly as every paper always has) vs locked (grouped
+      // by the bundle(s) that would unlock them, so a category with a dozen locked papers behind one
+      // ₹499 pass doesn't read as a dozen separate decisions) ----
+      const unlockedPapers = [];
+      const groupMap = new Map(); // bundleId -> { bundle, papers: [] }
+      const individualPapers = []; // locked papers no active bundle currently covers -- sold one at a time
       papers.forEach(paper => {
-        const s = paper.scheme;
-        // Uses the lightweight questionCount metadata, not paper.questions — the actual question
-        // content (with answers) isn't fetched for browsing cards, locked or unlocked; see
-        // fetchCloudContent/ensurePaperQuestionsLoaded.
-        const maxMarks = (paper.questionCount * s.marksCorrect).toFixed(0);
-        const isUnlocked = isTestUnlockedForUser(paper.id);
-        // bundle-only papers never show a standalone price -- their price column is optional/
-        // informational at best, since there's no individual-buy path for isTestUnlockedForUser to
-        // gate on. A "BUNDLE" badge instead of a ₹ amount keeps the card from implying a price that
-        // can't actually be paid on its own.
-        const priceLabel = paper.bundleOnly ? 'BUNDLE' : (paper.price === 0 ? 'FREE DEMO' : `₹${paper.price}`);
+        if (isTestUnlockedForUser(paper.id)) { unlockedPapers.push(paper); return; }
+        const covering = bundlesCoveringPaper(paper);
+        if (covering.length) {
+          // A paper can legitimately be covered by more than one bundle at once (e.g. a cheaper
+          // subset pass carved out of a larger one) -- that's two different ways to unlock the same
+          // content, not a bug, so it's listed under every one of them rather than picking a single
+          // "owning" bundle.
+          covering.forEach(b => {
+            if (!groupMap.has(b.id)) groupMap.set(b.id, { bundle: b, papers: [] });
+            groupMap.get(b.id).papers.push(paper);
+          });
+        } else {
+          individualPapers.push(paper);
+        }
+      });
 
-        const card = document.createElement('div');
-        card.id = 'paper-card-' + paper.id;
-        card.className = "bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between transition-shadow";
-        card.innerHTML = `
+      // Only the first time a paper is actually rendered gets the canonical `paper-card-<id>` DOM id
+      // (site search / goToSearchResult looks it up by this id) -- a paper duplicated across two
+      // bundle groups would otherwise produce two elements with the same id, which is invalid HTML
+      // and would make getElementById unpredictable about which one it returns.
+      const idClaimed = new Set();
+      const cardHtml = paper => {
+        let domId = null;
+        if (!idClaimed.has(paper.id)) { idClaimed.add(paper.id); domId = 'paper-card-' + paper.id; }
+        return testGridPaperCardHtml(paper, catInfo, domId);
+      };
+
+      let html = '';
+      unlockedPapers.forEach(p => { html += cardHtml(p); });
+
+      // Cheapest way to unlock something first -- same ordering bundlesForSale already uses
+      // elsewhere in the app.
+      const groups = [...groupMap.values()].sort((a, b) => a.bundle.price - b.bundle.price);
+      groups.forEach(({ bundle, papers: groupPapers }) => {
+        html += testGroupTileHtml({
+          groupId: 'bdl_' + bundle.id,
+          icon: '📦',
+          title: bundle.name,
+          subtitle: `${groupPapers.length} locked paper${groupPapers.length === 1 ? '' : 's'}`,
+          priceHtml: `<span class="text-xs font-mono font-bold text-slate-900 shrink-0">₹${bundle.price}</span>`,
+          actionHtml: `<button onclick="event.stopPropagation(); openBundleCheckout('${bundle.id}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition shrink-0">Unlock all</button>`,
+          bodyCardsHtml: groupPapers.map(cardHtml).join('')
+        });
+      });
+
+      // Leftover locked papers no active bundle covers -- a plain declutter fold, not a purchase
+      // unit, so no price/buy action on the header itself (each paper card underneath still has its
+      // own "Unlock Paper (₹price)" button exactly as before grouping existed).
+      if (individualPapers.length) {
+        html += testGroupTileHtml({
+          groupId: 'individual',
+          icon: '📄',
+          title: 'Individual Papers',
+          subtitle: `${individualPapers.length} paper${individualPapers.length === 1 ? '' : 's'}, sold separately`,
+          priceHtml: '',
+          actionHtml: '',
+          bodyCardsHtml: individualPapers.map(cardHtml).join('')
+        });
+      }
+
+      grid.innerHTML = html;
+    }
+
+    // One paper's card, shared by the flat unlocked list and every bundle/individual group below.
+    // `domId` is the DOM id to give the wrapper (goToSearchResult looks a paper up by
+    // `paper-card-<id>`) -- pass null to render the same paper again (a locked paper duplicated
+    // across two covering bundles) without creating a second element with a duplicate id.
+    function testGridPaperCardHtml(paper, catInfo, domId) {
+      const s = paper.scheme;
+      // Uses the lightweight questionCount metadata, not paper.questions — the actual question
+      // content (with answers) isn't fetched for browsing cards, locked or unlocked; see
+      // fetchCloudContent/ensurePaperQuestionsLoaded.
+      const maxMarks = (paper.questionCount * s.marksCorrect).toFixed(0);
+      const isUnlocked = isTestUnlockedForUser(paper.id);
+      // bundle-only papers never show a standalone price -- their price column is optional/
+      // informational at best, since there's no individual-buy path for isTestUnlockedForUser to
+      // gate on. A "BUNDLE" badge instead of a ₹ amount keeps the card from implying a price that
+      // can't actually be paid on its own.
+      const priceLabel = paper.bundleOnly ? 'BUNDLE' : (paper.price === 0 ? 'FREE DEMO' : `₹${paper.price}`);
+      return `
+        <div ${domId ? `id="${domId}"` : ''} class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between transition-shadow">
           <div>
             <div class="flex items-center justify-between">
               <span class="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full">${s.examBadge}</span>
@@ -162,9 +233,58 @@
               <span>🔒 Unlock Paper (₹${paper.price})</span>
             </button>
           `)}
-        `;
-        grid.appendChild(card);
-      });
+        </div>`;
+    }
+
+    // A collapsible "folder" tile for a bundle's (or the leftover "Individual Papers" group's) locked
+    // papers -- spans both grid columns as one row, with its own 2-column sub-grid of paper cards
+    // inside. Collapsed by default (see toggleTestGroup); goToSearchResult expands one on demand when
+    // the paper a search matched is inside it.
+    function testGroupTileHtml({ groupId, icon, title, subtitle, priceHtml, actionHtml, bodyCardsHtml }) {
+      return `
+        <div class="md:col-span-2 border border-slate-200 rounded-2xl bg-white overflow-hidden" data-group-id="${groupId}">
+          <div onclick="toggleTestGroup('${groupId}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTestGroup('${groupId}');}" class="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-slate-50 transition cursor-pointer">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="text-2xl">${icon}</span>
+              <div class="min-w-0">
+                <div class="font-bold text-slate-900 truncate">${escapeHtml(title)}</div>
+                <div class="text-xs text-slate-500">${escapeHtml(subtitle)}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+              ${priceHtml}
+              ${actionHtml}
+              <span class="test-group-chevron text-slate-400 transition-transform">▾</span>
+            </div>
+          </div>
+          <div class="test-group-body hidden px-5 pb-5 pt-1 border-t border-slate-100">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">${bodyCardsHtml}</div>
+          </div>
+        </div>`;
+    }
+
+    // forceOpen: explicit true/false to set the state outright (used by goToSearchResult to expand a
+    // group on arrival); omitted, it just toggles whatever the button click implies.
+    function toggleTestGroup(groupId, forceOpen) {
+      const groupEl = document.querySelector(`[data-group-id="${groupId}"]`);
+      if (!groupEl) return;
+      const body = groupEl.querySelector('.test-group-body');
+      const chevron = groupEl.querySelector('.test-group-chevron');
+      const shouldOpen = forceOpen !== undefined ? forceOpen : body.classList.contains('hidden');
+      body.classList.toggle('hidden', !shouldOpen);
+      if (chevron) chevron.textContent = shouldOpen ? '▴' : '▾';
+    }
+
+    // Used by goToSearchResult: if the paper a search matched only rendered inside a collapsed bundle
+    // (or "Individual Papers") group, open that group before scrolling to/highlighting the card --
+    // otherwise the scroll would land on a hidden element.
+    function expandTestGroupContainingPaper(paperId) {
+      const el = document.getElementById('paper-card-' + paperId);
+      if (!el) return;
+      const body = el.closest('.test-group-body');
+      if (!body || !body.classList.contains('hidden')) return;
+      const groupEl = body.closest('[data-group-id]');
+      if (groupEl) toggleTestGroup(groupEl.dataset.groupId, true);
     }
 
     // handleExamCategoryChange() was only wired to the legacy "Quick upload" form's category
