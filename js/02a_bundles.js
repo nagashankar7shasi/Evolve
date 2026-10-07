@@ -77,6 +77,43 @@
       if (coveredCats.some(c => b.categories.includes(c))) return true;
       return (paper.alsoListCategories || []).some(c => b.categories.includes(c));
     }
+    // Reverse lookup of bundleCoversPaper(): every active, for-sale bundle that covers this paper,
+    // cheapest first. A paper can legitimately be covered by more than one bundle at once (e.g. a
+    // small subset pass carved out of a larger category pass) -- that's intentional, not a bug, so
+    // this returns all of them rather than picking a single "owning" bundle. Used for bundle-only
+    // papers' "Included in ..." / "Renew ..." UI and the Studio's safety-net warnings. Never used for
+    // entitlement itself -- that's still bundleCoversPaper()/activeBundlesFor() per student.
+    function bundlesCoveringPaper(paper) {
+      return bundlesForSale(b => bundleCoversPaper(b, paper));
+    }
+    // Shared "how do I unlock this" CTA for a bundle-only paper (paper.bundleOnly === true), used by
+    // both the Test Papers grid card and a custom Word Page's embedded paper card -- so a bundle-only
+    // paper never grows a standalone "Unlock Paper (₹price)" button in either place, wherever it's
+    // rendered. Returns an HTML string for the locked-state CTA area.
+    function bundleOnlyUnlockCta(paper) {
+      const covering = bundlesCoveringPaper(paper);
+      if (!covering.length) {
+        // Marked bundle-only but no bundle currently covers it -- the Studio warns the admin about
+        // this separately (see studioCheckBundleOnlyCoverage); a visitor just sees a neutral,
+        // non-actionable state here, never a price, since there's genuinely nothing to buy yet.
+        return `<div class="mt-6 w-full py-3 bg-slate-100 text-slate-400 font-bold text-xs rounded-lg text-center">Not available yet</div>`;
+      }
+      const student = getCurrentStudent();
+      // A bundle the student held for this exact paper but let lapse gets "Renew" instead of
+      // "Included in" -- same checkout either way, just a truer label for getting access back vs
+      // discovering it for the first time.
+      const lapsed = student && covering.find(b => (student.passes || []).includes(b.id) && isPassExpired(student, b.id));
+      if (lapsed) {
+        return `
+          <button onclick="openBundleCheckout('${lapsed.id}')" class="mt-6 w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition shadow">
+            🔄 Renew ${escapeHtml(lapsed.name)}
+          </button>`;
+      }
+      return `
+        <div class="mt-6 text-xs text-slate-500 text-center">
+          Included in: ${covering.map(b => `<button onclick="openBundleCheckout('${b.id}')" class="font-bold text-amber-700 hover:underline">${escapeHtml(b.name)}</button>`).join(', ')}
+        </div>`;
+    }
     function bundleCoversPage(b, page) {
       return b.allAccess || pageAncestry(page).some(p => b.pages.includes(p.id));
     }
@@ -522,7 +559,7 @@ window.onload = async function() {
     // toggle), which hides a paper from the Test Papers browse grid/search while leaving it fully
     // purchasable via a direct link or a page's Test paper card.
     supabaseClient.from('tests_catalog_public')
-      .select('id, category, extra_categories, also_list_categories, active, delisted, title, price, scheme, scheduled_for, question_count'),
+      .select('id, category, extra_categories, also_list_categories, active, delisted, bundle_only, title, price, scheme, scheduled_for, question_count'),
     supabaseClient.from('custom_pages').select('*'),
     supabaseClient.from('bundles').select('*'),
     supabaseClient.from('nav_menu').select('*').order('order_num'),
@@ -559,7 +596,7 @@ window.onload = async function() {
       // `questions` is intentionally left unset here — [] would look like "loaded, zero questions"
       // and silently mask a paper failing to load; leaving it undefined makes every loader below
       // treat this paper as "content not fetched yet" until ensurePaperQuestionsLoaded runs.
-      return { id: t.id, category: t.category, extraCategories, alsoListCategories, active: t.active !== false, delisted: !!t.delisted, title: t.title, price: t.price, scheme, questionCount: +t.question_count || 0, scheduled_for: t.scheduled_for || null };
+      return { id: t.id, category: t.category, extraCategories, alsoListCategories, active: t.active !== false, delisted: !!t.delisted, bundleOnly: !!t.bundle_only, title: t.title, price: t.price, scheme, questionCount: +t.question_count || 0, scheduled_for: t.scheduled_for || null };
     });
   }
 

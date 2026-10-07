@@ -126,7 +126,11 @@
         // fetchCloudContent/ensurePaperQuestionsLoaded.
         const maxMarks = (paper.questionCount * s.marksCorrect).toFixed(0);
         const isUnlocked = isTestUnlockedForUser(paper.id);
-        const priceLabel = paper.price === 0 ? 'FREE DEMO' : `₹${paper.price}`;
+        // bundle-only papers never show a standalone price -- their price column is optional/
+        // informational at best, since there's no individual-buy path for isTestUnlockedForUser to
+        // gate on. A "BUNDLE" badge instead of a ₹ amount keeps the card from implying a price that
+        // can't actually be paid on its own.
+        const priceLabel = paper.bundleOnly ? 'BUNDLE' : (paper.price === 0 ? 'FREE DEMO' : `₹${paper.price}`);
 
         const card = document.createElement('div');
         card.id = 'paper-card-' + paper.id;
@@ -135,7 +139,7 @@
           <div>
             <div class="flex items-center justify-between">
               <span class="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full">${s.examBadge}</span>
-              <span class="text-xs font-mono font-bold ${paper.price === 0 ? 'text-emerald-600' : 'text-slate-900'}">${priceLabel}</span>
+              <span class="text-xs font-mono font-bold ${paper.bundleOnly ? 'text-violet-600' : (paper.price === 0 ? 'text-emerald-600' : 'text-slate-900')}">${priceLabel}</span>
             </div>
             <h3 class="text-lg font-bold text-slate-900 mt-2">${paper.title}</h3>
             <p class="text-xs text-slate-500 mt-0.5 font-mono">${paper.questionCount} Bilingual Questions • ${s.duration} Mins</p>
@@ -153,11 +157,11 @@
             <button onclick="launchExamPaperPractice('${paper.id}')" class="mt-2 w-full py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-xs rounded-lg transition" title="Untimed, one question at a time, answer shown immediately">
               🎯 Attempt in Practice Mode
             </button>
-          ` : `
+          ` : (paper.bundleOnly ? bundleOnlyUnlockCta(paper) : `
             <button onclick="openPaperCheckout('${paper.id}')" class="mt-6 w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition shadow flex items-center justify-center gap-1.5">
               <span>🔒 Unlock Paper (₹${paper.price})</span>
             </button>
-          `}
+          `)}
         `;
         grid.appendChild(card);
       });
@@ -195,6 +199,7 @@
         const inBundles = (bundles || []).filter(b => (b.papers || []).includes(p.id)).map(b => b.name);
         const isInactive = p.active === false;
         const isDelisted = !!p.delisted;
+        const isBundleOnly = !!p.bundleOnly;
         return `<div class="border ${p_issue ? 'border-rose-300 bg-rose-50' : isInactive ? 'border-slate-200 bg-slate-100' : 'border-slate-200 bg-white'} rounded-lg p-2.5 ${isInactive ? 'opacity-70' : ''}">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0 flex-1">
@@ -202,6 +207,7 @@
               <div class="text-[11px] text-slate-500 mt-0.5 flex flex-wrap items-center gap-2">
                 ${isInactive ? '<span class="font-bold uppercase tracking-wider bg-slate-700 text-white px-1.5 py-0.5 rounded">Inactive</span>' : ''}
                 ${isDelisted ? '<span class="font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded" title="Hidden from the Test Papers grid and search — still purchasable via a direct link or a page\'s Test paper card">🙈 Delisted</span>' : ''}
+                ${isBundleOnly ? '<span class="font-bold uppercase tracking-wider bg-violet-100 text-violet-800 px-1.5 py-0.5 rounded" title="Not free, but never sold individually — reachable only via a covering bundle">🎁 Bundle-only</span>' : ''}
                 <span class="font-mono uppercase tracking-wider bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">${escapeHtml(catName(p.category))}</span>
                 ${(p.extraCategories || []).map(c => `<span class="font-mono uppercase tracking-wider bg-slate-50 border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded" title="Feeds the question bank of ${escapeHtml(catName(c))}">🏦 ${escapeHtml(catName(c))}</span>`).join('')}
                 ${(p.alsoListCategories || []).map(c => `<span class="font-mono uppercase tracking-wider bg-amber-50 border border-amber-200 text-amber-700 px-1.5 py-0.5 rounded" title="Also listed as its own paper + unlockable under ${escapeHtml(catName(c))}">🔗 ${escapeHtml(catName(c))}</span>`).join('')}
@@ -219,6 +225,7 @@
               <button onclick="openStudio('${p.id}', true)" class="px-2 py-1 border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold rounded" title="Duplicate as a new paper">⎘</button>
               <button onclick="toggleTestPaperActive('${p.id}')" class="px-2 py-1 border ${isInactive ? 'border-emerald-300 hover:bg-emerald-100 text-emerald-700' : 'border-slate-300 hover:bg-slate-100 text-slate-700'} font-bold rounded" title="${isInactive ? 'Reactivate — visible and openable again' : 'Deactivate — hides it and blocks opening for everyone'}">${isInactive ? '▶' : '⏸'}</button>
               <button onclick="toggleTestPaperDelisted('${p.id}')" class="px-2 py-1 border ${isDelisted ? 'border-indigo-300 hover:bg-indigo-100 text-indigo-700' : 'border-slate-300 hover:bg-slate-100 text-slate-700'} font-bold rounded" title="${isDelisted ? 'Re-list — show in the Test Papers grid and search again' : 'Delist — hide from the Test Papers grid/search, keep it openable via a direct link or page card'}">${isDelisted ? '🙈' : '👁'}</button>
+              <button onclick="toggleTestPaperBundleOnly('${p.id}')" class="px-2 py-1 border ${isBundleOnly ? 'border-violet-300 hover:bg-violet-100 text-violet-700' : 'border-slate-300 hover:bg-slate-100 text-slate-700'} font-bold rounded" title="${isBundleOnly ? 'Turn off Bundle-only — this paper becomes individually purchasable at its price again' : 'Bundle-only — not free, but never sold individually; reachable only via a covering bundle'}">🎁</button>
               <button onclick="editTestPaperPrice('${p.id}')" class="px-2 py-1 border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold rounded" title="Change price">₹</button>
               <button onclick="editTestPaperTitle('${p.id}')" class="px-2 py-1 border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold rounded" title="Rename">✎T</button>
               <button onclick="deleteTestPaper('${p.id}')" class="px-2 py-1 border border-rose-300 hover:bg-rose-100 text-rose-700 font-bold rounded" title="Delete permanently">×</button>
@@ -303,6 +310,34 @@
       p.delisted = nextDelisted;
       try {
         const { error } = await supabaseClient.from('tests_catalog').update({ delisted: nextDelisted }).eq('id', paperId);
+        if (error) throw error;
+      } catch (err) {
+        alert('Changed locally, but cloud save failed: ' + err.message);
+      }
+      renderTestsCatalogAdmin();
+      filterExamCategory(selectedCategory);
+    }
+
+    // Quick toggle for papers already created (e.g. in bulk via CSV) that need Bundle-only flipped
+    // afterwards, without reopening each one in the Studio editor one at a time. Same safety-net
+    // check as studioPublish(): warns if turning this off would leave a priced paper that's already
+    // covered by a bundle also individually purchasable, and if turning it on would leave the paper
+    // unreachable because no bundle currently covers it.
+    async function toggleTestPaperBundleOnly(paperId) {
+      const p = testsCatalog.find(x => x.id === paperId);
+      if (!p) return;
+      const nextBundleOnly = !p.bundleOnly;
+      const covering = bundlesCoveringPaper(p);
+      if (nextBundleOnly && !covering.length) {
+        if (!confirm(`"${p.title}" isn't covered by any active bundle yet.\n\nMarking it Bundle-only now will make it unreachable by students until a bundle covers it.\n\nContinue anyway?`)) return;
+      }
+      if (!nextBundleOnly && p.price > 0 && covering.length) {
+        const names = covering.map(b => b.name).join(', ');
+        if (!confirm(`"${p.title}" is covered by: ${names}.\n\nTurning off Bundle-only will also make it individually purchasable at ₹${p.price}, separate from those bundle(s).\n\nContinue anyway?`)) return;
+      }
+      p.bundleOnly = nextBundleOnly;
+      try {
+        const { error } = await supabaseClient.from('tests_catalog').update({ bundle_only: nextBundleOnly }).eq('id', paperId);
         if (error) throw error;
       } catch (err) {
         alert('Changed locally, but cloud save failed: ' + err.message);

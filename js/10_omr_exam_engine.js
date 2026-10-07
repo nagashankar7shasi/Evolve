@@ -51,7 +51,22 @@
       examMode = mode === 'difficult' ? 'difficult' : 'easy';
 
       if (!isTestUnlockedForUser(activeTest.id)) {
-        openCheckout('paper', activeTest.id, activeTest.title, activeTest.price);
+        // This is the one place every launch path funnels through (grid button, embedded Word-page
+        // card, planner "Retake", a bookmarked direct link) -- so it's also the one place that has to
+        // enforce bundle-only, not just the cards' own displayed buttons. A bundle-only paper must
+        // never open the standalone per-paper checkout, however it was reached.
+        if (activeTest.bundleOnly) {
+          const covering = bundlesCoveringPaper(activeTest);
+          if (covering.length === 1) {
+            openBundleCheckout(covering[0].id);
+          } else if (covering.length > 1) {
+            alert(`This paper is included in: ${covering.map(b => b.name).join(', ')}. Open the Test Papers screen to pick one.`);
+          } else {
+            alert("This paper isn't available yet.");
+          }
+        } else {
+          openCheckout('paper', activeTest.id, activeTest.title, activeTest.price);
+        }
         return;
       }
 

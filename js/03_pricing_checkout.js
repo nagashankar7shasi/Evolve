@@ -233,7 +233,12 @@
 
     function openPaperCheckout(paperId) {
       const paper = testsCatalog.find(p => p.id === paperId);
-      if (paper) openCheckout('paper', paper.id, paper.title, paper.price);
+      if (!paper) return;
+      // Defense in depth: neither card renderer ever wires a bundle-only paper's buy button to this
+      // function (see bundleOnlyUnlockCta/testPaperCardHtml), but refusing here too means a stray or
+      // future call site can't accidentally reopen the standalone-purchase leak this was built to close.
+      if (paper.bundleOnly) { alert('This paper is bundle-only — it isn\'t sold individually.'); return; }
+      openCheckout('paper', paper.id, paper.title, paper.price);
     }
 
     function openCheckout(type, id, title, price) {

@@ -374,6 +374,7 @@
     .word-canvas .kb-paper-card-badge { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; background: #e0e7ff; color: #3730a3; padding: 2px 10px; border-radius: 99px; }
     .word-canvas .kb-paper-card-price { font-size: 12px; font-family: monospace; font-weight: 800; color: #0f172a; }
     .word-canvas .kb-paper-card-price.is-free { color: #059669; }
+    .word-canvas .kb-paper-card-price.is-bundle { color: #7c3aed; }
     .word-canvas .kb-paper-card-title { font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 4px; }
     .word-canvas .kb-paper-card-meta { font-size: 11px; font-family: monospace; color: #64748b; }
     .word-canvas .kb-paper-card-cta { margin-top: 10px; align-self: flex-start; font-size: 11px; font-weight: 800; color: #4338ca; }

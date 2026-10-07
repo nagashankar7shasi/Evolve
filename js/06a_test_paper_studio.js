@@ -164,6 +164,7 @@
         alsoListCategories: [...document.querySelectorAll('.studio-alsolist-cb:checked')].map(cb => cb.value),
         active: document.getElementById('studio-active').checked,
         delisted: document.getElementById('studio-delisted').checked,
+        bundleOnly: document.getElementById('studio-bundleonly').checked,
         price: document.getElementById('studio-price').value,
         scheduledFor: document.getElementById('studio-scheduled-for').value,
         markCorrect: document.getElementById('studio-mark-correct').value,
@@ -209,6 +210,7 @@
       studioRefreshAlsoListCategoryOptions(Array.isArray(draft.alsoListCategories) ? draft.alsoListCategories : []);
       document.getElementById('studio-active').checked = draft.active !== false;
       document.getElementById('studio-delisted').checked = !!draft.delisted;
+      document.getElementById('studio-bundleonly').checked = !!draft.bundleOnly;
       document.getElementById('studio-price').value = draft.price || 99;
       document.getElementById('studio-scheduled-for').value = draft.scheduledFor || '';
       if (draft.markCorrect != null) document.getElementById('studio-mark-correct').value = draft.markCorrect;
@@ -245,6 +247,7 @@
       document.getElementById('studio-scheduled-for').value = '';
       document.getElementById('studio-active').checked = true;
       document.getElementById('studio-delisted').checked = false;
+      document.getElementById('studio-bundleonly').checked = false;
       studioApplyCategoryDefaults(firstCatId);
       studioRefreshExtraCategoryOptions([]);
       studioRefreshAlsoListCategoryOptions([]);
@@ -283,6 +286,7 @@
           studioRefreshAlsoListCategoryOptions(p.alsoListCategories || []);
           document.getElementById('studio-active').checked = p.active !== false;
           document.getElementById('studio-delisted').checked = !!p.delisted;
+          document.getElementById('studio-bundleonly').checked = !!p.bundleOnly;
           // SECURITY FIX: if p.price is undefined/null/NaN (older rows, direct DB edits, or any
           // upload path that didn't set it), assigning it straight to .value leaves the field blank.
           // On save, parseInt("") is NaN, which the old publish code silently coerced to 0 — meaning
@@ -1365,18 +1369,42 @@
       const alsoListCategories = [...document.querySelectorAll('.studio-alsolist-cb:checked')].map(cb => cb.value).filter(c => c !== category);
       const active = document.getElementById('studio-active').checked;
       const delisted = document.getElementById('studio-delisted').checked;
+      const bundleOnly = document.getElementById('studio-bundleonly').checked;
       // SECURITY FIX: previously `parseInt(rawValue, 10) || 0` treated a BLANK/invalid field exactly
       // the same as an admin explicitly typing 0 — meaning a stray cleared field silently published a
       // paid paper as free, with no warning. Now those two cases are told apart: blank/invalid requires
       // explicit confirmation before proceeding.
       const rawPrice = document.getElementById('studio-price').value;
       let price;
-      if (rawPrice.trim() === '' || isNaN(parseInt(rawPrice, 10))) {
+      // bundle-only papers skip the free-confirm entirely — there's no standalone sale for a blank
+      // price to accidentally make free; isTestUnlockedForUser() already ignores price for these.
+      if (bundleOnly) {
+        price = (rawPrice.trim() === '' || isNaN(parseInt(rawPrice, 10))) ? 0 : Math.max(0, parseInt(rawPrice, 10));
+      } else if (rawPrice.trim() === '' || isNaN(parseInt(rawPrice, 10))) {
         if (!confirm(`The price field is blank or invalid. Publish "${title}" as FREE (₹0)?\n\nClick Cancel to go back and enter a price.`)) return;
         price = 0;
       } else {
         price = Math.max(0, parseInt(rawPrice, 10));
       }
+
+      // Assign IDs here (moved up from below) so the safety-net checks just below can look up bundle
+      // coverage for the real id in edit mode, not just category-based coverage for a new paper.
+      const paperId = (studioState.mode === 'edit' && studioState.originalId) ? studioState.originalId : ('paper_' + Date.now());
+      const coveringBundles = bundlesCoveringPaper({ id: paperId, category, alsoListCategories, price, bundleOnly });
+      // Safety net #1: this is the exact mistake that prompted bundle-only to exist — pricing a paper
+      // that's already covered by a bundle, without realizing that price also opens a standalone
+      // "buy this one paper" path around that bundle.
+      if (!bundleOnly && price > 0 && coveringBundles.length) {
+        const names = coveringBundles.map(b => b.name).join(', ');
+        if (!confirm(`"${title}" is already covered by: ${names}.\n\nIt will ALSO be individually purchasable at ₹${price}, separate from those bundle(s). If that's not intended, click Cancel and check "Bundle-only" instead.\n\nPublish as individually purchasable anyway?`)) return;
+      }
+      // Safety net #2: the mirror mistake — Bundle-only is checked, but no bundle actually covers this
+      // paper (wrong category, not yet added to a bundle's paper list), so it would be unreachable by
+      // anyone but the admin.
+      if (bundleOnly && !coveringBundles.length) {
+        if (!confirm(`"${title}" is marked Bundle-only, but no active bundle currently covers it (wrong category, or not yet added to a bundle's paper list).\n\nIt will be unreachable by students until a bundle covers it.\n\nPublish anyway?`)) return;
+      }
+
       const scheme = {
         examBadge: (EXAM_CATEGORIES[category]?.defaultScheme?.examBadge) || 'EXAM',
         marksCorrect: parseFloat(document.getElementById('studio-mark-correct').value) || 2,
@@ -1394,8 +1422,7 @@
         if (!confirm(`⚠ ${problems.length} question${problems.length === 1 ? ' has a' : 's have'} problems:\n\n${preview}${more}\n\nPublish anyway? (Students will hit errors on the broken ones.)`)) return;
       }
 
-      // Assign IDs; keep original ID for edit mode, generate new one for new/duplicate
-      const paperId = (studioState.mode === 'edit' && studioState.originalId) ? studioState.originalId : ('paper_' + Date.now());
+      // paperId was already assigned above (needed earlier for the bundle-coverage safety-net checks).
       // Convert the datetime-local input (local time) to ISO for storage. Empty string → null.
       const schedRaw = document.getElementById('studio-scheduled-for').value;
       const scheduledFor = schedRaw ? new Date(schedRaw).toISOString() : null;
@@ -1422,12 +1449,12 @@
 
       try {
         const { error } = await supabaseClient.from('tests_catalog').upsert({
-          id: paperId, category, extra_categories: extraCategories, also_list_categories: alsoListCategories, active, delisted, title, price, scheme, questions: cleanQuestions, question_count: cleanQuestions.length, scheduled_for: scheduledFor
+          id: paperId, category, extra_categories: extraCategories, also_list_categories: alsoListCategories, active, delisted, bundle_only: bundleOnly, title, price, scheme, questions: cleanQuestions, question_count: cleanQuestions.length, scheduled_for: scheduledFor
         });
         if (error) throw error;
 
         // Update local catalog
-        const runtimePaper = { id: paperId, category, extraCategories, alsoListCategories, active, delisted, title, price, scheme, questions: cleanQuestions, questionCount: cleanQuestions.length, scheduled_for: scheduledFor };
+        const runtimePaper = { id: paperId, category, extraCategories, alsoListCategories, active, delisted, bundleOnly, title, price, scheme, questions: cleanQuestions, questionCount: cleanQuestions.length, scheduled_for: scheduledFor };
         const existingIdx = testsCatalog.findIndex(p => p.id === paperId);
         if (existingIdx >= 0) testsCatalog[existingIdx] = runtimePaper;
         else testsCatalog.push(runtimePaper);

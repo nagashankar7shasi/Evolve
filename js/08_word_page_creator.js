@@ -611,19 +611,25 @@
     function testPaperCardHtml(p) {
       const isUnlocked = isTestUnlockedForUser(p.id);
       const s = p.scheme || {};
-      const priceLabel = p.price === 0 ? 'FREE' : `₹${p.price}`;
+      // bundle-only papers never show a standalone price here either -- same reasoning as the Test
+      // Papers grid card: there's no individual-buy path for a ₹ amount to actually mean.
+      const priceLabel = p.bundleOnly ? 'BUNDLE' : (p.price === 0 ? 'FREE' : `₹${p.price}`);
       const metaBits = [
         p.questionCount ? `${p.questionCount} Qs` : '',
         s.duration ? `${s.duration} min` : ''
       ].filter(Boolean).join(' • ');
+      // The click target stays openExamModePicker() either way -- launchExamPaper() is the one place
+      // that actually enforces bundle-only (it routes to the bundle checkout instead of a standalone
+      // one), so this label only needs to describe the locked state truthfully, not branch the click.
+      const lockedCtaLabel = p.bundleOnly ? '🔒 Included in a bundle' : `🔒 Unlock Paper (${priceLabel})`;
       return `<a href="javascript:void(0)" onclick="openExamModePicker('${p.id}')" class="kb-paper-card">
         <div class="kb-paper-card-head">
           ${s.examBadge ? `<span class="kb-paper-card-badge">${escapeHtml(s.examBadge)}</span>` : '<span></span>'}
-          <span class="kb-paper-card-price${p.price === 0 ? ' is-free' : ''}">${priceLabel}</span>
+          <span class="kb-paper-card-price${p.bundleOnly ? ' is-bundle' : (p.price === 0 ? ' is-free' : '')}">${priceLabel}</span>
         </div>
         <span class="kb-paper-card-title">📝 ${escapeHtml(p.title)}</span>
         ${metaBits ? `<span class="kb-paper-card-meta">${metaBits}</span>` : ''}
-        <span class="kb-paper-card-cta">${isUnlocked ? 'Start Test →' : `🔒 Unlock Paper (${priceLabel})`}</span>
+        <span class="kb-paper-card-cta">${isUnlocked ? 'Start Test →' : lockedCtaLabel}</span>
       </a>`;
     }
 
