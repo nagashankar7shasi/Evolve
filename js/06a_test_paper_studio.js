@@ -4,8 +4,15 @@
     // State: studioState holds the paper being built/edited.
     //   { mode: 'new'|'edit'|'duplicate', originalId, questions:[…], … }
     // Questions use the same shape the exam engine already renders:
-    //   { id, q_en, q_kn, options_en:[4], options_kn:[4], correct, exp, exp_kn, subject, image_url,
-    //     image_url_kn, contentType, relevantPeriod, relevantUntil, askedInYears, retired, sourceQuestionId }
+    //   { id, q_en, q_kn, options_en:[4], options_kn:[4], correct, exp, exp_kn, subject, subTopic,
+    //     image_url, image_url_kn, contentType, relevantPeriod, relevantUntil, askedInYears, retired,
+    //     sourceQuestionId }
+    // subTopic is optional and purely descriptive -- anything more specific than Subject (e.g.
+    // "Fundamental Rights" under the Subject "Polity"). Unlike Subject it has no admin-managed
+    // registry/canonicalization; it's free text, and every place that groups or filters questions by
+    // Subject (Topic Builder, weakness/coverage views, Generate-from-Bank) keys off `subject` alone
+    // and is untouched by this field -- a blank subTopic simply means the question is tracked at the
+    // Subject level only, exactly as before this field existed.
     // exp_kn (Kannada explanation) is optional and independent of exp (English) — a paper can have
     // English-only explanations, Kannada-only, both, or neither, same as q_en/q_kn.
     // image_url is shown in English mode (and is the fallback for Kannada mode too); image_url_kn is
@@ -95,6 +102,11 @@
       'explanationkn': 'exp_kn', 'expkn': 'exp_kn', 'explanationkannada': 'exp_kn', 'solutionkn': 'exp_kn', 'reasonkn': 'exp_kn',
       // Subject
       'subject': 'subject', 'topic': 'subject', 'category': 'subject', 'tag': 'subject',
+      // Sub-topic — optional, finer-grained tag nested under Subject (e.g. "Fundamental Rights"
+      // under "Polity"). Deliberately NOT folded into the 'topic'->subject alias above: "topic" has
+      // always meant Subject in this app's vocabulary, and changing that now would silently remap
+      // existing uploads. A genuinely new, differently-named column instead.
+      'subtopic': 'subTopic', 'microtopic': 'subTopic',
       // Difficulty
       'difficulty': 'difficulty', 'level': 'difficulty', 'diff': 'difficulty', 'difficultylevel': 'difficulty',
       // Image (English / default — shown in Kannada mode too when no Kannada-specific image is set)
@@ -121,7 +133,8 @@
       d_en: 'Option D (English)',      d_kn: 'Option D (Kannada)',
       correct: 'Correct Answer',       exp: 'Explanation (English)',
       exp_kn: 'Explanation (Kannada)',
-      subject: 'Subject / Topic Tag',  image_url: 'Image URL (English / default)',
+      subject: 'Subject / Topic Tag',  subTopic: 'Sub-topic (optional, under Subject)',
+      image_url: 'Image URL (English / default)',
       image_url_kn: 'Image URL (Kannada-only override)',
       difficulty: 'Difficulty (1-5)',
       contentType: 'Type (Static/Current Affairs)', relevantPeriod: 'Relevant Period (CA only)',
@@ -299,7 +312,7 @@
             options_en: Array.isArray(q.options_en) ? q.options_en.slice(0, 4) : ['', '', '', ''],
             options_kn: Array.isArray(q.options_kn) ? q.options_kn.slice(0, 4) : ['', '', '', ''],
             correct: (q.correct || 'A').toUpperCase(),
-            exp: q.exp || '', exp_kn: q.exp_kn || '', subject: q.subject || '',
+            exp: q.exp || '', exp_kn: q.exp_kn || '', subject: q.subject || '', subTopic: q.subTopic || '',
             image_url: q.image_url || '',
             image_url_kn: q.image_url_kn || '',
             contentType: q.contentType === 'ca' ? 'ca' : 'static',
@@ -801,7 +814,7 @@
       const newlyAddedForDupCheck = [];
       let added = 0;
       rows.forEach((row, i) => {
-        const q = { id: startId + i, q_en: '', q_kn: '', options_en: ['', '', '', ''], options_kn: ['', '', '', ''], correct: 'A', exp: '', exp_kn: '', subject: '', difficulty: null, image_url: '', image_url_kn: '', contentType: 'static', relevantPeriod: '', relevantUntil: '', askedInYears: [] };
+        const q = { id: startId + i, q_en: '', q_kn: '', options_en: ['', '', '', ''], options_kn: ['', '', '', ''], correct: 'A', exp: '', exp_kn: '', subject: '', subTopic: '', difficulty: null, image_url: '', image_url_kn: '', contentType: 'static', relevantPeriod: '', relevantUntil: '', askedInYears: [] };
         for (const [colName, field] of Object.entries(mapping)) {
           const val = row[colName];
           if (val == null || field === '_unknown' || field === '_ignore') continue;
@@ -839,6 +852,12 @@
             q.subject = category ? canonicalizeSubject(category, String(val).trim()) : String(val).trim();
             if (q.subject) seenSubjects.add(q.subject);
           }
+          // Free text, unregistered -- unlike Subject above, sub-topic has no admin-managed list to
+          // canonicalize against (that would be a whole separate taxonomy-with-weights feature this
+          // wasn't asked for). Left exactly as typed; blank is the normal case and simply means this
+          // question is tracked at the Subject level only, same as every question before this field
+          // existed.
+          else if (field === 'subTopic') q.subTopic = String(val).trim();
           else if (field === 'difficulty') {
             const n = parseInt(String(val).trim(), 10);
             q.difficulty = (Number.isInteger(n) && n >= 1 && n <= 5) ? n : null;
@@ -894,7 +913,7 @@
     // Exact header row the CSV upload path round-trips cleanly (every one of these names is a key
     // in STUDIO_HEADER_ALIASES above) -- used by both the blank sample template and the real
     // paper-export functions below, so a downloaded paper always re-uploads without a remapping step.
-    const STUDIO_CSV_HEADERS = ['Question_EN', 'Question_KN', 'Opt_A_EN', 'Opt_B_EN', 'Opt_C_EN', 'Opt_D_EN', 'Opt_A_KN', 'Opt_B_KN', 'Opt_C_KN', 'Opt_D_KN', 'Correct', 'Explanation', 'Explanation_KN', 'Subject', 'Difficulty', 'Type', 'Relevant_Period', 'Asked_In_Years', 'Image_URL', 'Relevant_Until', 'Image_URL_KN'];
+    const STUDIO_CSV_HEADERS = ['Question_EN', 'Question_KN', 'Opt_A_EN', 'Opt_B_EN', 'Opt_C_EN', 'Opt_D_EN', 'Opt_A_KN', 'Opt_B_KN', 'Opt_C_KN', 'Opt_D_KN', 'Correct', 'Explanation', 'Explanation_KN', 'Subject', 'Difficulty', 'Type', 'Relevant_Period', 'Asked_In_Years', 'Image_URL', 'Relevant_Until', 'Image_URL_KN', 'Sub_Topic'];
 
     function studioRowsToCsv(rows) {
       return rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -932,7 +951,8 @@
           years,
           q.image_url || '',
           q.relevantUntil || '',
-          q.image_url_kn || ''
+          q.image_url_kn || '',
+          q.subTopic || ''
         ];
       });
       return studioRowsToCsv([STUDIO_CSV_HEADERS, ...rows]);
@@ -946,15 +966,18 @@
     function studioDownloadTemplate() {
       const sample = [
         STUDIO_CSV_HEADERS,
-        ['Which article of the Indian Constitution deals with Fundamental Duties?', 'ಭಾರತೀಯ ಸಂವಿಧಾನದ ಯಾವ ಆರ್ಟಿಕಲ್ ಮೂಲಭೂತ ಕರ್ತವ್ಯಗಳ ಬಗ್ಗೆ ಇದೆ?', 'Article 51A', 'Article 32', 'Article 21', 'Article 14', 'ಆರ್ಟಿಕಲ್ 51A', 'ಆರ್ಟಿಕಲ್ 32', 'ಆರ್ಟಿಕಲ್ 21', 'ಆರ್ಟಿಕಲ್ 14', 'A', 'Article 51A was added by the 42nd Amendment (1976).', 'ಆರ್ಟಿಕಲ್ 51A ಅನ್ನು 42ನೇ ತಿದ್ದುಪಡಿಯ (1976) ಮೂಲಕ ಸೇರಿಸಲಾಯಿತು.', 'Polity', '2', 'Static', '', '2018, 2021, 2023', '', '', ''],
-        ['The capital of Karnataka is:', 'ಕರ್ನಾಟಕದ ರಾಜಧಾನಿ:', 'Mysuru', 'Bengaluru', 'Hubballi', 'Mangaluru', 'ಮೈಸೂರು', 'ಬೆಂಗಳೂರು', 'ಹುಬ್ಬಳ್ಳಿ', 'ಮಂಗಳೂರು', 'B', 'Bengaluru has been the capital of Karnataka since the state was formed in 1956.', '1956ರಲ್ಲಿ ರಾಜ್ಯ ರಚನೆಯಾದಾಗಿನಿಂದ ಬೆಂಗಳೂರು ಕರ್ನಾಟಕದ ರಾಜಧಾನಿಯಾಗಿದೆ.', 'Geography', '1', 'Static', '', '', '', '', ''],
-        ['Which state topped NITI Aayog\'s latest SDG India Index?', 'ಇತ್ತೀಚಿನ NITI ಆಯೋಗ್ SDG ಇಂಡಿಯಾ ಇಂಡೆಕ್ಸ್‌ನಲ್ಲಿ ಯಾವ ರಾಜ್ಯ ಅಗ್ರಸ್ಥಾನದಲ್ಲಿದೆ?', 'Kerala', 'Karnataka', 'Tamil Nadu', 'Punjab', 'ಕೇರಳ', 'ಕರ್ನಾಟಕ', 'ತಮಿಳುನಾಡು', 'ಪಂಜಾಬ್', 'A', 'Released by NITI Aayog; ranking current as of this edition of the index.', 'NITI ಆಯೋಗ್ ಬಿಡುಗಡೆ ಮಾಡಿದೆ; ಈ ಆವೃತ್ತಿಯ ಶ್ರೇಯಾಂಕ.', 'Current Affairs', '2', 'Current Affairs', 'Sep 2026', '', '', '2027-09-30', ''],
+        ['Which article of the Indian Constitution deals with Fundamental Duties?', 'ಭಾರತೀಯ ಸಂವಿಧಾನದ ಯಾವ ಆರ್ಟಿಕಲ್ ಮೂಲಭೂತ ಕರ್ತವ್ಯಗಳ ಬಗ್ಗೆ ಇದೆ?', 'Article 51A', 'Article 32', 'Article 21', 'Article 14', 'ಆರ್ಟಿಕಲ್ 51A', 'ಆರ್ಟಿಕಲ್ 32', 'ಆರ್ಟಿಕಲ್ 21', 'ಆರ್ಟಿಕಲ್ 14', 'A', 'Article 51A was added by the 42nd Amendment (1976).', 'ಆರ್ಟಿಕಲ್ 51A ಅನ್ನು 42ನೇ ತಿದ್ದುಪಡಿಯ (1976) ಮೂಲಕ ಸೇರಿಸಲಾಯಿತು.', 'Polity', '2', 'Static', '', '2018, 2021, 2023', '', '', '', 'Fundamental Duties'],
+        // Sub_Topic is the last column and, as the next two rows show, can simply be left blank --
+        // the question is then tracked at the Subject level only, exactly as every question worked
+        // before this column existed.
+        ['The capital of Karnataka is:', 'ಕರ್ನಾಟಕದ ರಾಜಧಾನಿ:', 'Mysuru', 'Bengaluru', 'Hubballi', 'Mangaluru', 'ಮೈಸೂರು', 'ಬೆಂಗಳೂರು', 'ಹುಬ್ಬಳ್ಳಿ', 'ಮಂಗಳೂರು', 'B', 'Bengaluru has been the capital of Karnataka since the state was formed in 1956.', '1956ರಲ್ಲಿ ರಾಜ್ಯ ರಚನೆಯಾದಾಗಿನಿಂದ ಬೆಂಗಳೂರು ಕರ್ನಾಟಕದ ರಾಜಧಾನಿಯಾಗಿದೆ.', 'Geography', '1', 'Static', '', '', '', '', '', ''],
+        ['Which state topped NITI Aayog\'s latest SDG India Index?', 'ಇತ್ತೀಚಿನ NITI ಆಯೋಗ್ SDG ಇಂಡಿಯಾ ಇಂಡೆಕ್ಸ್‌ನಲ್ಲಿ ಯಾವ ರಾಜ್ಯ ಅಗ್ರಸ್ಥಾನದಲ್ಲಿದೆ?', 'Kerala', 'Karnataka', 'Tamil Nadu', 'Punjab', 'ಕೇರಳ', 'ಕರ್ನಾಟಕ', 'ತಮಿಳುನಾಡು', 'ಪಂಜಾಬ್', 'A', 'Released by NITI Aayog; ranking current as of this edition of the index.', 'NITI ಆಯೋಗ್ ಬಿಡುಗಡೆ ಮಾಡಿದೆ; ಈ ಆವೃತ್ತಿಯ ಶ್ರೇಯಾಂಕ.', 'Current Affairs', '2', 'Current Affairs', 'Sep 2026', '', '', '2027-09-30', '', ''],
         // "Match the following" questions: put each paired row on its own line in Question_EN (and
         // Question_KN, if translated), with the two lists separated by "|". The exam engine renders
         // any consecutive "|"-containing lines as a real two-column table -- see the help button
         // (studioShowFormatHelp) for the full syntax. No other column changes; Correct/options still
         // work exactly as for any other MCQ, using the usual A/B/C/D code-combination answers.
-        ["Match List I with List II and select the correct code:\nList I | List II\nA. Article 356 | 1. President's Rule\nB. Article 360 | 2. Financial Emergency", '', 'A-1, B-2', 'A-2, B-1', 'A-1, B-1', 'A-2, B-2', '', '', '', '', 'A', "Article 356 empowers the President to impose President's Rule in a state; Article 360 deals with a Financial Emergency.", '', 'Polity', '3', 'Static', '', '', '', '', '']
+        ["Match List I with List II and select the correct code:\nList I | List II\nA. Article 356 | 1. President's Rule\nB. Article 360 | 2. Financial Emergency", '', 'A-1, B-2', 'A-2, B-1', 'A-1, B-1', 'A-2, B-2', '', '', '', '', 'A', "Article 356 empowers the President to impose President's Rule in a state; Article 360 deals with a Financial Emergency.", '', 'Polity', '3', 'Static', '', '', '', '', '', 'Emergency Provisions']
       ];
       studioTriggerCsvDownload(studioRowsToCsv(sample), 'gritpro_question_template.csv');
     }
@@ -971,7 +994,7 @@
 
     // ---- Add / clear / renumber ----
     function studioAddBlankQuestion() {
-      const q = { id: studioState.questions.length + 1, q_en: '', q_kn: '', options_en: ['', '', '', ''], options_kn: ['', '', '', ''], correct: 'A', exp: '', exp_kn: '', subject: '', difficulty: null, image_url: '', image_url_kn: '', contentType: 'static', relevantPeriod: '', relevantUntil: '', askedInYears: [], _isNew: true };
+      const q = { id: studioState.questions.length + 1, q_en: '', q_kn: '', options_en: ['', '', '', ''], options_kn: ['', '', '', ''], correct: 'A', exp: '', exp_kn: '', subject: '', subTopic: '', difficulty: null, image_url: '', image_url_kn: '', contentType: 'static', relevantPeriod: '', relevantUntil: '', askedInYears: [], _isNew: true };
       studioState.questions.push(q);
       studioRenderList();
       // Open edit modal immediately for the new blank question
@@ -1142,7 +1165,7 @@
       const imageBadge = hasImageEn && hasImageKn ? '<span>· 🖼️ image (EN+KN)</span>'
         : hasImageKn ? '<span>· 🖼️ image (KN only)</span>'
         : hasImageEn ? '<span>· 🖼️ image</span>' : '';
-      body += `<div class="qmeta">${badge}<span>Correct: <b>${escapeHtml(q.correct)}</b></span>${q.subject ? `<span>· ${escapeHtml(q.subject)}</span>` : ''}${q.difficulty ? `<span>· Lvl ${q.difficulty}/5</span>` : ''}${imageBadge}${q.contentType === 'ca' ? `<span>· 📰 CA${q.relevantPeriod ? ` (${escapeHtml(q.relevantPeriod)})` : ''}</span>` : ''}${askedCount ? `<span>· ⭐ Asked ${askedCount}×</span>` : ''}${q.retired ? '<span class="text-rose-500">· 🚫 retired</span>' : ''}${problem ? `<div class="qerr">⚠ ${escapeHtml(problem)}</div>` : ''}</div>`;
+      body += `<div class="qmeta">${badge}<span>Correct: <b>${escapeHtml(q.correct)}</b></span>${q.subject ? `<span>· ${escapeHtml(q.subject)}${q.subTopic ? ` › ${escapeHtml(q.subTopic)}` : ''}</span>` : ''}${q.difficulty ? `<span>· Lvl ${q.difficulty}/5</span>` : ''}${imageBadge}${q.contentType === 'ca' ? `<span>· 📰 CA${q.relevantPeriod ? ` (${escapeHtml(q.relevantPeriod)})` : ''}</span>` : ''}${askedCount ? `<span>· ⭐ Asked ${askedCount}×</span>` : ''}${q.retired ? '<span class="text-rose-500">· 🚫 retired</span>' : ''}${problem ? `<div class="qerr">⚠ ${escapeHtml(problem)}</div>` : ''}</div>`;
       body += `</div>`;
 
       return `
@@ -1213,6 +1236,7 @@
       document.getElementById('edit-correct').value = q.correct || 'A';
       document.getElementById('edit-difficulty').value = q.difficulty || '';
       populateEditSubjectSelect(q.subject || '');
+      document.getElementById('edit-subtopic').value = q.subTopic || '';
       document.getElementById('edit-exp').value = q.exp || '';
       document.getElementById('edit-exp-kn').value = q.exp_kn || '';
       document.getElementById('edit-relevant-until').value = q.relevantUntil || '';
@@ -1245,6 +1269,7 @@
       q.difficulty = diffVal ? +diffVal : null;
       const subjVal = document.getElementById('edit-subject').value;
       q.subject = subjVal === '__add_new__' ? '' : subjVal.trim();
+      q.subTopic = document.getElementById('edit-subtopic').value.trim();
       q.exp = document.getElementById('edit-exp').value.trim();
       q.exp_kn = document.getElementById('edit-exp-kn').value.trim();
       q.contentType = editCurrentContentType;
@@ -1378,7 +1403,7 @@
       const cleanQuestions = studioState.questions.map(q => ({
         id: q.id, q_en: q.q_en, q_kn: q.q_kn,
         options_en: q.options_en, options_kn: q.options_kn,
-        correct: q.correct, exp: q.exp, exp_kn: q.exp_kn || '', subject: q.subject || '',
+        correct: q.correct, exp: q.exp, exp_kn: q.exp_kn || '', subject: q.subject || '', subTopic: q.subTopic || '',
         image_url: q.image_url || '',
         image_url_kn: q.image_url_kn || '',
         contentType: q.contentType === 'ca' ? 'ca' : 'static',
