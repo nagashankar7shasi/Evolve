@@ -440,6 +440,7 @@ window.onload = async function() {
       return {
         email: normalizeEmail(s.email),
         name: s.name || '',
+        phone: s.phone || '',
         utr: s.utr || '',
         status: s.status || 'active',
         allowedExams: Array.isArray(s.allowed_exams) ? s.allowed_exams : [],
@@ -759,14 +760,15 @@ async function studentLoginPrecheck(email) {
 // payload to clobber. Returns the resulting full row (safe to hand back to the caller: by the time this
 // runs, the caller has either just OTP-verified this email or is completing a same-session signup, the
 // same trust level as a real login) or null on failure.
-async function studentUpsertCredentials(email, passwordHash, passwordSalt, name, migrated) {
+async function studentUpsertCredentials(email, passwordHash, passwordSalt, name, migrated, phone) {
   try {
     const { data, error } = await supabaseClient.rpc('student_upsert_credentials', {
       p_email: normalizeEmail(email),
       p_password_hash: passwordHash,
       p_password_salt: passwordSalt,
       p_name: name || null,
-      p_migrated: !!migrated
+      p_migrated: !!migrated,
+      p_phone: phone || null
     });
     if (error) { console.error('student_upsert_credentials failed:', fmtErr(error)); return null; }
     return Array.isArray(data) ? data[0] : data;
