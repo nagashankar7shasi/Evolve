@@ -767,7 +767,7 @@
         document.getElementById('auth-new-pass2').value = '';
         showAuthPanel('set-password');
       } else if (purpose === 'signup') {
-        await completeSignup(email, pending.name, pending.passwordSalt, pending.passwordHash, true, pending.password);
+        await completeSignup(email, pending.name, pending.passwordSalt, pending.passwordHash, true, pending.password, pending.phone);
       }
     }
 
@@ -775,7 +775,7 @@
     // plainPassword is the password as the student just typed it -- PHASE 3 uses it, right here at
     // account-creation time, to also create their real Supabase Auth account (it's optional/undefined
     // for any legacy caller that doesn't have it, and signup just falls back to the local-only account).
-    async function completeSignup(email, name, passwordSalt, passwordHash, emailVerified, plainPassword) {
+    async function completeSignup(email, name, passwordSalt, passwordHash, emailVerified, plainPassword, phone) {
       // PHASE 3b: whether this claims an admin-pre-created row (keeping its existing access) or creates
       // a brand-new one is now decided atomically, server-side, by student_upsert_credentials -- it
       // never touches an entitlement column either way. We no longer read the row first: `students`
@@ -791,7 +791,7 @@
         synced = await syncSupabaseAuthAccount(email, plainPassword);
       }
 
-      const row = await studentUpsertCredentials(email, passwordHash, passwordSalt, name, synced);
+      const row = await studentUpsertCredentials(email, passwordHash, passwordSalt, name, synced, phone);
       if (!row) {
         return showAuthMessage('Something went wrong creating your account. Please try again.');
       }
@@ -902,9 +902,11 @@
       if (!authSettings.allowSignup) return showAuthMessage('New accounts are created by the academy. Please contact us to register.');
       const name = document.getElementById('auth-signup-name').value.trim();
       const email = normalizeEmail(document.getElementById('auth-signup-email').value);
+      const phone = normalizeIndianMobile(document.getElementById('auth-signup-phone').value);
       const p1 = document.getElementById('auth-signup-pass').value;
       const p2 = document.getElementById('auth-signup-pass2').value;
       if (!name) return showAuthMessage('Enter your name.');
+      if (!phone) return showAuthMessage('Enter a valid 10-digit Indian mobile number.');
       if (p1.length < 8) return showAuthMessage('Use at least 8 characters for your password.');
       if (p1 !== p2) return showAuthMessage("The two passwords don't match.");
 
@@ -926,7 +928,7 @@
       // If the admin turned off email verification, create the account directly and skip the OTP round trip.
       if (!authSettings.requireSignupOtp) {
         setBusy('auth-signup-btn', true, 'Creating account…');
-        await completeSignup(email, name, passwordSalt, passwordHash, false, p1);
+        await completeSignup(email, name, passwordSalt, passwordHash, false, p1, phone);
         setBusy('auth-signup-btn', false);
         return;
       }
@@ -935,8 +937,17 @@
       // PHASE 3: p1 (plaintext) rides along in `pending` purely so completeSignup can create the
       // real Supabase Auth account once the OTP is verified below -- it's never persisted anywhere,
       // just held in otpState for the few minutes the OTP round trip takes.
-      await sendOtp(email, 'signup', { name, passwordSalt, passwordHash, password: p1 });
+      await sendOtp(email, 'signup', { name, passwordSalt, passwordHash, password: p1, phone });
       setBusy('auth-signup-btn', false);
+    }
+
+    // Accepts a 10-digit Indian mobile typed with or without a leading +91/91/0, and with
+    // spaces/dashes in it. Returns the bare 10-digit string (starting 6-9) or '' if invalid.
+    function normalizeIndianMobile(raw) {
+      let digits = String(raw || '').replace(/\D/g, '');
+      if (digits.length === 12 && digits.startsWith('91')) digits = digits.slice(2);
+      else if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1);
+      return /^[6-9]\d{9}$/.test(digits) ? digits : '';
     }
 
     // ---- Session ----

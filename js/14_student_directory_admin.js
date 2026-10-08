@@ -31,7 +31,7 @@
       const filter = dirFilter.value;
       const pendingEmails = new Set(paymentOrders.filter(o => o.status === 'pending').map(o => o.email));
       const rows = studentDirectory.filter(st => {
-        if (q && !`${st.email} ${st.name || ''}`.toLowerCase().includes(q)) return false;
+        if (q && !`${st.email} ${st.name || ''} ${st.phone || ''}`.toLowerCase().includes(q)) return false;
         if (filter === 'pass')     return st.passes.length > 0;
         if (filter === 'nopass')   return !st.passes.length;
         if (filter === 'pending')  return pendingEmails.has(st.email);
@@ -49,7 +49,7 @@
       body.innerHTML = rows.length ? rows.map(st => `
         <tr class="${isStudentBlocked(st) ? 'text-slate-400' : ''}">
           <td class="py-2 pr-2"><input type="checkbox" class="dir-row-cb" value="${escapeHtml(st.email)}" aria-label="Select ${escapeHtml(st.email)}" /></td>
-          <td class="py-2 pr-3"><div class="font-bold ${isStudentBlocked(st) ? '' : 'text-slate-800'}">${escapeHtml(st.name || '—')}</div><div class="text-slate-500">${escapeHtml(st.email)}</div></td>
+          <td class="py-2 pr-3"><div class="font-bold ${isStudentBlocked(st) ? '' : 'text-slate-800'}">${escapeHtml(st.name || '—')}</div><div class="text-slate-500">${escapeHtml(st.email)}</div>${st.phone ? `<div class="text-slate-400 text-[10px]">📱 ${escapeHtml(st.phone)}</div>` : ''}</td>
           <td class="py-2 pr-3">${st.passes.length ? st.passes.map(k => `<span class="inline-block mb-0.5 px-1.5 py-0.5 rounded ${isPassExpired(st, k) ? 'bg-slate-100 text-slate-400 line-through' : 'bg-emerald-50 text-emerald-800'} text-[10px] font-bold" title="${escapeHtml((st.passExpiry || {})[k] ? 'Until ' + fmtDate(st.passExpiry[k]) : 'No expiry')}">${escapeHtml(bundleLabel(k))}</span>`).join(' ') : '<span class="text-slate-300">—</span>'}</td>
           <td class="py-2 pr-3 font-mono">${st.allowedExams.length} / ${st.allowedPages.length} / ${st.allowedPdfs.length}</td>
           <td class="py-2 pr-3 whitespace-nowrap">${st.lastLoginAt ? fmtDateTime(st.lastLoginAt) : '<span class="text-slate-400">Never</span>'}</td>
