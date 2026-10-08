@@ -77,11 +77,17 @@
       const holders = studentDirectory.filter(st => activeBundlesFor(st).length).length;
       const newStudents = studentDirectory.filter(st => st.createdAt && new Date(st.createdAt) >= weekAgo).length;
       const testsWeek = userAttempts.filter(a => attemptTime(a) >= weekAgo.getTime()).length;
+      // site_visit_counts.day is the DB server's (UTC) calendar day -- see sql/add_site_visit_counter.sql.
+      // "Unique" is a device-level approximation (one count per browser per day), not real analytics.
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const todayVisits = (siteVisitCounts.find(v => v.day === todayStr) || {}).count || 0;
+      const totalVisits = siteVisitCounts.reduce((n, v) => n + (v.count || 0), 0);
       box.innerHTML =
         statCard('Payments waiting', pending.length, pending.length ? `${rupees(pending.reduce((n, o) => n + (+o.amount || 0), 0))} to verify` : 'All caught up', "showAdminPanel('payments')") +
         statCard('Collected this month', rupees(monthRev), `${approved.filter(o => orderTime(o) >= monthStart).length} payment(s)`, "showAdminPanel('revenue')") +
         statCard('Students', studentDirectory.length, `${newStudents} new this week · ${holders} with an active bundle`, "showAdminPanel('students')") +
-        statCard('Tests taken', testsWeek, 'in the last 7 days');
+        statCard('Tests taken', testsWeek, 'in the last 7 days') +
+        statCard('Visitors today', todayVisits, `${totalVisits} all-time`);
       document.getElementById('ov-payments').innerHTML = paymentOrders.slice(0, 6).map(o => `
         <div class="flex justify-between gap-3 p-2 bg-slate-50 border rounded-lg">
           <span class="min-w-0 truncate"><b>${escapeHtml(o.name || o.email)}</b> · ${escapeHtml(o.title)}</span>

@@ -277,7 +277,25 @@ function addShowPasswordToggles() {
   });
 }
 
+// Lightweight "how many people visited today" gauge for the admin Overview panel -- NOT a real
+// analytics system (no cookies/IP captured). "Unique" is approximated per browser: this sets a
+// localStorage flag the first time it fires each calendar day and is a no-op on every later
+// page load/tab that same day, so one person refreshing repeatedly doesn't inflate the count.
+// Skipped entirely for the admin's own session so checking the site doesn't count as a visitor.
+// See sql/add_site_visit_counter.sql for the server side (increment_daily_visit RPC).
+function recordDailyVisit() {
+  if (typeof isAdmin === 'function' && isAdmin()) return;
+  const today = new Date().toISOString().slice(0, 10);
+  const key = 'kas_visit_counted_' + today;
+  if (localStorage.getItem(key)) return;
+  localStorage.setItem(key, '1');
+  supabaseClient.rpc('increment_daily_visit').then(({ error }) => {
+    if (error) console.error('increment_daily_visit failed:', fmtErr(error));
+  });
+}
+
 window.onload = async function() {
+      recordDailyVisit();
       // --- FETCH LIVE DATA FROM GITHUB JSON ---
       try {
         const response = await fetch('data.json');
@@ -362,6 +380,7 @@ window.onload = async function() {
         fetchCloudPayments(),
         fetchCloudAttempts(),
         fetchCloudStudents(),
+        fetchCloudVisitStats(),   // admin-only (RLS); no-op data for everyone else
         currentUser ? fetchCloudProgress() : Promise.resolve(),
         fetchCloudAllProgress(),   // admin-only bulk fetch so Student Directory summaries work
         fetchCloudPricingMaster(),
@@ -477,6 +496,26 @@ window.onload = async function() {
     console.error("Failed to fetch students:", fmtErr(error));
   }
 }
+
+// Daily visit counts for the admin Overview panel (see sql/add_site_visit_counter.sql). RLS
+// restricts SELECT on site_visit_counts to the admin, so this comes back empty (not an error
+// worth logging) for every student/anonymous session -- that's expected, not a bug.
+let siteVisitCounts = [];
+async function fetchCloudVisitStats() {
+  const { data, error } = await supabaseClient
+    .from('site_visit_counts')
+    .select('*')
+    .order('day', { ascending: false });
+
+  if (data) {
+    siteVisitCounts = data;
+    if (typeof renderOverview === 'function' && typeof currentAdminPanel !== 'undefined' && currentAdminPanel === 'overview') renderOverview();
+  } else if (error) {
+    if (typeof isAdmin === 'function' && isAdmin()) console.error('fetchCloudVisitStats failed:', fmtErr(error));
+    siteVisitCounts = [];
+  }
+}
+
     async function fetchCloudProgress() {
   if (!currentUser) return;
   const email = normalizeEmail(currentUser.email);
