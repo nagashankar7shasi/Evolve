@@ -12,7 +12,7 @@
         order: 1,
         badge: 'Deep Roots. Higher Tomorrows.',
         headingMain: 'EVOLVE+',
-        headingSub: 'Test. Prepare. Challenge.',
+        headingSub: 'KPSC KAS Mock Tests · Karnataka PSI · FDA/SDA Exam Prep',
         description: 'Bilingual OMR mocks, hand-crafted planners and study rooms for KPSC KAS, Karnataka PSI, FDA/SDA and UPSC CSE — under one login.',
         cta1Label: 'Explore Exam Categories',
         cta1Action: 'tests',            // 'tests' | 'signup' | 'dashboard' | 'home' | 'page:<id>' | 'url:<...>'
