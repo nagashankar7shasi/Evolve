@@ -4,7 +4,30 @@
        key/value store as pricingMaster/authSettings/featureAccess above —
        no new table needed.
     ----------------------------------------------------- */
-    let siteBranding = { name: 'EVOLVE+', tagline: 'Transform Potential into Performance', logoImageDataUrl: '', pdfWatermarkImageDataUrl: '' };
+    let siteBranding = { name: 'EVOLVE+', tagline: 'Transform Potential into Performance', logoImageDataUrl: '', pdfWatermarkImageDataUrl: '', socialLinks: {} };
+
+    // Platforms shown as footer icons when the admin fills in a link for them. Keyed to match
+    // siteBranding.socialLinks and the branding-social-<key> input ids below -- add a new platform
+    // by adding one entry here, one input in index.html, and nothing else (applySiteBranding /
+    // hydrateBrandingAdmin / saveSiteBranding all loop over this list).
+    const SOCIAL_PLATFORMS = [
+      { key: 'instagram', label: 'Instagram', icon: '📸', placeholder: 'https://instagram.com/yourhandle' },
+      { key: 'telegram',  label: 'Telegram channel', icon: '✈️', placeholder: 'https://t.me/yourchannel' },
+      { key: 'twitter',   label: 'Twitter / X', icon: '🐦', placeholder: 'https://x.com/yourhandle' },
+      { key: 'youtube',   label: 'YouTube', icon: '▶️', placeholder: 'https://youtube.com/@yourchannel' },
+      { key: 'facebook',  label: 'Facebook', icon: '👍', placeholder: 'https://facebook.com/yourpage' },
+    ];
+
+    // Admin can paste a bare handle/domain ("instagram.com/x" or even "@x") as well as a full URL --
+    // this fills in https:// so the footer link always works without the admin needing to think
+    // about it. Returns '' unchanged for a blank field.
+    function normalizeSocialUrl(raw) {
+      let v = (raw || '').trim();
+      if (!v) return '';
+      if (/^https?:\/\//i.test(v)) return v;
+      v = v.replace(/^@/, '');
+      return 'https://' + v;
+    }
 
     async function fetchCloudSiteBranding() {
       const cloud = await fetchCloudAppSetting('site_branding');
@@ -37,6 +60,19 @@
         imgEl.src = '';
         textEl.classList.remove('hidden');
       }
+
+      renderSocialLinks();
+    }
+
+    // Paints the footer "follow us" icon row from siteBranding.socialLinks -- one <a> per platform
+    // that has a link configured, the whole row hidden when none are set.
+    function renderSocialLinks() {
+      const box = document.getElementById('site-social-links');
+      if (!box) return;
+      const links = siteBranding.socialLinks || {};
+      const active = SOCIAL_PLATFORMS.filter(p => links[p.key]);
+      box.innerHTML = active.map(p => `<a href="${escapeHtml(links[p.key])}" target="_blank" rel="noopener" aria-label="${escapeHtml(p.label)}" title="${escapeHtml(p.label)}" class="text-base hover:opacity-70">${p.icon}</a>`).join('');
+      box.classList.toggle('hidden', !active.length);
     }
 
     // Fills the admin form fields from the current siteBranding state (called when the panel is
@@ -49,6 +85,11 @@
       tagInput.value = siteBranding.tagline || '';
       renderLogoPreview();
       renderPdfWatermarkPreview();
+      const links = siteBranding.socialLinks || {};
+      SOCIAL_PLATFORMS.forEach(p => {
+        const input = document.getElementById('branding-social-' + p.key);
+        if (input) input.value = links[p.key] || '';
+      });
     }
 
     function renderLogoPreview() {
@@ -171,6 +212,12 @@
     async function saveSiteBranding() {
       siteBranding.name = (document.getElementById('branding-name').value || '').trim() || 'EVOLVE+';
       siteBranding.tagline = (document.getElementById('branding-tagline').value || '').trim();
+      siteBranding.socialLinks = {};
+      SOCIAL_PLATFORMS.forEach(p => {
+        const input = document.getElementById('branding-social-' + p.key);
+        const url = normalizeSocialUrl(input ? input.value : '');
+        if (url) siteBranding.socialLinks[p.key] = url;
+      });
       applySiteBranding();
       const ok = await saveCloudAppSetting('site_branding', siteBranding);
       const flash = document.getElementById('branding-saved');
