@@ -599,7 +599,7 @@ async function fetchCloudVisitStats() {
     // toggle), which hides a paper from the Test Papers browse grid/search while leaving it fully
     // purchasable via a direct link or a page's Test paper card.
     supabaseClient.from('tests_catalog_public')
-      .select('id, category, extra_categories, also_list_categories, active, delisted, bundle_only, title, price, scheme, scheduled_for, question_count'),
+      .select('id, category, extra_categories, also_list_categories, active, delisted, bundle_only, title, price, scheme, scheduled_for, question_count, order_num'),
     supabaseClient.from('custom_pages').select('*'),
     supabaseClient.from('bundles').select('*'),
     supabaseClient.from('nav_menu').select('*').order('order_num'),
@@ -636,7 +636,7 @@ async function fetchCloudVisitStats() {
       // `questions` is intentionally left unset here — [] would look like "loaded, zero questions"
       // and silently mask a paper failing to load; leaving it undefined makes every loader below
       // treat this paper as "content not fetched yet" until ensurePaperQuestionsLoaded runs.
-      return { id: t.id, category: t.category, extraCategories, alsoListCategories, active: t.active !== false, delisted: !!t.delisted, bundleOnly: !!t.bundle_only, title: t.title, price: t.price, scheme, questionCount: +t.question_count || 0, scheduled_for: t.scheduled_for || null };
+      return { id: t.id, category: t.category, extraCategories, alsoListCategories, active: t.active !== false, delisted: !!t.delisted, bundleOnly: !!t.bundle_only, title: t.title, price: t.price, scheme, questionCount: +t.question_count || 0, scheduled_for: t.scheduled_for || null, order: Number.isFinite(+t.order_num) ? +t.order_num : 0 };
     });
   }
 
