@@ -200,6 +200,11 @@
       // fetchCloudContent/ensurePaperQuestionsLoaded.
       const maxMarks = (paper.questionCount * s.marksCorrect).toFixed(0);
       const isUnlocked = isTestUnlockedForUser(paper.id);
+      // Separate from isUnlocked -- a paper can be fully owned/free and still not be live yet (see
+      // isTestLiveYet's own comment). Only matters for the unlocked branch below: a locked paper's
+      // buy flow is untouched, since paying for it ahead of the launch date is still fine.
+      const liveYet = isTestLiveYet(paper);
+      const liveDateStr = paper.scheduled_for ? new Date(paper.scheduled_for).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
       // bundle-only papers never show a standalone price -- their price column is optional/
       // informational at best, since there's no individual-buy path for isTestUnlockedForUser to
       // gate on. A "BUNDLE" badge instead of a ₹ amount keeps the card from implying a price that
@@ -221,7 +226,11 @@
               <div class="flex justify-between font-sans pt-1 border-t"><span>Max Attainable Marks:</span><b class="text-slate-900">${maxMarks}</b></div>
             </div>` : ''}
           </div>
-          ${isUnlocked ? `
+          ${isUnlocked && !liveYet ? `
+            <div class="mt-6 w-full py-3 bg-amber-50 border border-amber-200 text-amber-800 font-bold text-xs rounded-lg text-center" title="You already have access -- it just isn't open yet">
+              🗓 Live on ${liveDateStr}
+            </div>
+          ` : isUnlocked ? `
             <button onclick="openExamModePicker('${paper.id}')" class="mt-6 w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg transition shadow">
               Launch OMR Mock Exam
             </button>

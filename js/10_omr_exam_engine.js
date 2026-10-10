@@ -15,6 +15,13 @@
     // centrally, so all three call sites (Exam Hub, planner "Retake", custom-page test paper cards)
     // get this for free without each needing their own guard.
     function openExamModePicker(paperId) {
+      // Checked here too (not just inside launchExamPaper) so a not-yet-live paper tells the student
+      // plainly instead of flashing the Easy/Difficult picker modal first and only then refusing.
+      const paper = testsCatalog.find(p => p.id === paperId);
+      if (paper && isTestUnlockedForUser(paperId) && !isTestLiveYet(paper)) {
+        alert(`"${paper.title}" goes live on ${new Date(paper.scheduled_for).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}. Check back then.`);
+        return;
+      }
       if (pricingMaster.difficultModeEnabled === false) {
         return launchExamPaper(paperId, 'easy');
       }
@@ -67,6 +74,16 @@
         } else {
           openCheckout('paper', activeTest.id, activeTest.title, activeTest.price);
         }
+        return;
+      }
+
+      // Entitlement confirmed above -- but entitled and live-yet are separate questions (see
+      // isTestLiveYet's own comment). This is the one place every launch path funnels through, so
+      // it's also the backstop for the mode-picker's own earlier check (openExamModePicker) and for
+      // any other entry point that calls straight in here (a bookmarked link, an embedded Word-page
+      // card, planner "Retake").
+      if (!isTestLiveYet(activeTest)) {
+        alert(`"${activeTest.title}" goes live on ${new Date(activeTest.scheduled_for).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}. Check back then.`);
         return;
       }
 
@@ -159,6 +176,13 @@
 
       if (!isTestUnlockedForUser(paper.id)) {
         openCheckout('paper', paper.id, paper.title, paper.price);
+        return;
+      }
+
+      // Same timing gate as launchExamPaper -- Practice Mode's own button calls straight in here
+      // without going through openExamModePicker, so it needs its own copy of this check.
+      if (!isTestLiveYet(paper)) {
+        alert(`"${paper.title}" goes live on ${new Date(paper.scheduled_for).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}. Check back then.`);
         return;
       }
 

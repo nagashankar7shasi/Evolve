@@ -78,6 +78,19 @@
       return student.allowedExams.includes(testId);
     }
 
+    // Timing gate, deliberately kept separate from isTestUnlockedForUser above: "does this student
+    // have access" and "has this paper gone live yet" are two different questions, and conflating them
+    // would make an already-entitled student (bought it, holds a covering bundle, or it's free) see a
+    // "buy/locked" message for a paper they already own but that simply isn't live yet -- wrong message
+    // for that case. Callers that need to know whether a paper can actually be opened right now must
+    // check both isTestUnlockedForUser() AND this. Admin bypasses (same pattern as the active===false
+    // bypass above), so launch-day QA doesn't have to wait for the clock.
+    function isTestLiveYet(paper) {
+      if (!paper || !paper.scheduled_for) return true;
+      if (isAdmin()) return true;
+      return new Date(paper.scheduled_for).getTime() <= Date.now();
+    }
+
     // A page is open if, for every paid page on its path (itself or above), the student owns that page,
     // owns a page above it, or holds a bundle that includes one of them.
     function pageEntitledNodes(page) {
