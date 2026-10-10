@@ -1,6 +1,18 @@
     /* ----------------------------------------------------
        6. CATEGORY-WISE EXAM PAGES & TEST INGESTION
     ----------------------------------------------------- */
+    // Explicit display order for test papers (order_num on tests_catalog) -- replaces what used to
+    // be no sort at all: the bulk catalog fetch has no ORDER BY, so papers appeared in whatever
+    // arbitrary order Postgres happened to hand rows back in, with no relationship to title, price,
+    // or upload date. Lower order sorts first; a title tiebreak keeps same-order papers (e.g. every
+    // paper still on its backfilled default) in a stable, predictable sequence instead of whatever
+    // order the catalog array happens to be in. Shared by the student-facing grid
+    // (filterExamCategoryBase), the admin list (renderTestsCatalogAdmin), and the ▲/▼ quick-reorder
+    // (moveTestPaper) so all three always agree on "what order is this in right now".
+    function testCatalogSortCompare(a, b) {
+      return (a.order || 0) - (b.order || 0) || (a.title || '').localeCompare(b.title || '');
+    }
+
     // Renders the Exam Hub's category tabs from EXAM_CATEGORIES — replaces what used to be 4
     // hand-typed <button> elements. Preserves the exact class/data-category shape that
     // filterExamCategoryBase already expects, so the active-tab-highlighting logic needs no changes.
@@ -98,7 +110,8 @@
       // Test paper card on a page (see testPaperCardHtml/hydratePageCards); it just doesn't clutter
       // this browse grid.
       const papers = testsCatalog.filter(p => p.active !== false && !p.delisted &&
-        (scope.includes(p.category) || (p.alsoListCategories || []).some(c => scope.includes(c))));
+        (scope.includes(p.category) || (p.alsoListCategories || []).some(c => scope.includes(c))))
+        .sort(testCatalogSortCompare);
 
       const bannerInfo = (selectedSubCategory && EXAM_CATEGORIES[selectedSubCategory]) || catInfo;
       document.getElementById('cat-banner-title').innerText = `${bannerInfo.name} Exam Room`;
@@ -309,7 +322,7 @@
       const rows = (testsCatalog || []).filter(p =>
         (filter === 'all' || p.category === filter) &&
         (!q || (p.title || '').toLowerCase().includes(q))
-      );
+      ).sort(testCatalogSortCompare);
       const catName = c => (EXAM_CATEGORIES[c] && EXAM_CATEGORIES[c].name) || c || '—';
       if (!rows.length) {
         root.innerHTML = '<p class="text-slate-400 text-center py-6">No papers match. Upload one above, or clear the filter.</p>';
@@ -323,12 +336,14 @@
         if (bad.length) return `${bad.length} question${bad.length > 1 ? 's are' : ' is'} missing a valid Correct letter (A-D)`;
         return null;
       };
-      root.innerHTML = rows.map(p => {
+      root.innerHTML = rows.map((p, i) => {
         const p_issue = problem(p);
         const inBundles = (bundles || []).filter(b => (b.papers || []).includes(p.id)).map(b => b.name);
         const isInactive = p.active === false;
         const isDelisted = !!p.delisted;
         const isBundleOnly = !!p.bundleOnly;
+        const atTop = i === 0;
+        const atBottom = i === rows.length - 1;
         return `<div class="border ${p_issue ? 'border-rose-300 bg-rose-50' : isInactive ? 'border-slate-200 bg-slate-100' : 'border-slate-200 bg-white'} rounded-lg p-2.5 ${isInactive ? 'opacity-70' : ''}">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0 flex-1">
@@ -340,6 +355,7 @@
                 <span class="font-mono uppercase tracking-wider bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">${escapeHtml(catName(p.category))}</span>
                 ${(p.extraCategories || []).map(c => `<span class="font-mono uppercase tracking-wider bg-slate-50 border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded" title="Feeds the question bank of ${escapeHtml(catName(c))}">🏦 ${escapeHtml(catName(c))}</span>`).join('')}
                 ${(p.alsoListCategories || []).map(c => `<span class="font-mono uppercase tracking-wider bg-amber-50 border border-amber-200 text-amber-700 px-1.5 py-0.5 rounded" title="Also listed as its own paper + unlockable under ${escapeHtml(catName(c))}">🔗 ${escapeHtml(catName(c))}</span>`).join('')}
+                <span class="font-mono text-slate-400" title="Display order — lower sorts first. Edit exactly in the Studio, or nudge with ▲▼.">#${p.order || 0}</span>
                 <span>${(Array.isArray(p.questions) && p.questions.length) ? p.questions.length : (p.questionCount || 0)} Qs</span>
                 <span>${p.price === 0 ? '<b class="text-emerald-700">Free</b>' : '₹' + p.price}</span>
                 ${p.scheme && p.scheme.duration ? `<span>${p.scheme.duration} min</span>` : ''}
@@ -349,6 +365,8 @@
               ${p_issue ? `<div class="mt-1 text-[11px] font-bold text-rose-700">⚠ ${escapeHtml(p_issue)}. Re-upload the CSV to fix.</div>` : ''}
             </div>
             <div class="flex items-center gap-1 shrink-0">
+              <button onclick="moveTestPaper('${p.id}', -1)" ${atTop ? 'disabled' : ''} class="px-1.5 py-1 border ${atTop ? 'border-slate-200 text-slate-300 cursor-not-allowed' : 'border-slate-300 hover:bg-slate-100 text-slate-700'} font-bold rounded" title="Move up in this list (nudges display order)">▲</button>
+              <button onclick="moveTestPaper('${p.id}', 1)" ${atBottom ? 'disabled' : ''} class="px-1.5 py-1 border ${atBottom ? 'border-slate-200 text-slate-300 cursor-not-allowed' : 'border-slate-300 hover:bg-slate-100 text-slate-700'} font-bold rounded" title="Move down in this list (nudges display order)">▼</button>
               <button onclick="openStudio('${p.id}')" class="px-2 py-1 border border-amber-300 hover:bg-amber-100 text-amber-800 font-bold rounded" title="Open in studio to edit">✎</button>
               <button onclick="downloadTestPaperCsv('${p.id}')" class="px-2 py-1 border border-emerald-300 hover:bg-emerald-100 text-emerald-700 font-bold rounded" title="Download this paper's questions as CSV — fix mistakes in a spreadsheet, then re-upload">⬇</button>
               <button onclick="openStudio('${p.id}', true)" class="px-2 py-1 border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold rounded" title="Duplicate as a new paper">⎘</button>
@@ -362,6 +380,47 @@
           </div>
         </div>`;
       }).join('');
+    }
+
+    // Quick reorder: swaps order_num with whichever paper sits adjacent in the EXACT list currently
+    // on screen (same category filter + search box the admin has active) -- "move this one up/down
+    // in the list I'm looking at", mirroring movePage() (js/08_word_page_creator.js) and
+    // moveMenuItem() (js/09_navigation_granular_controls.js), the same pattern this app already uses
+    // for custom pages and nav items. For exact control (or setting a brand-new paper's starting
+    // position) use the "Display order" field in the Studio instead -- this is just a fast nudge.
+    async function moveTestPaper(paperId, dir) {
+      const filter = (document.getElementById('tests-list-filter') || {}).value || 'all';
+      const q = ((document.getElementById('tests-list-search') || {}).value || '').trim().toLowerCase();
+      const rows = (testsCatalog || []).filter(p =>
+        (filter === 'all' || p.category === filter) &&
+        (!q || (p.title || '').toLowerCase().includes(q))
+      ).sort(testCatalogSortCompare);
+      const i = rows.findIndex(p => p.id === paperId);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= rows.length) return;
+      const a = rows[i], b = rows[j];
+      if ((a.order || 0) === (b.order || 0)) {
+        // Tied order_num (two papers never individually reordered before) -- give every paper
+        // CURRENTLY in view its own spaced-out value matching its present position, so the swap
+        // below has two distinct numbers to exchange. This preserves the exact order everyone's
+        // already seeing (idx*10 sorts identically to the tie it replaces); only a/b are actually
+        // persisted to the cloud below, so this is a harmless, self-correcting renumber, not a
+        // hidden mass-write.
+        rows.forEach((p, idx) => { p.order = idx * 10; });
+      }
+      [a.order, b.order] = [b.order, a.order];
+      try {
+        const results = await Promise.all([
+          supabaseClient.from('tests_catalog').update({ order_num: a.order }).eq('id', a.id),
+          supabaseClient.from('tests_catalog').update({ order_num: b.order }).eq('id', b.id)
+        ]);
+        const failed = results.find(r => r.error);
+        if (failed) throw failed.error;
+      } catch (err) {
+        alert('Reordered locally, but cloud save failed: ' + err.message);
+      }
+      renderTestsCatalogAdmin();
+      if (typeof filterExamCategory === 'function' && typeof selectedCategory !== 'undefined') filterExamCategory(selectedCategory);
     }
 
     // Downloads a published (or draft-saved) paper's questions as the same CSV shape the upload

@@ -252,6 +252,14 @@
       studioRefreshExtraCategoryOptions([]);
       studioRefreshAlsoListCategoryOptions([]);
       studioRefreshBundleCheckOptions();
+      // New paper's default display order appends after everything else already in the catalog, so
+      // the admin doesn't have to think about it unless they want this one to jump the queue —
+      // overwritten just below with the original's own value when editing/duplicating instead.
+      document.getElementById('studio-order-num').value = (testsCatalog || []).reduce((max, p) => Math.max(max, p.order || 0), 0) + 10;
+      // Preselect whichever bundles already explicitly list this paper (works the same for edit and
+      // duplicate — both read from the ORIGINAL paper's id, which is all bundleCoversPaper-by-`papers`
+      // cares about here; a brand-new paper obviously isn't in anything yet).
+      studioRefreshBundleOptions(paperId ? (bundles || []).filter(b => (b.papers || []).includes(paperId)).map(b => b.id) : []);
 
       // Offer to resume a saved draft — only for brand-new papers (not editing/duplicating an
       // already-published one, where "draft" doesn't make sense as a concept).
@@ -297,6 +305,10 @@
           if (!priceIsValid) {
             alert(`⚠ "${p.title}" had no valid price on file (found: ${JSON.stringify(p.price)}). Defaulted to ₹99 — please confirm the correct price before publishing, or this paper may have been silently free.`);
           }
+          // Same "copy the original's value, admin can override" treatment as price/schedule above --
+          // a duplicate keeps its source paper's display position until moved, rather than silently
+          // landing wherever the "new paper" default (end of catalog) would have put it.
+          document.getElementById('studio-order-num').value = (typeof p.order === 'number') ? p.order : 0;
           // Preload schedule if present. datetime-local wants "YYYY-MM-DDTHH:mm" (local time, no seconds/TZ)
           if (p.scheduled_for) {
             const d = new Date(p.scheduled_for);
@@ -392,6 +404,20 @@
         .sort((a, b) => (a.order || 0) - (b.order || 0))
         .map(c => ({ value: c.id, label: escapeHtml(c.name) + (c.active === false ? ' (hidden from students)' : '') }));
       checkboxList('studio-also-list-categories', items, selected.filter(v => v !== primary), 'studio-alsolist-cb');
+    }
+
+    // Rebuilds the "Include in bundle(s)" checkbox list -- every bundle EXCEPT all-access ones (an
+    // all-access pass already covers every paper by definition, so offering a checkbox for it here
+    // would be either a no-op or confusingly implied to matter when it doesn't). Checking a bundle
+    // here is read back in studioPublish() and diffed against that bundle's current `papers` array --
+    // see the comment there for why that diff is safe to do against live state rather than a snapshot.
+    function studioRefreshBundleOptions(preselect) {
+      const selected = preselect || [...document.querySelectorAll('.studio-bundle-cb:checked')].map(cb => cb.value);
+      const items = (bundles || [])
+        .filter(b => !b.allAccess)
+        .sort((a, b) => (a.order || 0) - (b.order || 0))
+        .map(b => ({ value: b.id, label: `${escapeHtml(b.name)} <span class="text-slate-400">₹${b.price}${(b.papers || []).length ? ` · ${b.papers.length} paper${b.papers.length === 1 ? '' : 's'}` : ''}</span>` }));
+      checkboxList('studio-bundles', items, selected, 'studio-bundle-cb');
     }
 
     function studioSetInputMode(mode) {
@@ -1386,6 +1412,8 @@
       } else {
         price = Math.max(0, parseInt(rawPrice, 10));
       }
+      const rawOrder = document.getElementById('studio-order-num').value;
+      const orderNum = (rawOrder.trim() === '' || isNaN(parseInt(rawOrder, 10))) ? 0 : parseInt(rawOrder, 10);
 
       // Assign IDs here (moved up from below) so the safety-net checks just below can look up bundle
       // coverage for the real id in edit mode, not just category-based coverage for a new paper.
@@ -1449,15 +1477,46 @@
 
       try {
         const { error } = await supabaseClient.from('tests_catalog').upsert({
-          id: paperId, category, extra_categories: extraCategories, also_list_categories: alsoListCategories, active, delisted, bundle_only: bundleOnly, title, price, scheme, questions: cleanQuestions, question_count: cleanQuestions.length, scheduled_for: scheduledFor
+          id: paperId, category, extra_categories: extraCategories, also_list_categories: alsoListCategories, active, delisted, bundle_only: bundleOnly, title, price, scheme, questions: cleanQuestions, question_count: cleanQuestions.length, scheduled_for: scheduledFor, order_num: orderNum
         });
         if (error) throw error;
 
         // Update local catalog
-        const runtimePaper = { id: paperId, category, extraCategories, alsoListCategories, active, delisted, bundleOnly, title, price, scheme, questions: cleanQuestions, questionCount: cleanQuestions.length, scheduled_for: scheduledFor };
+        const runtimePaper = { id: paperId, category, extraCategories, alsoListCategories, active, delisted, bundleOnly, title, price, scheme, questions: cleanQuestions, questionCount: cleanQuestions.length, scheduled_for: scheduledFor, order: orderNum };
         const existingIdx = testsCatalog.findIndex(p => p.id === paperId);
         if (existingIdx >= 0) testsCatalog[existingIdx] = runtimePaper;
         else testsCatalog.push(runtimePaper);
+
+        // ---- Sync "Include in bundle(s)" picker into each affected bundle's `papers` list ----
+        // Diffed against each bundle's CURRENT in-memory `papers` array rather than a snapshot taken
+        // when the Studio opened -- nothing else in this app mutates bundle.papers while the Studio
+        // is open in the same session, so "current" and "snapshot-at-open" are always the same value
+        // in practice, and comparing against current state is simpler and can't go stale. All-access
+        // bundles are never offered in the picker (studioRefreshBundleOptions) and so are never
+        // touched here either.
+        const checkedBundleIds = [...document.querySelectorAll('.studio-bundle-cb:checked')].map(cb => cb.value);
+        const changedBundles = [];
+        (bundles || []).forEach(b => {
+          if (b.allAccess) return;
+          const already = (b.papers || []).includes(paperId);
+          const checked = checkedBundleIds.includes(b.id);
+          if (already === checked) return;
+          b.papers = checked ? [...(b.papers || []), paperId] : (b.papers || []).filter(id => id !== paperId);
+          changedBundles.push(b);
+        });
+        let bundleSyncError = null;
+        if (changedBundles.length) {
+          try {
+            const results = await Promise.all(changedBundles.map(b =>
+              supabaseClient.from('bundles').update({ papers: b.papers }).eq('id', b.id)
+            ));
+            const failed = results.find(r => r.error);
+            if (failed) throw failed.error;
+          } catch (err) {
+            bundleSyncError = err;
+          }
+          if (typeof afterBundleChange === 'function') afterBundleChange();
+        }
 
         // Always clear the draft slot on a successful publish. studioSaveDraft() is now gated to
         // 'new' mode only (see its comment), so in practice this only ever fires for a genuinely new
@@ -1469,7 +1528,8 @@
         studioState = null;
         renderTestsCatalogAdmin();
         if (typeof filterExamCategory === 'function') filterExamCategory(selectedCategory);
-        alert(`✓ Published "${title}" (${cleanQuestions.length} question${cleanQuestions.length === 1 ? '' : 's'}) live to the cloud.`);
+        alert(`✓ Published "${title}" (${cleanQuestions.length} question${cleanQuestions.length === 1 ? '' : 's'}) live to the cloud.` +
+          (bundleSyncError ? `\n\n⚠ Bundle membership update failed: ${bundleSyncError.message}\n\nCheck the bundle(s) manually in Bundles admin.` : ''));
       } catch (err) {
         alert('Publish failed: ' + err.message);
       } finally {
