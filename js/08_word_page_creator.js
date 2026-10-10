@@ -610,6 +610,7 @@
     // locked-state click handler to keep in sync here.
     function testPaperCardHtml(p) {
       const isUnlocked = isTestUnlockedForUser(p.id);
+      const liveYet = isTestLiveYet(p);
       const s = p.scheme || {};
       // bundle-only papers never show a standalone price here either -- same reasoning as the Test
       // Papers grid card: there's no individual-buy path for a ₹ amount to actually mean.
@@ -622,6 +623,11 @@
       // that actually enforces bundle-only (it routes to the bundle checkout instead of a standalone
       // one), so this label only needs to describe the locked state truthfully, not branch the click.
       const lockedCtaLabel = p.bundleOnly ? '🔒 Included in a bundle' : `🔒 Unlock Paper (${priceLabel})`;
+      // "Live on <date>" takes priority over "Start Test →" when both are true (owned but not yet
+      // live) -- same isUnlocked-but-not-liveYet distinction as the Exam Hub's own card. The click
+      // target is unchanged either way; launchExamPaper() (reached via openExamModePicker) is the one
+      // place that actually enforces this, this label just has to describe it truthfully.
+      const ctaLabel = !isUnlocked ? lockedCtaLabel : (liveYet ? 'Start Test →' : `🗓 Live on ${new Date(p.scheduled_for).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`);
       return `<a href="javascript:void(0)" onclick="openExamModePicker('${p.id}')" class="kb-paper-card">
         <div class="kb-paper-card-head">
           ${s.examBadge ? `<span class="kb-paper-card-badge">${escapeHtml(s.examBadge)}</span>` : '<span></span>'}
@@ -629,7 +635,7 @@
         </div>
         <span class="kb-paper-card-title">📝 ${escapeHtml(p.title)}</span>
         ${metaBits ? `<span class="kb-paper-card-meta">${metaBits}</span>` : ''}
-        <span class="kb-paper-card-cta">${isUnlocked ? 'Start Test →' : lockedCtaLabel}</span>
+        <span class="kb-paper-card-cta">${ctaLabel}</span>
       </a>`;
     }
 
