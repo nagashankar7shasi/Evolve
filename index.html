@@ -55,7 +55,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
   <!-- Add Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="css/main.css?v=59">
+  <link rel="stylesheet" href="css/main.css?v=60">
 
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col select-none">
@@ -955,6 +955,12 @@
             <button type="button" onmousedown="event.preventDefault()" onclick="openLinkPdfModal()" class="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded shadow-sm flex items-center gap-1">
               <span>🔗 Link Highlighted Words to PDF</span>
             </button>
+            <button type="button" onmousedown="event.preventDefault()" onclick="openGenericLinkModal()" class="px-3 py-1 bg-blue-50 border border-blue-300 text-blue-700 font-bold rounded hover:bg-blue-100 flex items-center gap-1" title="Link selected text to any web address (or click inside an existing link to edit it)">
+              <span>🔗 Link to URL</span>
+            </button>
+            <button type="button" onmousedown="event.preventDefault()" onclick="openFindReplaceModal()" class="px-3 py-1 bg-white border rounded hover:bg-slate-50 font-bold flex items-center gap-1" title="Find and replace text in this page">
+              <span>🔍 Find &amp; Replace</span>
+            </button>
           </div>
           <div class="px-2 py-1.5 bg-slate-50 border border-t-0 border-slate-200 flex flex-wrap items-center gap-1.5 text-xs">
             <span class="font-bold text-slate-500 mr-1">Insert</span>
@@ -992,18 +998,54 @@
               <button type="button" onmousedown="event.preventDefault()" onclick="imageAction('alignRight')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50" title="Float right, text wraps around">R ⯈</button>
               <button type="button" onmousedown="event.preventDefault()" onclick="imageAction('delete')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-rose-600 ml-1">Remove</button>
             </span>
-            <span id="table-tools" class="hidden items-center gap-1 ml-1 pl-2 border-l border-slate-300">
+            <span id="table-tools" class="hidden items-center gap-1 ml-1 pl-2 border-l border-slate-300 flex-wrap">
               <span class="font-bold text-slate-500">Table</span>
               <button type="button" onmousedown="event.preventDefault()" onclick="tableAction('addRow')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">+ Row</button>
               <button type="button" onmousedown="event.preventDefault()" onclick="tableAction('addCol')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">+ Column</button>
               <button type="button" onmousedown="event.preventDefault()" onclick="tableAction('delRow')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">− Row</button>
               <button type="button" onmousedown="event.preventDefault()" onclick="tableAction('delCol')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">− Column</button>
+              <button type="button" onmousedown="event.preventDefault()" onclick="tableMergeAction('mergeRight')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50" title="Merge this cell with the one to its right">⇥ Merge right</button>
+              <button type="button" onmousedown="event.preventDefault()" onclick="tableMergeAction('mergeDown')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50" title="Merge this cell with the one below it">⇣ Merge down</button>
+              <button type="button" onmousedown="event.preventDefault()" onclick="tableMergeAction('unmerge')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50" title="Undo a merge on this cell">⇱ Un-merge</button>
+              <select onchange="tableCellColor(this.value); this.value=''" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 cursor-pointer" title="Cell background color">
+                <option value="">Cell color…</option>
+                <option value="none">◽ Remove color</option>
+                <option value="#fef9c3">🟨 Yellow</option>
+                <option value="#dcfce7">🟩 Green</option>
+                <option value="#dbeafe">🟦 Blue</option>
+                <option value="#fee2e2">🟥 Red</option>
+                <option value="#f3e8ff">🟪 Purple</option>
+              </select>
               <button type="button" onmousedown="event.preventDefault()" onclick="tableAction('delTable')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-rose-600">Delete table</button>
             </span>
             <span id="cols-tools" class="hidden items-center gap-1 ml-1 pl-2 border-l border-slate-300">
               <span class="font-bold text-slate-500">Columns</span>
               <button type="button" onmousedown="event.preventDefault()" onclick="columnsAction('addCol')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">+ Column</button>
               <button type="button" onmousedown="event.preventDefault()" onclick="columnsAction('delCol')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">− Column</button>
+            </span>
+            <span id="stats-tools" class="hidden items-center gap-1 ml-1 pl-2 border-l border-slate-300">
+              <span class="font-bold text-slate-500">Key figures</span>
+              <button type="button" onmousedown="event.preventDefault()" onclick="statsAction('add')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">+ Figure</button>
+              <button type="button" onmousedown="event.preventDefault()" onclick="statsAction('remove')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">− Figure</button>
+            </span>
+            <span id="timeline-tools" class="hidden items-center gap-1 ml-1 pl-2 border-l border-slate-300">
+              <span class="font-bold text-slate-500">Timeline</span>
+              <button type="button" onmousedown="event.preventDefault()" onclick="timelineAction('add')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">+ Event</button>
+              <button type="button" onmousedown="event.preventDefault()" onclick="timelineAction('remove')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">− Event</button>
+            </span>
+            <span id="faq-tools" class="hidden items-center gap-1 ml-1 pl-2 border-l border-slate-300">
+              <span class="font-bold text-slate-500">FAQ</span>
+              <button type="button" onmousedown="event.preventDefault()" onclick="faqAction('add')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">+ Question</button>
+              <button type="button" onmousedown="event.preventDefault()" onclick="faqAction('remove')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-rose-600">− Remove this one</button>
+            </span>
+            <span id="grid-tools" class="hidden items-center gap-1 ml-1 pl-2 border-l border-slate-300">
+              <span class="font-bold text-slate-500">Card grid</span>
+              <button type="button" onmousedown="event.preventDefault()" onclick="gridAction('addCard')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">+ Card</button>
+              <button type="button" onmousedown="event.preventDefault()" onclick="gridAction('removeLast')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">− Card</button>
+            </span>
+            <span id="video-tools" class="hidden items-center gap-1 ml-1 pl-2 border-l border-slate-300">
+              <span class="font-bold text-slate-500">Video</span>
+              <button type="button" onmousedown="event.preventDefault()" onclick="videoAction('changeUrl')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">Change URL</button>
             </span>
           </div>
 
@@ -2451,6 +2493,66 @@
     </div>
   </div>
 
+  <div id="link-url-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+      <button onclick="closeModal('link-url-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      <div class="flex items-center space-x-2 mb-2">
+        <span class="text-xl">🔗</span>
+        <h3 class="text-base font-bold text-slate-900">Link to a web address</h3>
+      </div>
+      <p class="text-xs text-slate-500 mb-4">Link the selected text to any page on the web — a news article, an official notification, another site.</p>
+
+      <div class="space-y-4 text-xs">
+        <div class="p-2.5 bg-blue-50 border border-blue-200 rounded-lg">
+          <span id="link-url-preview-label" class="text-slate-500 block text-[10px]">Selected text:</span>
+          <span id="link-url-text-preview" class="font-bold text-slate-900 italic">—</span>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Web address</label>
+          <input type="url" id="link-url-input" placeholder="https://example.com/article" class="w-full px-2.5 py-2 border rounded-lg outline-none" />
+        </div>
+
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="link-url-newtab" checked class="rounded text-blue-600" />
+          <span class="text-slate-700">Open in a new tab</span>
+        </label>
+
+        <div class="flex gap-2">
+          <button type="button" id="link-url-remove-btn" onclick="removeGenericLinkFromModal()" class="hidden flex-1 py-2.5 bg-rose-50 border border-rose-300 text-rose-700 font-bold rounded-lg hover:bg-rose-100">Remove link</button>
+          <button type="button" id="link-url-modal-submit" onclick="applyGenericLinkToSelection()" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition shadow">Insert link</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="find-replace-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+      <button onclick="closeModal('find-replace-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      <div class="flex items-center space-x-2 mb-2">
+        <span class="text-xl">🔍</span>
+        <h3 class="text-base font-bold text-slate-900">Find &amp; Replace</h3>
+      </div>
+      <p class="text-xs text-slate-500 mb-4">Search this page's text. Not case-sensitive.</p>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Find</label>
+          <input type="text" id="fr-find-input" class="w-full px-2.5 py-2 border rounded-lg outline-none" />
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Replace with</label>
+          <input type="text" id="fr-replace-input" class="w-full px-2.5 py-2 border rounded-lg outline-none" />
+        </div>
+        <div class="flex gap-2">
+          <button type="button" onclick="findNextInEditor()" class="flex-1 py-2.5 bg-white border rounded-lg hover:bg-slate-50 font-bold">Find next</button>
+          <button type="button" onclick="replaceCurrentMatch()" class="flex-1 py-2.5 bg-white border rounded-lg hover:bg-slate-50 font-bold">Replace</button>
+        </div>
+        <button type="button" onclick="replaceAllInEditor()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition shadow">Replace all</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= MODAL: ASPIRANT LOGIN / SIGN-UP / OTP / FORGOT PASSWORD ================= -->
   <div id="student-login-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
@@ -3433,39 +3535,39 @@ B. Article 360 | 2. Financial Emergency</pre>
   </footer>
 
   <!-- ================= JAVASCRIPT ARCHITECTURE ================= -->
-  <script src="js/00_supabase_init.js?v=59"></script>
-  <script src="js/01_exam_category_master.js?v=59"></script>
-  <script src="js/02_pricing_master_storage.js?v=59"></script>
-  <script src="js/02a_bundles.js?v=59"></script>
-  <script src="js/03_pricing_checkout.js?v=59"></script>
-  <script src="js/03a_site_branding.js?v=59"></script>
-  <script src="js/03b_dev_console.js?v=59"></script>
-  <script src="js/03c_bundles_admin_editor.js?v=59"></script>
-  <script src="js/03d_payment_claims.js?v=59"></script>
-  <script src="js/03e_feedback.js?v=59"></script>
-  <script src="js/03f_coupons.js?v=59"></script>
-  <script src="js/04_access_permission_checkers.js?v=59"></script>
-  <script src="js/05_student_entitlements_desk.js?v=59"></script>
-  <script src="js/06_exam_pages_test_ingestion.js?v=59"></script>
-  <script src="js/06a_test_paper_studio.js?v=59"></script>
-  <script src="js/06b_mains_studio.js?v=59"></script>
-  <script src="js/06c_mains_practice.js?v=59"></script>
-  <script src="js/07_pdf_vault.js?v=59"></script>
-  <script src="js/07a_pdf_publishing_wizard.js?v=59"></script>
-  <script src="js/08_word_page_creator.js?v=59"></script>
-  <script src="js/09_navigation_granular_controls.js?v=59"></script>
-  <script src="js/09a_site_search.js?v=59"></script>
-  <script src="js/10_omr_exam_engine.js?v=59"></script>
-  <script src="js/11_dashboard_review_modal.js?v=59"></script>
-  <script src="js/11a_study_planners.js?v=59"></script>
-  <script src="js/11c_dashboard_access_layers.js?v=59"></script>
-  <script src="js/11d_study_planner_admin_csv.js?v=59"></script>
-  <script src="js/11b_practice_mistakes_topic_builder.js?v=59"></script>
-  <script src="js/12_authentication_export.js?v=59"></script>
-  <script src="js/12a_email.js?v=59"></script>
-  <script src="js/12b_home_page_configuration.js?v=59"></script>
-  <script src="js/13_announcements.js?v=59"></script>
-  <script src="js/14_student_directory_admin.js?v=59"></script>
-  <script src="js/15_backup_export_restore.js?v=59"></script>
+  <script src="js/00_supabase_init.js?v=60"></script>
+  <script src="js/01_exam_category_master.js?v=60"></script>
+  <script src="js/02_pricing_master_storage.js?v=60"></script>
+  <script src="js/02a_bundles.js?v=60"></script>
+  <script src="js/03_pricing_checkout.js?v=60"></script>
+  <script src="js/03a_site_branding.js?v=60"></script>
+  <script src="js/03b_dev_console.js?v=60"></script>
+  <script src="js/03c_bundles_admin_editor.js?v=60"></script>
+  <script src="js/03d_payment_claims.js?v=60"></script>
+  <script src="js/03e_feedback.js?v=60"></script>
+  <script src="js/03f_coupons.js?v=60"></script>
+  <script src="js/04_access_permission_checkers.js?v=60"></script>
+  <script src="js/05_student_entitlements_desk.js?v=60"></script>
+  <script src="js/06_exam_pages_test_ingestion.js?v=60"></script>
+  <script src="js/06a_test_paper_studio.js?v=60"></script>
+  <script src="js/06b_mains_studio.js?v=60"></script>
+  <script src="js/06c_mains_practice.js?v=60"></script>
+  <script src="js/07_pdf_vault.js?v=60"></script>
+  <script src="js/07a_pdf_publishing_wizard.js?v=60"></script>
+  <script src="js/08_word_page_creator.js?v=60"></script>
+  <script src="js/09_navigation_granular_controls.js?v=60"></script>
+  <script src="js/09a_site_search.js?v=60"></script>
+  <script src="js/10_omr_exam_engine.js?v=60"></script>
+  <script src="js/11_dashboard_review_modal.js?v=60"></script>
+  <script src="js/11a_study_planners.js?v=60"></script>
+  <script src="js/11c_dashboard_access_layers.js?v=60"></script>
+  <script src="js/11d_study_planner_admin_csv.js?v=60"></script>
+  <script src="js/11b_practice_mistakes_topic_builder.js?v=60"></script>
+  <script src="js/12_authentication_export.js?v=60"></script>
+  <script src="js/12a_email.js?v=60"></script>
+  <script src="js/12b_home_page_configuration.js?v=60"></script>
+  <script src="js/13_announcements.js?v=60"></script>
+  <script src="js/14_student_directory_admin.js?v=60"></script>
+  <script src="js/15_backup_export_restore.js?v=60"></script>
 </body>
 </html>
