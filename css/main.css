@@ -215,7 +215,7 @@
     .word-canvas blockquote { margin: 1rem 0; padding: 0.4rem 1rem; border-left: 4px solid #cbd5e1; color: #475569; font-style: italic; background: #f8fafc; }
     /* editor-only guides */
     #word-editor-canvas .kb-cols > div { outline: 1px dashed #cbd5e1; outline-offset: 4px; min-height: 2rem; }
-    #word-editor-canvas .kb-pagelink { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 6px 30px 6px 10px; margin: 4px 0; border: 1px dashed #f59e0b; border-radius: 8px; background: #fffbeb; font-size: 12px; font-weight: 700; color: #78350f; }
+    #word-editor-canvas .kb-pagelink { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 6px 78px 6px 10px; margin: 4px 0; border: 1px dashed #f59e0b; border-radius: 8px; background: #fffbeb; font-size: 12px; font-weight: 700; color: #78350f; }
     /* Delete (and, for resource cards, edit) buttons overlaid on non-editable blocks (resource
        cards, page cards, tables). These blocks are contenteditable="false" "islands" the browser
        won't let you select-and-backspace or click into reliably, so without these there is no way
@@ -269,6 +269,44 @@
     #word-editor-canvas .kb-cols .kb-pagelink .kb-block-delete,
     #word-editor-canvas .kb-cols-3 .kb-pagelink .kb-block-delete,
     #word-editor-canvas .kb-cols-4 .kb-pagelink .kb-block-delete { top: 50%; right: 6px; transform: translateY(-50%); }
+    /* Move-up/move-down buttons, same editor-only overlay idea as .kb-block-delete just above (and
+       stripped from public view the same way -- see the JS strip in renderDynamicCustomPage() and
+       downloadWordEditorPagePdf(), both now also removing .kb-block-move). Added only to the
+       "island" block types (table, columns, video, page/paper card, resource card) -- the ones a
+       cursor can't just be placed inside and retyped around, so before this the only way to move
+       one was delete-and-reinsert at the new spot. Plain editable content (info/tip/warn/facts,
+       key-figures, timeline, FAQ, card grid) is left out on purpose: that text can already be
+       moved the ordinary way, by selecting it and cutting/pasting, so a dedicated button would be
+       redundant there. Placed at the opposite (left) corner from the delete button so the two
+       never collide, except on the pagelink badge (inline, no room for a second corner) where
+       they sit in the same row, left of delete. */
+    #word-editor-canvas .kb-block-move {
+      position: absolute; z-index: 3; width: 20px; height: 16px; padding: 0; border: none;
+      border-radius: 999px; background: rgba(15,23,42,.6); color: #fff; font-size: 9px;
+      font-weight: 800; line-height: 16px; text-align: center; cursor: pointer;
+    }
+    #word-editor-canvas .kb-block-move:hover { background: #2563eb; }
+    #word-editor-canvas .kb-table-wrap .kb-block-move-up,
+    #word-editor-canvas .kb-video-wrap .kb-block-move-up,
+    #word-editor-canvas .kb-cols .kb-block-move-up,
+    #word-editor-canvas .kb-cols-3 .kb-block-move-up,
+    #word-editor-canvas .kb-cols-4 .kb-block-move-up { top: 6px; left: 6px; }
+    #word-editor-canvas .kb-table-wrap .kb-block-move-down,
+    #word-editor-canvas .kb-video-wrap .kb-block-move-down,
+    #word-editor-canvas .kb-cols .kb-block-move-down,
+    #word-editor-canvas .kb-cols-3 .kb-block-move-down,
+    #word-editor-canvas .kb-cols-4 .kb-block-move-down { top: 24px; left: 6px; }
+    #word-editor-canvas .kb-resource-card .kb-block-move-up   { top: 6px;  left: 6px; }
+    #word-editor-canvas .kb-resource-card .kb-block-move-down { top: 24px; left: 6px; }
+    #word-editor-canvas .kb-pagelink .kb-block-move-up   { top: 50%; right: 30px; transform: translateY(-50%); }
+    #word-editor-canvas .kb-pagelink .kb-block-move-down { top: 50%; right: 54px; transform: translateY(-50%); }
+    /* Click-to-select for the video embed, same idea as img.kb-selected below -- the iframe itself
+       is pointer-events:none ONLY inside the editor (never on the public page, where it must stay
+       playable), so a click lands on the wrapper div underneath instead of being swallowed by the
+       cross-origin YouTube document, which otherwise can't dispatch click events back out to this
+       page's own listeners at all. */
+    #word-editor-canvas .kb-video-wrap iframe { pointer-events: none; }
+    #word-editor-canvas .kb-video-wrap.kb-selected { outline: 3px solid #f59e0b; outline-offset: 2px; }
     #word-editor-canvas details.kb-faq { display: block; }
     #word-editor-canvas details.kb-faq > *:not(summary) { display: block; }
     /* A blank page should read like a blank Word/Docs page, not an unlabeled empty box. Targets
@@ -284,6 +322,12 @@
     .word-canvas figure.kb-figure.kb-small img { max-width: 320px; }
     .word-canvas figure.kb-figure.kb-medium img { max-width: 560px; }
     .word-canvas figure.kb-figure figcaption { font-size: 12px; color: #64748b; margin-top: 0.35rem; }
+    /* Generic "link selected text to any web address" tool -- distinct blue from the amber/red PDF-
+       link badge (openLinkPdfModal) so the two are visually distinguishable at a glance in saved
+       content: amber+badge means "opens one of our PDFs", plain blue underline means "goes to an
+       external web address". */
+    .word-canvas .kb-ext-link { color: #2563eb; text-decoration: underline; }
+    .word-canvas .kb-ext-link:hover { color: #1d4ed8; }
     #word-editor-canvas figure.kb-figure img { cursor: pointer; }
     #word-editor-canvas figure.kb-figure img.kb-selected { outline: 3px solid #f59e0b; outline-offset: 2px; }
 

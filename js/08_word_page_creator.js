@@ -23,8 +23,23 @@
           colsTools.classList.toggle('hidden', !colsBlock);
           colsTools.classList.toggle('inline-flex', !!colsBlock);
         }
+        // Same floating-toolbar pattern, one per block type that supports adding/removing an item
+        // after it's been inserted (stats/timeline/FAQ/grid previously had no way to do this short
+        // of delete-and-recreate the whole block -- see statsAction/timelineAction/faqAction/
+        // gridAction below).
+        toggleBlockToolbar('stats-tools', el.closest('.kb-stats'));
+        toggleBlockToolbar('timeline-tools', el.closest('ol.kb-timeline'));
+        toggleBlockToolbar('faq-tools', el.closest('details.kb-faq'));
+        toggleBlockToolbar('grid-tools', el.closest('.kb-grid'));
       }
     });
+
+    function toggleBlockToolbar(elId, active) {
+      const tools = document.getElementById(elId);
+      if (!tools) return;
+      tools.classList.toggle('hidden', !active);
+      tools.classList.toggle('inline-flex', !!active);
+    }
 
     // Inserts HTML for a non-editable block (resource card, page card, test paper card) and
     // immediately verifies it actually arrived with its real content, not just its opening markup.
@@ -147,6 +162,58 @@
       if (block && confirm('Delete this column block?')) block.remove();
     }
 
+    // Move-up/move-down overlay buttons, same island-button idea as the delete buttons above --
+    // added to every "atomic" block type (table, columns, video, page/paper card, resource card)
+    // so it can be reordered in place instead of deleted and reinserted at the new spot. Shared
+    // markup, inserted alongside each block type's own delete button in BLOCK_TEMPLATES/insertBlock/
+    // buildResourceCardHtml/insertPageCard/insertTestPaperCard below.
+    const BLOCK_MOVE_BTNS =
+      '<button type="button" class="kb-block-move kb-block-move-up" contenteditable="false" title="Move this block up" onmousedown="event.preventDefault()" onclick="event.preventDefault(); event.stopPropagation(); moveBlockUp(this);">▲</button>' +
+      '<button type="button" class="kb-block-move kb-block-move-down" contenteditable="false" title="Move this block down" onmousedown="event.preventDefault()" onclick="event.preventDefault(); event.stopPropagation(); moveBlockDown(this);">▼</button>';
+
+    // The closest ancestor that is itself one of the reorderable block types -- a move button can
+    // be nested arbitrarily deep inside one of these (e.g. a resource card inside a column), so this
+    // climbs to find the actual block to relocate rather than the button's immediate parent.
+    function closestMovableBlock(btn) {
+      return btn.closest('.kb-table-wrap, .kb-cols, .kb-cols-3, .kb-cols-4, .kb-video-wrap, .kb-pagelink, .kb-resource-card');
+    }
+
+    // Every block inserted via insertBlockWithTrailingParagraph (every type above) is immediately
+    // followed by its own auto-inserted blank "keep typing" paragraph (see ensureTrailingParagraphAfter
+    // further down) -- a plain adjacent-sibling swap would move the block past THAT blank line
+    // first, not past the next actual content, so clicking "move down" once would look like nothing
+    // happened at all (caught by this feature's own test script: filtering block order showed no
+    // change after one click). These walk past any number of blank placeholder paragraphs to find
+    // the next real sibling to swap with.
+    function nextSignificantSibling(el) {
+      let n = el.nextElementSibling;
+      while (isEmptyEditorParagraph(n)) n = n.nextElementSibling;
+      return n;
+    }
+    function prevSignificantSibling(el) {
+      let n = el.previousElementSibling;
+      while (isEmptyEditorParagraph(n)) n = n.previousElementSibling;
+      return n;
+    }
+
+    function moveBlockUp(btn) {
+      const block = closestMovableBlock(btn);
+      const prev = block && prevSignificantSibling(block);
+      if (!prev) return; // already first real content (or not found) -- nothing to swap with
+      block.parentNode.insertBefore(block, prev);
+      block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function moveBlockDown(btn) {
+      const block = closestMovableBlock(btn);
+      const next = block && nextSignificantSibling(block);
+      if (!next) return; // already last real content (or not found) -- nothing to swap with
+      // Moving `next` to just before `block` has the same net effect as moving `block` past `next`,
+      // for two siblings -- and avoids re-deriving "the sibling after next" separately.
+      block.parentNode.insertBefore(next, block);
+      block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
     // Recomputes the actual number of columns (every child except the delete-button island) and
     // sets it as an inline style, so the layout tracks columns added/removed after the block was
     // first inserted -- the mobile/tablet breakpoints in main.css override this with !important,
@@ -182,6 +249,108 @@
       applyColsWidth(block);
     }
 
+    // Same "add/remove an item after insertion" idea as columnsAction/tableAction above, for the
+    // four block types that previously had none: once inserted, a stats/timeline/FAQ/grid block
+    // could only be deleted and recreated from scratch to add one more entry. The text inside each
+    // item was always directly editable (normal contenteditable content); only the add/remove step
+    // was missing.
+    function statsAction(action) {
+      const node = editorRange && editorRange.startContainer;
+      const el = node && (node.nodeType === 1 ? node : node.parentElement);
+      const block = el && el.closest('.kb-stats');
+      if (!block) return alert('Click inside a Key figures block first.');
+      if (action === 'add') {
+        const div = document.createElement('div');
+        div.innerHTML = '<b>0</b><span>Label</span>';
+        block.appendChild(div);
+        moveEditorCaretTo(div.querySelector('b'));
+      } else if (action === 'remove') {
+        const items = [...block.children];
+        if (items.length <= 1) return alert('A Key figures block needs at least one item.');
+        const caretItem = el.closest('.kb-stats > div');
+        (caretItem && items.includes(caretItem) ? caretItem : items[items.length - 1]).remove();
+        const remaining = [...block.children];
+        moveEditorCaretTo(remaining[remaining.length - 1]);
+      }
+    }
+
+    function timelineAction(action) {
+      const node = editorRange && editorRange.startContainer;
+      const el = node && (node.nodeType === 1 ? node : node.parentElement);
+      const block = el && el.closest('ol.kb-timeline');
+      if (!block) return alert('Click inside a Timeline block first.');
+      if (action === 'add') {
+        const li = document.createElement('li');
+        li.innerHTML = '<b>Year</b>Event or ruler';
+        block.appendChild(li);
+        moveEditorCaretTo(li);
+      } else if (action === 'remove') {
+        const items = [...block.children];
+        if (items.length <= 1) return alert('A Timeline block needs at least one entry.');
+        const caretItem = el.closest('ol.kb-timeline > li');
+        (caretItem && items.includes(caretItem) ? caretItem : items[items.length - 1]).remove();
+        const remaining = [...block.children];
+        moveEditorCaretTo(remaining[remaining.length - 1]);
+      }
+    }
+
+    // FAQ is one <details> per question, not a container of many items (unlike stats/timeline), so
+    // "add" inserts a new sibling entry right after the current one, and "remove" deletes the
+    // current entry itself -- matching how FAQs actually get built, one question at a time.
+    function faqAction(action) {
+      const node = editorRange && editorRange.startContainer;
+      const el = node && (node.nodeType === 1 ? node : node.parentElement);
+      const block = el && el.closest('details.kb-faq');
+      if (!block) return alert('Click inside an FAQ block first.');
+      if (action === 'add') {
+        const details = document.createElement('details');
+        details.className = 'kb-faq';
+        details.open = true;
+        details.innerHTML = '<summary>Write the question here?</summary><p>Write the answer here.</p>';
+        block.parentNode.insertBefore(details, block.nextSibling);
+        moveEditorCaretTo(details.querySelector('summary'));
+      } else if (action === 'remove') {
+        if (!confirm('Delete this FAQ entry?')) return;
+        const neighbor = block.nextElementSibling || block.previousElementSibling;
+        block.remove();
+        if (neighbor) moveEditorCaretTo(neighbor.querySelector ? (neighbor.querySelector('summary') || neighbor) : neighbor);
+      }
+    }
+
+    function gridAction(action) {
+      const node = editorRange && editorRange.startContainer;
+      const el = node && (node.nodeType === 1 ? node : node.parentElement);
+      const block = el && el.closest('.kb-grid');
+      if (!block) return alert('Click inside a Card grid block first.');
+      if (action === 'addCard') {
+        const div = document.createElement('div');
+        div.innerHTML = '<h4>Card title</h4><p>Card text.</p>';
+        block.appendChild(div);
+        moveEditorCaretTo(div.querySelector('p'));
+      } else if (action === 'removeLast') {
+        const items = [...block.children];
+        if (items.length <= 1) return alert('A Card grid needs at least one item.');
+        const caretItem = el.closest('.kb-grid > *');
+        (caretItem && items.includes(caretItem) ? caretItem : items[items.length - 1]).remove();
+      }
+    }
+
+    // The video block is a single contenteditable="false" island with nothing to click "inside"
+    // the normal way (see the click-to-select wiring in wireEditorImages below), so unlike the
+    // blocks above, there's exactly one thing to change after insertion: swap which video plays.
+    function videoAction(action) {
+      const canvas = document.getElementById('word-editor-canvas');
+      if (!selectedVideoBlock || !canvas.contains(selectedVideoBlock)) return alert('Click a video in the editor first.');
+      if (action === 'changeUrl') {
+        const url = (prompt('Paste the new YouTube video URL:') || '').trim();
+        if (!url) return;
+        const videoId = extractYouTubeId(url);
+        if (!videoId) return alert("Couldn't find a YouTube video in that link. Paste the full video URL (e.g. https://youtube.com/watch?v=... or https://youtu.be/...).");
+        const iframe = selectedVideoBlock.querySelector('iframe');
+        if (iframe) iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}`;
+      }
+    }
+
     // Pulls the 11-char video ID out of any YouTube URL shape an admin might paste (watch link,
     // share link, youtu.be, an existing embed link, or a Shorts link) -- used by insertBlock('video')
     // below. Returns null for anything that isn't recognizably a YouTube video URL, rather than
@@ -205,9 +374,9 @@
       tip: '<div class="kb-box kb-tip"><div class="kb-box-title">✅ Exam tip</div><p>Write the tip here.</p></div>',
       warn: '<div class="kb-box kb-warn"><div class="kb-box-title">⚠️ Common mistake</div><p>Describe the trap students fall into.</p></div>',
       facts: '<div class="kb-box kb-facts"><div class="kb-box-title">📌 Key facts</div><ul><li>First fact</li><li>Second fact</li><li>Third fact</li></ul></div>',
-      cols: '<div class="kb-cols">' + COLS_DELETE_BTN + '<div><h3>Left heading</h3><p>Left column text.</p></div><div><h3>Right heading</h3><p>Right column text.</p></div></div>',
-      cols3: '<div class="kb-cols-3">' + COLS_DELETE_BTN + '<div><h3>Column 1</h3><p>Text.</p></div><div><h3>Column 2</h3><p>Text.</p></div><div><h3>Column 3</h3><p>Text.</p></div></div>',
-      cols4: '<div class="kb-cols-4">' + COLS_DELETE_BTN + '<div><h3>1</h3><p>Text.</p></div><div><h3>2</h3><p>Text.</p></div><div><h3>3</h3><p>Text.</p></div><div><h3>4</h3><p>Text.</p></div></div>',
+      cols: '<div class="kb-cols">' + COLS_DELETE_BTN + BLOCK_MOVE_BTNS + '<div><h3>Left heading</h3><p>Left column text.</p></div><div><h3>Right heading</h3><p>Right column text.</p></div></div>',
+      cols3: '<div class="kb-cols-3">' + COLS_DELETE_BTN + BLOCK_MOVE_BTNS + '<div><h3>Column 1</h3><p>Text.</p></div><div><h3>Column 2</h3><p>Text.</p></div><div><h3>Column 3</h3><p>Text.</p></div></div>',
+      cols4: '<div class="kb-cols-4">' + COLS_DELETE_BTN + BLOCK_MOVE_BTNS + '<div><h3>1</h3><p>Text.</p></div><div><h3>2</h3><p>Text.</p></div><div><h3>3</h3><p>Text.</p></div><div><h3>4</h3><p>Text.</p></div></div>',
       grid: '<div class="kb-grid"><p>Insert Resource cards (or any content) here — this grid auto-flows into as many columns as fit.</p></div>',
       stats: '<div class="kb-stats"><div><b>64%</b><span>Services share of GSVA</span></div><div><b>31</b><span>Districts in Karnataka</span></div><div><b>1956</b><span>State reorganisation</span></div></div>',
       timeline: '<ol class="kb-timeline"><li><b>1336</b>Event or ruler</li><li><b>1565</b>Next event</li><li><b>1799</b>Next event</li></ol>',
@@ -356,6 +525,7 @@
         // be deleted at all once inserted.
         html = `<div class="kb-table-wrap">` +
           `<button type="button" class="kb-block-delete" contenteditable="false" title="Delete this table" onclick="event.preventDefault(); event.stopPropagation(); if (confirm('Delete this table?')) this.closest('.kb-table-wrap').remove();">✕</button>` +
+          BLOCK_MOVE_BTNS +
           `<table class="kb-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
       }
       if (kind === 'video') {
@@ -370,6 +540,7 @@
         // presses play.
         html = `<div class="kb-video-wrap" contenteditable="false">` +
           `<button type="button" class="kb-block-delete" contenteditable="false" title="Delete this video" onclick="event.preventDefault(); event.stopPropagation(); if (confirm('Delete this video?')) this.closest('.kb-video-wrap').remove();">✕</button>` +
+          BLOCK_MOVE_BTNS +
           `<iframe src="https://www.youtube-nocookie.com/embed/${videoId}" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" loading="lazy" allowfullscreen></iframe>` +
           `</div>`;
       }
@@ -422,6 +593,80 @@
         (table.closest('.kb-table-wrap') || table).remove();
         document.getElementById('table-tools').classList.add('hidden');
       }
+    }
+
+    // Merge/un-merge the cell the caret is in with a neighbor, and color its background. This is
+    // a best-effort implementation for the simple, regular grids an admin actually builds here
+    // (every row the same number of cells) -- it doesn't attempt to handle arbitrarily irregular
+    // spans the way a full spreadsheet engine would, which is why mergeDown looks up the cell
+    // below by plain child position (colIdx) rather than re-deriving true visual columns across
+    // rows that already contain spans of their own.
+    function tableMergeAction(action) {
+      const node = editorRange && editorRange.startContainer;
+      const cell = node && (node.nodeType === 1 ? node : node.parentElement).closest('td, th');
+      if (!cell) return alert('Click inside a table cell first.');
+      const row = cell.parentElement;
+
+      const mergeContentInto = (target, source) => {
+        const sourceHtml = source.innerHTML.trim();
+        if (sourceHtml && sourceHtml !== '&nbsp;') {
+          const targetHtml = target.innerHTML.trim();
+          target.innerHTML = (targetHtml && targetHtml !== '&nbsp;' ? targetHtml + ' ' : '') + sourceHtml;
+        }
+      };
+
+      if (action === 'mergeRight') {
+        const next = cell.nextElementSibling;
+        if (!next || (next.tagName !== 'TD' && next.tagName !== 'TH')) return alert('No cell to the right to merge with.');
+        mergeContentInto(cell, next);
+        cell.colSpan = (cell.colSpan || 1) + (next.colSpan || 1);
+        next.remove();
+        moveEditorCaretTo(cell);
+      } else if (action === 'mergeDown') {
+        const colIdx = [...row.children].indexOf(cell);
+        const nextRow = row.nextElementSibling;
+        const below = nextRow && nextRow.children[colIdx];
+        if (!below) return alert('No cell below to merge with.');
+        mergeContentInto(cell, below);
+        cell.rowSpan = (cell.rowSpan || 1) + (below.rowSpan || 1);
+        below.remove();
+        moveEditorCaretTo(cell);
+      } else if (action === 'unmerge') {
+        const colSpan = cell.colSpan || 1;
+        const rowSpan = cell.rowSpan || 1;
+        if (colSpan <= 1 && rowSpan <= 1) return alert('This cell isn\'t merged.');
+        if (colSpan > 1) {
+          cell.colSpan = 1;
+          for (let i = 1; i < colSpan; i++) {
+            const blank = document.createElement(cell.tagName);
+            blank.innerHTML = '&nbsp;';
+            cell.parentElement.insertBefore(blank, cell.nextSibling);
+          }
+        }
+        if (rowSpan > 1) {
+          cell.rowSpan = 1;
+          const colIdx = [...row.children].indexOf(cell);
+          let r = row;
+          for (let i = 1; i < rowSpan; i++) {
+            r = r.nextElementSibling;
+            if (!r) break;
+            const blank = document.createElement(cell.tagName === 'TH' ? 'th' : 'td');
+            blank.innerHTML = '&nbsp;';
+            r.insertBefore(blank, r.children[colIdx] || null);
+          }
+        }
+        moveEditorCaretTo(cell);
+      }
+    }
+
+    // Background shading for the cell the caret is in -- a plain inline style, so it survives
+    // straight through to the public page and the PDF export with no extra stripping logic needed.
+    function tableCellColor(color) {
+      if (!color) return;
+      const node = editorRange && editorRange.startContainer;
+      const cell = node && (node.nodeType === 1 ? node : node.parentElement).closest('td, th');
+      if (!cell) return alert('Click inside a table cell first.');
+      cell.style.backgroundColor = color === 'none' ? '' : color;
     }
 
     // ---- Images inside page content ----
@@ -479,6 +724,7 @@
     }
 
     let selectedEditorImage = null;
+    let selectedVideoBlock = null;
     function imageAction(action) {
       const img = selectedEditorImage;
       if (!img || !document.getElementById('word-editor-canvas').contains(img)) return alert('Click a picture in the editor first.');
@@ -578,6 +824,20 @@
         const tools = document.getElementById('image-tools');
         tools.classList.toggle('hidden', !img);
         tools.classList.toggle('inline-flex', !!img);
+
+        // Click-to-select for the video embed -- the iframe itself is pointer-events:none inside
+        // the editor (see the CSS comment on that rule) specifically so this click lands on the
+        // wrapper div instead of being swallowed by the cross-origin YouTube document, which
+        // otherwise can't dispatch a click back out to this page's listeners at all.
+        canvas.querySelectorAll('.kb-video-wrap.kb-selected').forEach(v => v.classList.remove('kb-selected'));
+        const videoWrap = e.target.closest('.kb-video-wrap');
+        selectedVideoBlock = videoWrap || null;
+        if (videoWrap) videoWrap.classList.add('kb-selected');
+        const videoTools = document.getElementById('video-tools');
+        if (videoTools) {
+          videoTools.classList.toggle('hidden', !videoWrap);
+          videoTools.classList.toggle('inline-flex', !!videoWrap);
+        }
       });
     })();
 
@@ -598,6 +858,7 @@
       insertHtmlWithIntegrityCheck(
         `<div class="kb-pagelink" contenteditable="false" data-page="${p.id}">` +
           `<button type="button" class="kb-block-delete" title="Delete this page card" onclick="event.preventDefault(); event.stopPropagation(); if (confirm('Delete this page card?')) this.closest('.kb-pagelink').remove();">✕</button>` +
+          BLOCK_MOVE_BTNS +
           `${escapeHtml(p.icon || '📄')} Page card: ${escapeHtml(p.title)}` +
         `</div><p><br></p>`,
         el => el.innerHTML.includes('Page card:'),
@@ -627,6 +888,7 @@
       insertHtmlWithIntegrityCheck(
         `<div class="kb-pagelink" contenteditable="false" data-paper="${p.id}">` +
           `<button type="button" class="kb-block-delete" title="Delete this test paper card" onclick="event.preventDefault(); event.stopPropagation(); if (confirm('Delete this test paper card?')) this.closest('.kb-pagelink').remove();">✕</button>` +
+          BLOCK_MOVE_BTNS +
           `📝 Test paper card: ${escapeHtml(p.title)}` +
         `</div><p><br></p>`,
         el => el.innerHTML.includes('Test paper card:'),
@@ -794,6 +1056,7 @@
         `<div class="kb-resource-card" contenteditable="false" data-target-type="${type}" data-target-id="${escapeHtml(targetId || '')}" data-editor-label="${editorLabel}">` +
           `<button type="button" class="kb-block-delete kb-block-delete-edit" title="Edit this resource card" onclick="event.preventDefault(); event.stopPropagation(); openResourceCardModal(this.closest('.kb-resource-card'));">✎</button>` +
           `<button type="button" class="kb-block-delete" title="Delete this resource card" onclick="event.preventDefault(); event.stopPropagation(); if (confirm('Delete this resource card?')) this.closest('.kb-resource-card').remove();">✕</button>` +
+          BLOCK_MOVE_BTNS +
           thumbHtml +
           `<div class="kb-resource-body">` +
             `<h4 class="kb-resource-title">${escapeHtml(title)}</h4>` +
@@ -1121,6 +1384,212 @@
       alert(`Hyperlinked "${highlightedText}" to "${doc.title}"!`);
     }
 
+    // ---- Generic hyperlink (selected text -> any web address) ----
+    // The only link tool above this was PDF-specific (openLinkPdfModal/applyPdfLinkToSelection) --
+    // there was no way to link text to an external site, a government notification page, another
+    // source, anything that isn't one of our own uploaded PDFs. This is the same highlight-then-
+    // pick pattern, but for a plain URL, and it also doubles as an "edit this link" tool: clicking
+    // the Link button while the caret is already inside one of these links (not a PDF link, which
+    // keeps its own dedicated edit flow) edits that link's address in place instead of requiring a
+    // fresh selection.
+    let savedGenericLinkRange = null;
+    let editingGenericLinkEl = null;
+
+    function openGenericLinkModal() {
+      const canvas = document.getElementById('word-editor-canvas');
+      const sel = window.getSelection();
+      const node = sel.rangeCount ? sel.anchorNode : null;
+      const el = node && (node.nodeType === 1 ? node : node.parentElement);
+      const existingLink = el && canvas.contains(el) && el.closest('a.kb-ext-link');
+
+      // Reads the text through the Range itself (getRangeAt) rather than Selection.toString() --
+      // same text in every real browser, but Range.toString() is the lower-level, rendering-
+      // independent API, so this still works correctly even when the selection sits in content
+      // that isn't visibly painted yet (e.g. right after this block was inserted programmatically).
+      const hasRealSelection = sel.rangeCount && !sel.isCollapsed && sel.getRangeAt(0).toString().trim();
+      if (!existingLink && !hasRealSelection) {
+        alert('Please highlight/select the text you want to hyperlink first.');
+        return;
+      }
+
+      editingGenericLinkEl = existingLink || null;
+      savedGenericLinkRange = existingLink ? null : sel.getRangeAt(0).cloneRange();
+
+      document.getElementById('link-url-preview-label').innerText = existingLink ? 'Editing the link on:' : 'Selected text:';
+      document.getElementById('link-url-text-preview').innerText = `"${(existingLink ? existingLink.textContent : sel.getRangeAt(0).toString()).trim()}"`;
+      document.getElementById('link-url-input').value = existingLink ? existingLink.href : '';
+      document.getElementById('link-url-newtab').checked = existingLink ? existingLink.target === '_blank' : true;
+      document.getElementById('link-url-modal-submit').innerText = existingLink ? 'Update link' : 'Insert link';
+      document.getElementById('link-url-remove-btn').classList.toggle('hidden', !existingLink);
+
+      openModal('link-url-modal');
+      setTimeout(() => document.getElementById('link-url-input').focus(), 50);
+    }
+
+    function applyGenericLinkToSelection() {
+      const url = document.getElementById('link-url-input').value.trim();
+      if (!url) return alert('Paste a web address.');
+      if (!/^https?:\/\//i.test(url)) return alert('The address must start with http:// or https://');
+      const newTab = document.getElementById('link-url-newtab').checked;
+
+      if (editingGenericLinkEl) {
+        editingGenericLinkEl.href = url;
+        if (newTab) { editingGenericLinkEl.target = '_blank'; editingGenericLinkEl.rel = 'noopener'; }
+        else { editingGenericLinkEl.removeAttribute('target'); editingGenericLinkEl.removeAttribute('rel'); }
+        editingGenericLinkEl = null;
+        closeModal('link-url-modal');
+        return;
+      }
+
+      if (!savedGenericLinkRange) return;
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedGenericLinkRange);
+      const text = savedGenericLinkRange.toString();
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.className = 'kb-ext-link';
+      if (newTab) { link.target = '_blank'; link.rel = 'noopener'; }
+      link.textContent = text;
+
+      savedGenericLinkRange.deleteContents();
+      savedGenericLinkRange.insertNode(link);
+      savedGenericLinkRange = null;
+
+      closeModal('link-url-modal');
+    }
+
+    function removeGenericLinkFromModal() {
+      if (!editingGenericLinkEl) return;
+      const parent = editingGenericLinkEl.parentNode;
+      while (editingGenericLinkEl.firstChild) parent.insertBefore(editingGenericLinkEl.firstChild, editingGenericLinkEl);
+      parent.removeChild(editingGenericLinkEl);
+      parent.normalize();
+      editingGenericLinkEl = null;
+      closeModal('link-url-modal');
+    }
+
+    // ---- Find & Replace within the page being edited ----
+    // Walks the canvas's text nodes directly rather than using the browser's deprecated/unreliable
+    // window.find(), so this behaves the same in every browser (including the headless one the
+    // regression suite runs in). "Find next" moves the live text selection to the next match
+    // (wrapping back to the start once it runs out) so the match is visibly highlighted and
+    // scrolled into view using the browser's own selection rendering -- no extra DOM wrapping/
+    // unwrapping needed, which would otherwise risk leaving stray marker elements behind.
+    let frLastNode = null;
+    let frLastOffset = 0;
+
+    function openFindReplaceModal() {
+      frLastNode = null;
+      frLastOffset = 0;
+      const canvas = document.getElementById('word-editor-canvas');
+      const sel = window.getSelection();
+      document.getElementById('fr-find-input').value =
+        (sel.rangeCount && !sel.isCollapsed && canvas.contains(sel.anchorNode)) ? sel.getRangeAt(0).toString() : '';
+      document.getElementById('fr-replace-input').value = '';
+      openModal('find-replace-modal');
+      setTimeout(() => document.getElementById('fr-find-input').focus(), 50);
+    }
+
+    function findNextInEditor() {
+      const term = document.getElementById('fr-find-input').value;
+      if (!term) return alert('Type something to find.');
+      const canvas = document.getElementById('word-editor-canvas');
+      const walker = document.createTreeWalker(canvas, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      let n;
+      while ((n = walker.nextNode())) nodes.push(n);
+      if (!nodes.length) return alert(`"${term}" not found.`);
+
+      const lower = term.toLowerCase();
+      let startIdx = 0;
+      if (frLastNode) {
+        const idx = nodes.indexOf(frLastNode);
+        if (idx !== -1) startIdx = idx;
+      }
+
+      for (let pass = 0; pass < 2; pass++) {
+        for (let i = startIdx; i < nodes.length; i++) {
+          const offset = (pass === 0 && i === startIdx) ? frLastOffset : 0;
+          const idx = nodes[i].textContent.toLowerCase().indexOf(lower, offset);
+          if (idx === -1) continue;
+          const node = nodes[i];
+          const range = document.createRange();
+          range.setStart(node, idx);
+          range.setEnd(node, idx + term.length);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          const rect = range.getBoundingClientRect();
+          if (rect && (rect.top || rect.bottom)) window.scrollTo({ top: window.scrollY + rect.top - 150, behavior: 'smooth' });
+          editorRange = range.cloneRange();
+          frLastNode = node;
+          frLastOffset = idx + term.length;
+          return;
+        }
+        startIdx = 0; // wrap around and try again from the very start, once
+      }
+      alert(`"${term}" not found.`);
+      frLastNode = null;
+      frLastOffset = 0;
+    }
+
+    function replaceCurrentMatch() {
+      const term = document.getElementById('fr-find-input').value;
+      const replacement = document.getElementById('fr-replace-input').value;
+      if (!term) return alert('Type something to find.');
+      const sel = window.getSelection();
+      // Only replace if the live selection is actually the match "Find next" just landed on --
+      // otherwise (nothing found yet, or the admin clicked elsewhere since) just find the next one.
+      // Reads the text via the Range itself (not Selection.toString(), which depends on the
+      // selection actually being painted) so this is still correct the instant after a
+      // programmatic find, before any repaint has happened.
+      if (!sel.rangeCount || sel.isCollapsed || sel.getRangeAt(0).toString().toLowerCase() !== term.toLowerCase()) {
+        return findNextInEditor();
+      }
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      const textNode = document.createTextNode(replacement);
+      range.insertNode(textNode);
+      frLastNode = textNode;
+      frLastOffset = textNode.textContent.length;
+      sel.removeAllRanges();
+      findNextInEditor();
+    }
+
+    function replaceAllInEditor() {
+      const term = document.getElementById('fr-find-input').value;
+      const replacement = document.getElementById('fr-replace-input').value;
+      if (!term) return alert('Type something to find.');
+      const canvas = document.getElementById('word-editor-canvas');
+      const walker = document.createTreeWalker(canvas, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      let n;
+      while ((n = walker.nextNode())) nodes.push(n);
+
+      const lower = term.toLowerCase();
+      let count = 0;
+      nodes.forEach(node => {
+        const text = node.textContent;
+        const lowerText = text.toLowerCase();
+        if (!lowerText.includes(lower)) return;
+        let result = '';
+        let i = 0;
+        while (i < text.length) {
+          const idx = lowerText.indexOf(lower, i);
+          if (idx === -1) { result += text.slice(i); break; }
+          result += text.slice(i, idx) + replacement;
+          i = idx + term.length;
+          count++;
+        }
+        node.textContent = result;
+      });
+      frLastNode = null;
+      frLastOffset = 0;
+      alert(count ? `Replaced ${count} occurrence${count === 1 ? '' : 's'}.` : `"${term}" not found.`);
+    }
+
   async function handleSaveCustomPage(e) {
   e.preventDefault();
   const title = document.getElementById('page-title-input').value.trim();
@@ -1129,6 +1598,7 @@
   const bundleOnly = isGated && document.getElementById('page-bundleonly-check').checked;
   const price = isGated && !bundleOnly ? (parseInt(document.getElementById('page-price-input').value) || 49) : 0;
   document.querySelectorAll('#word-editor-canvas img.kb-selected').forEach(i => i.classList.remove('kb-selected'));
+  document.querySelectorAll('#word-editor-canvas .kb-video-wrap.kb-selected').forEach(v => v.classList.remove('kb-selected'));
   const htmlContent = document.getElementById('word-editor-canvas').innerHTML;
   const meta = {
     parentId: document.getElementById('page-parent-input').value || null,
@@ -1462,7 +1932,7 @@
         // render here too (unstyled, but present and clickable) -- reported as "there's an X even
         // on the front end". Stripped unconditionally, for every page, regardless of how the
         // content was produced (hand-typed, pasted, or published via the PDF wizard).
-        contentBox.querySelectorAll('.kb-block-delete').forEach(btn => btn.remove());
+        contentBox.querySelectorAll('.kb-block-delete, .kb-block-move').forEach(btn => btn.remove());
         hydratePageCards(contentBox);
       }
 
@@ -1750,7 +2220,7 @@
 
       const temp = document.createElement('div');
       temp.innerHTML = canvas.innerHTML;
-      temp.querySelectorAll('.kb-block-delete').forEach(btn => btn.remove());
+      temp.querySelectorAll('.kb-block-delete, .kb-block-move').forEach(btn => btn.remove());
       // A print window can't reliably render a cross-origin YouTube iframe (and a static PDF
       // couldn't play it anyway) -- swap each video block for a plain clickable link to the real
       // video instead of shipping a blank/broken rectangle in the exported PDF.
