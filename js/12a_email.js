@@ -1077,7 +1077,7 @@
         student = getStudentRecord(email);
       }
       if (!student) {
-        student = { email, utr: 'SELF_SIGNUP', status: 'active', allowedExams: [], allowedPages: [], allowedPdfs: [], allowedPlanners: [], passes: [], passExpiry: {}, createdAt: new Date().toISOString() };
+        student = { email, utr: 'SELF_SIGNUP', status: 'active', allowedExams: [], allowedPages: [], allowedPdfs: [], allowedPlanners: [], allowedMains: [], passes: [], passExpiry: {}, createdAt: new Date().toISOString() };
         studentDirectory.push(student);
       }
       localStorage.setItem('kas_student_directory', JSON.stringify(studentDirectory));

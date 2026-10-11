@@ -1069,6 +1069,7 @@
       renderMyAccess();
       renderPerformanceAnalysis(admin ? [] : attempts);
       renderPracticeCenter();
+      renderMainsDashboardCard();
       renderMyPayments();
       renderStudyPlanner();
 

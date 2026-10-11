@@ -469,6 +469,7 @@ window.onload = async function() {
         allowedPages: Array.isArray(s.allowed_pages) ? s.allowed_pages : [],
         allowedPdfs: Array.isArray(s.allowed_pdfs) ? s.allowed_pdfs : [],
         allowedPlanners: Array.isArray(s.allowed_planners) ? s.allowed_planners : [],
+        allowedMains: Array.isArray(s.allowed_mains) ? s.allowed_mains : [],
         passes: Array.isArray(s.passes) ? s.passes : [],
         passExpiry: s.pass_expiry || {},
         passwordHash: s.password_hash || undefined,
@@ -543,6 +544,7 @@ async function fetchCloudVisitStats() {
     
     renderStudyPlanner();
     renderPracticeCenter();
+    renderMainsDashboardCard();
   }
 }
 

@@ -45,7 +45,7 @@
     function getStudentRecord(email) {
       const e = normalizeEmail(email);
       const st = studentDirectory.find(x => x.email === e) || null;
-      if (st) ['allowedExams', 'allowedPages', 'allowedPdfs', 'allowedPlanners', 'passes'].forEach(k => { if (!Array.isArray(st[k])) st[k] = []; });
+      if (st) ['allowedExams', 'allowedPages', 'allowedPdfs', 'allowedPlanners', 'allowedMains', 'passes'].forEach(k => { if (!Array.isArray(st[k])) st[k] = []; });
       return st;
     }
 
@@ -76,6 +76,21 @@
       if (!student) return false;
       if (activeBundlesFor(student).some(b => bundleCoversPaper(b, paper))) return true;
       return student.allowedExams.includes(testId);
+    }
+
+    // Mains question-bank access is gated per exam category, not per-question ("gated like test
+    // papers", per the product decision): a covering bundle/pass (the matching category pass, one
+    // of its category ancestors, or All-Access) or a standalone Mains-access purchase for that
+    // category (student.allowedMains) unlocks browsing, writing answers and self-assessment for
+    // every question filed under it. Unlike isTestUnlockedForUser, there's deliberately no
+    // free/price-0 shortcut -- Mains access is always either bundle-covered or purchased.
+    function isMainsUnlockedForUser(categoryId) {
+      if (isAdmin()) return true;
+      const student = getCurrentStudent();
+      if (!student) return false;
+      const coveredCats = categoryAndAncestors(categoryId);
+      if (activeBundlesFor(student).some(b => b.allAccess || coveredCats.some(c => b.categories.includes(c)))) return true;
+      return (student.allowedMains || []).includes(categoryId);
     }
 
     // Timing gate, deliberately kept separate from isTestUnlockedForUser above: "does this student

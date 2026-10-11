@@ -11,7 +11,7 @@
         studentDirectory.forEach(s => {
           const opt = document.createElement('option');
           opt.value = s.email;
-          opt.innerText = `${s.email} (${s.passes.length ? s.passes.length + ' pass(es), ' : ''}${s.allowedExams.length} tests, ${s.allowedPages.length} pages, ${s.allowedPdfs.length} PDFs)`;
+          opt.innerText = `${s.email} (${s.passes.length ? s.passes.length + ' pass(es), ' : ''}${s.allowedExams.length} tests, ${s.allowedPages.length} pages, ${s.allowedPdfs.length} PDFs)${(s.allowedMains || []).length ? `, ${s.allowedMains.length} mains` : ''}`;
           sel.appendChild(opt);
         });
       }
@@ -79,6 +79,19 @@
           `;
         });
       }
+
+      // Individual Mains-access grants (one per exam category, since Mains is category-scoped, not
+      // item-scoped -- see isMainsUnlockedForUser). Only the two categories the Mains ecosystem
+      // actually serves today appear here, same list as the Mains Practice category tabs.
+      const mainsBox = document.getElementById('entitle-mains-list');
+      if (mainsBox) {
+        mainsBox.innerHTML = MAINS_CATEGORY_IDS.map(catId => `
+          <label class="flex items-start space-x-2 cursor-pointer" data-entitle-row="mains" data-item-id="${catId}">
+            <input type="checkbox" value="${catId}" class="entitle-mains-cb mt-0.5 rounded text-amber-500" />
+            <span class="truncate">${escapeHtml(categoryDisplayName(catId))} Mains <span class="via-bundle-badge hidden text-[10px] font-bold text-emerald-600">✓ via bundle</span></span>
+          </label>
+        `).join('');
+      }
     }
 
     function grantQuickBundle(bundleType) {
@@ -104,6 +117,7 @@
           allowedPages: [],
           allowedPdfs: [],
           allowedPlanners: [],
+          allowedMains: [],
           passes: []
         };
         studentDirectory.push(student);
@@ -145,6 +159,9 @@
       });
       document.querySelectorAll('.entitle-planner-cb').forEach(cb => {
         cb.checked = (student.allowedPlanners || []).includes(cb.value);
+      });
+      document.querySelectorAll('.entitle-mains-cb').forEach(cb => {
+        cb.checked = (student.allowedMains || []).includes(cb.value);
       });
       updateBundleCoverageHighlights();
     }
@@ -195,6 +212,7 @@
         return doc && bundleCoversPdf(b, doc);
       });
       applyTo('[data-entitle-row="planner"]', (b, id) => bundleCoversPlanner(b, id));
+      applyTo('[data-entitle-row="mains"]', (b, catId) => b.allAccess || categoryAndAncestors(catId).some(c => b.categories.includes(c)));
     }
 
     function renderSelectedStudentLoginInfo() {
@@ -223,7 +241,7 @@
     }
 
     function selectAllEntitlements(checkAll) {
-      document.querySelectorAll('.entitle-pass-cb, .entitle-paper-cb, .entitle-page-cb, .entitle-pdf-cb, .entitle-planner-cb').forEach(cb => {
+      document.querySelectorAll('.entitle-pass-cb, .entitle-paper-cb, .entitle-page-cb, .entitle-pdf-cb, .entitle-planner-cb, .entitle-mains-cb').forEach(cb => {
         cb.checked = checkAll;
       });
     }
@@ -239,6 +257,7 @@
   const pages = Array.from(document.querySelectorAll('.entitle-page-cb:checked')).filter(cb => cb.dataset.viaBundle !== 'true').map(cb => cb.value);
   const pdfs = Array.from(document.querySelectorAll('.entitle-pdf-cb:checked')).filter(cb => cb.dataset.viaBundle !== 'true').map(cb => cb.value);
   const plannerGrants = Array.from(document.querySelectorAll('.entitle-planner-cb:checked')).filter(cb => cb.dataset.viaBundle !== 'true').map(cb => cb.value);
+  const mainsGrants = Array.from(document.querySelectorAll('.entitle-mains-cb:checked')).filter(cb => cb.dataset.viaBundle !== 'true').map(cb => cb.value);
   const passes = Array.from(document.querySelectorAll('.entitle-pass-cb:checked')).map(cb => cb.value);
 
   // Round 2: snapshot what the student had BEFORE this save, so we can email them
@@ -248,7 +267,8 @@
     exams:  [...(activeSelectedStudent.allowedExams || [])],
     pages:  [...(activeSelectedStudent.allowedPages || [])],
     pdfs:   [...(activeSelectedStudent.allowedPdfs  || [])],
-    planners: [...(activeSelectedStudent.allowedPlanners || [])]
+    planners: [...(activeSelectedStudent.allowedPlanners || [])],
+    mains: [...(activeSelectedStudent.allowedMains || [])]
   };
 
   [...activeSelectedStudent.passes].forEach(id => { if (!passes.includes(id)) revokePass(activeSelectedStudent, id); });
@@ -258,6 +278,7 @@
   activeSelectedStudent.allowedPages = pages;
   activeSelectedStudent.allowedPdfs = pdfs;
   activeSelectedStudent.allowedPlanners = plannerGrants;
+  activeSelectedStudent.allowedMains = mainsGrants;
   activeSelectedStudent.utr = document.getElementById('entitle-student-utr').value.trim();
 
   // Save to Supabase Cloud
@@ -272,6 +293,7 @@
       allowed_pages: activeSelectedStudent.allowedPages,
       allowed_pdfs: activeSelectedStudent.allowedPdfs,
       allowed_planners: activeSelectedStudent.allowedPlanners,
+      allowed_mains: activeSelectedStudent.allowedMains,
       passes: activeSelectedStudent.passes,
       pass_expiry: activeSelectedStudent.passExpiry || {}
     });
@@ -287,9 +309,10 @@
     exams:  exams.filter(x  => !before.exams.includes(x)),
     pages:  pages.filter(x  => !before.pages.includes(x)),
     pdfs:   pdfs.filter(x   => !before.pdfs.includes(x)),
-    planners: plannerGrants.filter(x => !before.planners.includes(x))
+    planners: plannerGrants.filter(x => !before.planners.includes(x)),
+    mains: mainsGrants.filter(x => !before.mains.includes(x))
   };
-  const addedAnything = added.passes.length || added.exams.length || added.pages.length || added.pdfs.length || added.planners.length;
+  const addedAnything = added.passes.length || added.exams.length || added.pages.length || added.pdfs.length || added.planners.length || added.mains.length;
   let emailNote = '';
   if (addedAnything) {
     const bits = [];
@@ -298,6 +321,7 @@
     if (added.pages.length)  bits.push(`${added.pages.length} study page${added.pages.length > 1 ? 's' : ''}`);
     if (added.pdfs.length)   bits.push(`${added.pdfs.length} PDF${added.pdfs.length > 1 ? 's' : ''}`);
     if (added.planners.length) bits.push(`${added.planners.length} planner${added.planners.length > 1 ? 's' : ''}`);
+    if (added.mains.length) bits.push(`Mains access: ${added.mains.map(categoryDisplayName).join(', ')}`);
     const summary = bits.join(', ');
     sendAutoEmail('access_granted', activeSelectedStudent.email, {
       name: displayNameFor(activeSelectedStudent.email),

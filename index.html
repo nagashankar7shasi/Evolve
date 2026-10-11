@@ -55,7 +55,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
   <!-- Add Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="css/main.css?v=56">
+  <link rel="stylesheet" href="css/main.css?v=57">
 
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col select-none">
@@ -427,6 +427,15 @@
         <p class="text-[11px] text-slate-500 mb-4">Pick an exam and subjects. Questions come from the papers you have access to.</p>
         <div id="topic-builder" class="text-xs space-y-4"></div>
       </div>
+    </div>
+
+    <!-- Mains Practice entry point (students only) -->
+    <div id="dash-mains-section" class="hidden bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h3 class="font-bold text-sm text-slate-900 mb-1">✍️ Mains Answer Writing</h3>
+        <p class="text-[11px] text-slate-500">Write descriptive answers, get AI feedback or request a personal review. Gated per exam category.</p>
+      </div>
+      <button onclick="openMainsPractice()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg shadow shrink-0">Open Mains Practice →</button>
     </div>
 
     <!-- My payments (students with at least one payment) -->
@@ -1632,6 +1641,12 @@
                 <span class="font-bold text-slate-800 block border-b pb-1 mb-2">Study Planners (individual grant)</span>
                 <div id="entitle-planners-list" class="space-y-1.5 max-h-40 overflow-y-auto text-[11px]"></div>
               </div>
+
+              <!-- Individual Mains-access grants -->
+              <div class="bg-white p-3 rounded-lg border">
+                <span class="font-bold text-slate-800 block border-b pb-1 mb-2">Mains Access (individual grant)</span>
+                <div id="entitle-mains-list" class="space-y-1.5 max-h-40 overflow-y-auto text-[11px]"></div>
+              </div>
             </div>
 
             <div class="pt-2 flex justify-between items-center">
@@ -1846,6 +1861,25 @@
           <p class="text-slate-400">For testing only, ahead of the real credit-pack / bundle-allowance economy.</p>
         </div>
 
+        <div class="p-3 bg-sky-50 border border-sky-200 rounded-xl space-y-3 text-xs">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <span class="font-bold text-slate-800">🔓 Mains access pricing (standalone purchase)</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-2">
+              <label class="font-bold text-slate-700">KPSC KAS: ₹</label>
+              <input type="number" id="mq-mains-access-price-kpsc_kas" min="0" step="1" class="w-20 px-2 py-1 border rounded-lg outline-none font-mono" />
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="font-bold text-slate-700">UPSC CSE: ₹</label>
+              <input type="number" id="mq-mains-access-price-upsc_cse" min="0" step="1" class="w-20 px-2 py-1 border rounded-lg outline-none font-mono" />
+            </div>
+            <button onclick="mainsAccessPriceSave()" class="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg">Save</button>
+            <span id="mq-mains-access-price-status" class="text-slate-500"></span>
+          </div>
+          <p class="text-slate-400">What a student pays to unlock just the Mains question bank for one exam category, without buying the full category Pass (which also covers it).</p>
+        </div>
+
         <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-3 text-xs">
           <div class="flex items-center justify-between flex-wrap gap-2">
             <span class="font-bold text-slate-800">👤 Human evaluation queue</span>
@@ -1984,9 +2018,8 @@
   </main>
 
   <!-- ================= MAINS PRACTICE (full-screen, same pattern as the OMR engine below) =================
-       Intentionally not linked from any nav/dashboard button yet -- see js/06c_mains_practice.js header
-       comment. Reached only via openMainsPractice() until the other evaluation tiers + access-control
-       wiring land. -->
+       Linked from the student dashboard (#dash-mains-section). Per-category access control lives in
+       isMainsUnlockedForUser() -- see js/06c_mains_practice.js header comment. -->
   <div id="view-mains-practice" class="fixed inset-0 bg-slate-100 z-50 flex flex-col hidden">
     <div class="bg-white border-b px-4 py-3 flex items-center justify-between shadow-sm shrink-0">
       <h2 class="font-bold text-slate-900">✍️ Mains Practice</h2>
@@ -2006,6 +2039,7 @@
           </select>
         </div>
         <div id="mp-question-list" class="space-y-2 text-sm"></div>
+        <div id="mp-locked-box" class="hidden"></div>
       </div>
 
       <!-- Screen 2: write an answer -->
@@ -3396,39 +3430,39 @@ B. Article 360 | 2. Financial Emergency</pre>
   </footer>
 
   <!-- ================= JAVASCRIPT ARCHITECTURE ================= -->
-  <script src="js/00_supabase_init.js?v=56"></script>
-  <script src="js/01_exam_category_master.js?v=56"></script>
-  <script src="js/02_pricing_master_storage.js?v=56"></script>
-  <script src="js/02a_bundles.js?v=56"></script>
-  <script src="js/03_pricing_checkout.js?v=56"></script>
-  <script src="js/03a_site_branding.js?v=56"></script>
-  <script src="js/03b_dev_console.js?v=56"></script>
-  <script src="js/03c_bundles_admin_editor.js?v=56"></script>
-  <script src="js/03d_payment_claims.js?v=56"></script>
-  <script src="js/03e_feedback.js?v=56"></script>
-  <script src="js/03f_coupons.js?v=56"></script>
-  <script src="js/04_access_permission_checkers.js?v=56"></script>
-  <script src="js/05_student_entitlements_desk.js?v=56"></script>
-  <script src="js/06_exam_pages_test_ingestion.js?v=56"></script>
-  <script src="js/06a_test_paper_studio.js?v=56"></script>
-  <script src="js/06b_mains_studio.js?v=56"></script>
-  <script src="js/06c_mains_practice.js?v=56"></script>
-  <script src="js/07_pdf_vault.js?v=56"></script>
-  <script src="js/07a_pdf_publishing_wizard.js?v=56"></script>
-  <script src="js/08_word_page_creator.js?v=56"></script>
-  <script src="js/09_navigation_granular_controls.js?v=56"></script>
-  <script src="js/09a_site_search.js?v=56"></script>
-  <script src="js/10_omr_exam_engine.js?v=56"></script>
-  <script src="js/11_dashboard_review_modal.js?v=56"></script>
-  <script src="js/11a_study_planners.js?v=56"></script>
-  <script src="js/11c_dashboard_access_layers.js?v=56"></script>
-  <script src="js/11d_study_planner_admin_csv.js?v=56"></script>
-  <script src="js/11b_practice_mistakes_topic_builder.js?v=56"></script>
-  <script src="js/12_authentication_export.js?v=56"></script>
-  <script src="js/12a_email.js?v=56"></script>
-  <script src="js/12b_home_page_configuration.js?v=56"></script>
-  <script src="js/13_announcements.js?v=56"></script>
-  <script src="js/14_student_directory_admin.js?v=56"></script>
-  <script src="js/15_backup_export_restore.js?v=56"></script>
+  <script src="js/00_supabase_init.js?v=57"></script>
+  <script src="js/01_exam_category_master.js?v=57"></script>
+  <script src="js/02_pricing_master_storage.js?v=57"></script>
+  <script src="js/02a_bundles.js?v=57"></script>
+  <script src="js/03_pricing_checkout.js?v=57"></script>
+  <script src="js/03a_site_branding.js?v=57"></script>
+  <script src="js/03b_dev_console.js?v=57"></script>
+  <script src="js/03c_bundles_admin_editor.js?v=57"></script>
+  <script src="js/03d_payment_claims.js?v=57"></script>
+  <script src="js/03e_feedback.js?v=57"></script>
+  <script src="js/03f_coupons.js?v=57"></script>
+  <script src="js/04_access_permission_checkers.js?v=57"></script>
+  <script src="js/05_student_entitlements_desk.js?v=57"></script>
+  <script src="js/06_exam_pages_test_ingestion.js?v=57"></script>
+  <script src="js/06a_test_paper_studio.js?v=57"></script>
+  <script src="js/06b_mains_studio.js?v=57"></script>
+  <script src="js/06c_mains_practice.js?v=57"></script>
+  <script src="js/07_pdf_vault.js?v=57"></script>
+  <script src="js/07a_pdf_publishing_wizard.js?v=57"></script>
+  <script src="js/08_word_page_creator.js?v=57"></script>
+  <script src="js/09_navigation_granular_controls.js?v=57"></script>
+  <script src="js/09a_site_search.js?v=57"></script>
+  <script src="js/10_omr_exam_engine.js?v=57"></script>
+  <script src="js/11_dashboard_review_modal.js?v=57"></script>
+  <script src="js/11a_study_planners.js?v=57"></script>
+  <script src="js/11c_dashboard_access_layers.js?v=57"></script>
+  <script src="js/11d_study_planner_admin_csv.js?v=57"></script>
+  <script src="js/11b_practice_mistakes_topic_builder.js?v=57"></script>
+  <script src="js/12_authentication_export.js?v=57"></script>
+  <script src="js/12a_email.js?v=57"></script>
+  <script src="js/12b_home_page_configuration.js?v=57"></script>
+  <script src="js/13_announcements.js?v=57"></script>
+  <script src="js/14_student_directory_admin.js?v=57"></script>
+  <script src="js/15_backup_export_restore.js?v=57"></script>
 </body>
 </html>

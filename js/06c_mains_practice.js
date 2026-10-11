@@ -6,17 +6,18 @@
     // browse -> write -> self-assess. AI-assisted evaluation calls the provider-agnostic
     // 'mains-ai-evaluate' Edge Function (Claude + OpenAI adapters, see that function's own comments);
     // it reports a clean "not configured yet" error until an admin adds a real API key, rather than
-    // failing. Human-reviewed evaluation (the third tier) is still a "coming soon" placeholder -- the
-    // admin review queue hasn't been built yet. INTENTIONALLY NOT LINKED from any dashboard button or
-    // nav yet -- same staged-rollout discipline as the admin Question Studio PR: feature-complete,
-    // reachable only by calling openMainsPractice() directly, until all tiers exist and
-    // access-control (Task "wire into bundle scope") is wired in.
+    // failing. Human-reviewed evaluation (the third tier) is a paid request into the admin's review
+    // queue (see 06b_mains_studio.js). Access to the Mains question bank itself (this whole view, for
+    // a given category) is gated like test papers -- see isMainsUnlockedForUser() in
+    // 04_access_permission_checkers.js -- and is linked from the student dashboard
+    // (renderMainsDashboardCard, #dash-mains-section) now that access-control is wired in.
     let mainsSubmissions = [];        // this student's own submissions only (server-side .eq filter, even though RLS itself is public-read)
     let mainsPracticeFilterCategory = 'kpsc_kas';
     let mainsPracticeFilterSubject = '';
     let mainsPracticeCurrentQuestion = null; // question object currently being answered (write screen)
     let mainsPracticeAnswerPhotoFile = null; // staged File, not yet uploaded
     let mainsPracticeCurrentSubmissionId = null; // submission currently shown on the self-assess screen (AI-feedback button target)
+    let mainsAccessPriceCache = null; // lazy-loaded app_settings('mains_access_price'), {kpsc_kas, upsc_cse}
 
     async function fetchCloudMainsSubmissions() {
       if (!currentUser) { mainsSubmissions = []; return; }
@@ -38,6 +39,16 @@
       document.getElementById('view-mains-practice').classList.remove('hidden');
       await fetchCloudMainsSubmissions();
       mainsPracticeShowBrowse();
+    }
+
+    // Dashboard entry point card (#dash-mains-section) -- visible to any logged-in, non-blocked
+    // student, same show/hide rule as the other dashboard cards (renderPracticeCenter). Whether a
+    // given category is actually unlocked is decided inside Mains Practice itself, per category tab
+    // (renderMainsLockedBox) -- this card is just the door in.
+    function renderMainsDashboardCard() {
+      const section = document.getElementById('dash-mains-section');
+      if (!section) return;
+      section.classList.toggle('hidden', !getCurrentStudent());
     }
 
     function closeMainsPractice() {
@@ -71,8 +82,47 @@
         b.classList.toggle('text-white', on);
         b.classList.toggle('text-slate-700', !on);
       });
-      mainsPracticeRefreshSubjectFilter();
-      renderMainsPracticeQuestionList();
+      const unlocked = isMainsUnlockedForUser(mainsPracticeFilterCategory);
+      document.getElementById('mp-filter-subject').classList.toggle('hidden', !unlocked);
+      document.getElementById('mp-question-list').classList.toggle('hidden', !unlocked);
+      document.getElementById('mp-locked-box').classList.toggle('hidden', unlocked);
+      if (unlocked) {
+        mainsPracticeRefreshSubjectFilter();
+        renderMainsPracticeQuestionList();
+      } else {
+        renderMainsLockedBox(mainsPracticeFilterCategory);
+      }
+    }
+
+    // Locked-state CTA for a category the student doesn't have Mains access to -- mirrors
+    // bundleOnlyUnlockCta's spirit (02a_bundles.js) but offers TWO unlock paths, since the product
+    // decision ("gated like test papers") explicitly allows either: the category Pass bundle (which
+    // already covers every mock paper in that category too), or a cheaper standalone Mains-only
+    // purchase. Bundle id === category id for both kpsc_kas and upsc_cse (see seedBundles), so
+    // openBundleCheckout(categoryId) is reused directly.
+    async function renderMainsLockedBox(categoryId) {
+      const box = document.getElementById('mp-locked-box');
+      box.innerHTML = `<div class="bg-white border rounded-xl p-6 text-center text-sm text-slate-500">Loading…</div>`;
+      if (!mainsAccessPriceCache) mainsAccessPriceCache = (await fetchCloudAppSetting('mains_access_price')) || {};
+      const price = mainsAccessPriceCache[categoryId] != null ? mainsAccessPriceCache[categoryId] : (MAINS_ACCESS_DEFAULT_PRICE[categoryId] || 0);
+      const bundle = getBundle(categoryId);
+      const catName = categoryDisplayName(categoryId);
+      box.innerHTML = `
+        <div class="bg-white border rounded-xl p-6 text-center">
+          <div class="text-3xl mb-2">🔒</div>
+          <p class="font-bold text-slate-900 mb-1">Mains access needed for ${escapeHtml(catName)}</p>
+          <p class="text-slate-500 text-xs mb-5">Unlock answer writing, AI feedback and self-assessment for this category.</p>
+          <div class="flex flex-wrap justify-center gap-3">
+            ${bundle ? `
+              <button onclick="openBundleCheckout('${bundle.id}')" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg shadow">
+                🎓 ${escapeHtml(bundle.name)} — ₹${bundle.price}
+              </button>` : ''}
+            <button onclick="openCheckout('mains', '${categoryId}', 'Mains Access — ${escapeHtml(catName)}', ${price})" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg shadow">
+              ✍️ Mains access only — ₹${price}
+            </button>
+          </div>
+          <p class="text-slate-400 text-[11px] mt-4">The category Pass also covers every mock test in ${escapeHtml(catName)} — the standalone option is Mains-only.</p>
+        </div>`;
     }
 
     function mainsPracticeCategoryTabClick(catId) {
@@ -122,6 +172,14 @@
     function startMainsAnswer(questionId) {
       const q = getMainsQuestion(questionId);
       if (!q) return;
+      // Defensive re-check -- the browse screen already hides question cards for a locked category
+      // (renderMainsLockedBox), but this guards against a stale question card still in the DOM (e.g.
+      // access was revoked mid-session) rather than trusting only what's rendered.
+      if (!isMainsUnlockedForUser(q.categoryId)) {
+        mainsPracticeFilterCategory = q.categoryId;
+        mainsPracticeShowBrowse();
+        return;
+      }
       mainsPracticeCurrentQuestion = q;
       mainsPracticeAnswerPhotoFile = null;
       document.getElementById('mp-write-subject').innerText = q.subject || q.categoryId;
