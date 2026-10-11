@@ -121,10 +121,17 @@
       // Explanation image (English / default) — e.g. a labeled map/diagram the SOLUTION needs to show
       // (map-based questions especially). Separate from the question's own image_url above: a question
       // can have no image of its own but still need one in its explanation, or vice versa.
+      // NOTE: 'expimageurl' (the normalized form of this app's own CSV export header "Exp_Image_URL")
+      // must be listed explicitly -- it does NOT fall out of 'expimage'/'explanationimageurl' below,
+      // since studioNormalizeHeader just lowercases+strips non-alnum rather than stemming words. A
+      // missing exact-match alias here previously meant even a CSV downloaded from this app's own
+      // "Download sample template" couldn't re-upload without manual column mapping.
+      'expimageurl': 'exp_image_url',
       'explanationimage': 'exp_image_url', 'expimage': 'exp_image_url', 'explanationimageurl': 'exp_image_url',
       'solutionimage': 'exp_image_url', 'answerimage': 'exp_image_url', 'mapimage': 'exp_image_url',
       'explanationdiagram': 'exp_image_url', 'expimg': 'exp_image_url',
       // Explanation image (Kannada-only override)
+      'expimageurlkn': 'exp_image_url_kn',
       'explanationimagekn': 'exp_image_url_kn', 'expimagekn': 'exp_image_url_kn', 'solutionimagekn': 'exp_image_url_kn',
       'explanationimagekannada': 'exp_image_url_kn', 'mapimagekn': 'exp_image_url_kn',
       // Content type (Static syllabus vs Current Affairs) — see studioQuestionProblem/getQuestionBank
