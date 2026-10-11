@@ -615,10 +615,14 @@ async function evaluateOMRSubmission() {
       </div>
       <div class="text-slate-700 mb-1.5">${renderQuestionTextHtml(q.q_en)}</div>
       ${q.q_kn && q.q_kn !== q.q_en ? `<div class="text-slate-500 mb-1.5" style="font-family:'Noto Sans Kannada',sans-serif">${renderQuestionTextHtml(q.q_kn)}</div>` : ''}
+      ${isRealImageUrl(q.image_url) ? `<img src="${escapeHtml(q.image_url)}" alt="Question diagram" class="max-w-full max-h-64 rounded-lg border border-slate-200 mb-1.5 mx-auto block" />` : ''}
+      ${isRealImageUrl(q.image_url_kn) && q.image_url_kn !== q.image_url ? `<img src="${escapeHtml(q.image_url_kn)}" alt="Question diagram (Kannada)" class="max-w-full max-h-64 rounded-lg border border-slate-200 mb-1.5 mx-auto block" />` : ''}
       <div class="text-[11px] mb-1">Your Bubble: <b>${choice}</b> | Answer Key: <b class="text-emerald-700 font-bold">${q.correct}</b> ${askedBadgeHtml(q)}</div>
       <div class="p-2 bg-white rounded border border-slate-100 text-[11px] text-slate-600">
         <b>Explanation:</b> ${q.exp || ''}
+        ${isRealImageUrl(q.exp_image_url) ? `<img src="${escapeHtml(q.exp_image_url)}" alt="Explanation diagram" class="max-w-full max-h-64 rounded-lg border border-slate-200 mt-1.5 mx-auto block" />` : ''}
         ${q.exp_kn ? `<div class="mt-1" style="font-family:'Noto Sans Kannada',sans-serif">${q.exp_kn}</div>` : ''}
+        ${isRealImageUrl(q.exp_image_url_kn) && q.exp_image_url_kn !== q.exp_image_url ? `<img src="${escapeHtml(q.exp_image_url_kn)}" alt="Explanation diagram (Kannada)" class="max-w-full max-h-64 rounded-lg border border-slate-200 mt-1.5 mx-auto block" />` : ''}
       </div>
     `;
     solBox.appendChild(item);
