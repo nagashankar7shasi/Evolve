@@ -55,7 +55,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
   <!-- Add Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="css/main.css?v=54">
+  <link rel="stylesheet" href="css/main.css?v=55">
 
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col select-none">
@@ -1820,6 +1820,32 @@
           </div>
         </div>
 
+        <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-xl space-y-3 text-xs">
+          <span class="font-bold text-slate-800">🤖 AI evaluation settings</span>
+          <div class="flex flex-wrap items-center gap-2">
+            <span id="mq-ai-config-status" class="text-slate-600">Checking…</span>
+            <button onclick="mainsAiCheckConfig()" class="text-[11px] font-bold text-indigo-600 hover:underline">↻ Re-check</button>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <label class="font-bold text-slate-700">Try first:</label>
+            <select id="mq-ai-provider-pref" class="px-2 py-1 border rounded-lg bg-white outline-none">
+              <option value="claude">Claude</option>
+              <option value="openai">OpenAI (ChatGPT)</option>
+            </select>
+            <button onclick="mainsAiSaveProviderPref()" class="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg">Save</button>
+            <span id="mq-ai-provider-status" class="text-slate-500"></span>
+          </div>
+          <p class="text-slate-400">Whichever provider you pick, a request still falls back to the other one automatically if its key isn't configured yet.</p>
+          <div class="border-t pt-2 flex flex-wrap items-center gap-2">
+            <label class="font-bold text-slate-700">Grant test credits:</label>
+            <input type="email" id="mq-ai-grant-email" placeholder="student@email.com" class="px-2 py-1 border rounded-lg outline-none min-w-[12rem]" />
+            <input type="number" id="mq-ai-grant-amount" placeholder="e.g. 5" step="1" class="w-20 px-2 py-1 border rounded-lg outline-none font-mono" />
+            <button onclick="mainsAiGrantCredits()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg">Grant</button>
+            <span id="mq-ai-grant-status" class="text-slate-500"></span>
+          </div>
+          <p class="text-slate-400">For testing only, ahead of the real credit-pack / bundle-allowance economy.</p>
+        </div>
+
         <div id="mains-questions-admin-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 text-xs"></div>
 
         <form id="mains-question-editor" onsubmit="saveMainsQuestion(event)" class="hidden border-t pt-4 space-y-4 text-xs">
@@ -2021,9 +2047,22 @@
           <div id="mp-assess-rubric-list" class="space-y-1.5 text-sm"></div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-          <div class="bg-slate-50 border rounded-xl p-4 text-slate-500">
-            <b class="block text-slate-700 mb-1">🤖 AI-assisted feedback</b>
-            Coming soon — structured scoring against this rubric, powered by Claude.
+          <div class="bg-slate-50 border rounded-xl p-4" id="mp-ai-feedback-box">
+            <div class="flex items-center justify-between mb-1.5">
+              <b class="text-slate-700">🤖 AI-assisted feedback</b>
+              <span id="mp-ai-credits-label" class="text-slate-400 text-[11px]"></span>
+            </div>
+            <div id="mp-ai-feedback-idle">
+              <button onclick="requestMainsAiEvaluation()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-xs">Get AI feedback</button>
+              <p class="text-slate-400 mt-1.5">Uses 1 evaluation credit.</p>
+            </div>
+            <div id="mp-ai-feedback-loading" class="hidden text-slate-500">Evaluating your answer…</div>
+            <div id="mp-ai-feedback-error" class="hidden text-rose-600"></div>
+            <div id="mp-ai-feedback-result" class="hidden text-xs">
+              <p class="font-bold text-indigo-700 mb-1.5" id="mp-ai-score"></p>
+              <div id="mp-ai-criteria" class="space-y-1 mb-2"></div>
+              <p id="mp-ai-summary" class="text-slate-600"></p>
+            </div>
           </div>
           <div class="bg-slate-50 border rounded-xl p-4 text-slate-500">
             <b class="block text-slate-700 mb-1">👤 Personal review</b>
@@ -3328,39 +3367,39 @@ B. Article 360 | 2. Financial Emergency</pre>
   </footer>
 
   <!-- ================= JAVASCRIPT ARCHITECTURE ================= -->
-  <script src="js/00_supabase_init.js?v=54"></script>
-  <script src="js/01_exam_category_master.js?v=54"></script>
-  <script src="js/02_pricing_master_storage.js?v=54"></script>
-  <script src="js/02a_bundles.js?v=54"></script>
-  <script src="js/03_pricing_checkout.js?v=54"></script>
-  <script src="js/03a_site_branding.js?v=54"></script>
-  <script src="js/03b_dev_console.js?v=54"></script>
-  <script src="js/03c_bundles_admin_editor.js?v=54"></script>
-  <script src="js/03d_payment_claims.js?v=54"></script>
-  <script src="js/03e_feedback.js?v=54"></script>
-  <script src="js/03f_coupons.js?v=54"></script>
-  <script src="js/04_access_permission_checkers.js?v=54"></script>
-  <script src="js/05_student_entitlements_desk.js?v=54"></script>
-  <script src="js/06_exam_pages_test_ingestion.js?v=54"></script>
-  <script src="js/06a_test_paper_studio.js?v=54"></script>
-  <script src="js/06b_mains_studio.js?v=54"></script>
-  <script src="js/06c_mains_practice.js?v=54"></script>
-  <script src="js/07_pdf_vault.js?v=54"></script>
-  <script src="js/07a_pdf_publishing_wizard.js?v=54"></script>
-  <script src="js/08_word_page_creator.js?v=54"></script>
-  <script src="js/09_navigation_granular_controls.js?v=54"></script>
-  <script src="js/09a_site_search.js?v=54"></script>
-  <script src="js/10_omr_exam_engine.js?v=54"></script>
-  <script src="js/11_dashboard_review_modal.js?v=54"></script>
-  <script src="js/11a_study_planners.js?v=54"></script>
-  <script src="js/11c_dashboard_access_layers.js?v=54"></script>
-  <script src="js/11d_study_planner_admin_csv.js?v=54"></script>
-  <script src="js/11b_practice_mistakes_topic_builder.js?v=54"></script>
-  <script src="js/12_authentication_export.js?v=54"></script>
-  <script src="js/12a_email.js?v=54"></script>
-  <script src="js/12b_home_page_configuration.js?v=54"></script>
-  <script src="js/13_announcements.js?v=54"></script>
-  <script src="js/14_student_directory_admin.js?v=54"></script>
-  <script src="js/15_backup_export_restore.js?v=54"></script>
+  <script src="js/00_supabase_init.js?v=55"></script>
+  <script src="js/01_exam_category_master.js?v=55"></script>
+  <script src="js/02_pricing_master_storage.js?v=55"></script>
+  <script src="js/02a_bundles.js?v=55"></script>
+  <script src="js/03_pricing_checkout.js?v=55"></script>
+  <script src="js/03a_site_branding.js?v=55"></script>
+  <script src="js/03b_dev_console.js?v=55"></script>
+  <script src="js/03c_bundles_admin_editor.js?v=55"></script>
+  <script src="js/03d_payment_claims.js?v=55"></script>
+  <script src="js/03e_feedback.js?v=55"></script>
+  <script src="js/03f_coupons.js?v=55"></script>
+  <script src="js/04_access_permission_checkers.js?v=55"></script>
+  <script src="js/05_student_entitlements_desk.js?v=55"></script>
+  <script src="js/06_exam_pages_test_ingestion.js?v=55"></script>
+  <script src="js/06a_test_paper_studio.js?v=55"></script>
+  <script src="js/06b_mains_studio.js?v=55"></script>
+  <script src="js/06c_mains_practice.js?v=55"></script>
+  <script src="js/07_pdf_vault.js?v=55"></script>
+  <script src="js/07a_pdf_publishing_wizard.js?v=55"></script>
+  <script src="js/08_word_page_creator.js?v=55"></script>
+  <script src="js/09_navigation_granular_controls.js?v=55"></script>
+  <script src="js/09a_site_search.js?v=55"></script>
+  <script src="js/10_omr_exam_engine.js?v=55"></script>
+  <script src="js/11_dashboard_review_modal.js?v=55"></script>
+  <script src="js/11a_study_planners.js?v=55"></script>
+  <script src="js/11c_dashboard_access_layers.js?v=55"></script>
+  <script src="js/11d_study_planner_admin_csv.js?v=55"></script>
+  <script src="js/11b_practice_mistakes_topic_builder.js?v=55"></script>
+  <script src="js/12_authentication_export.js?v=55"></script>
+  <script src="js/12a_email.js?v=55"></script>
+  <script src="js/12b_home_page_configuration.js?v=55"></script>
+  <script src="js/13_announcements.js?v=55"></script>
+  <script src="js/14_student_directory_admin.js?v=55"></script>
+  <script src="js/15_backup_export_restore.js?v=55"></script>
 </body>
 </html>
