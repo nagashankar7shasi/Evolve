@@ -55,7 +55,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
   <!-- Add Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="css/main.css?v=51">
+  <link rel="stylesheet" href="css/main.css?v=52">
 
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col select-none">
@@ -526,9 +526,9 @@
 
     <div class="flex flex-col lg:flex-row gap-6 items-start">
       <!-- Task menu -->
-      <aside class="hidden lg:block w-56 shrink-0 sticky top-20 bg-white border border-slate-200 rounded-2xl p-3 text-xs max-h-[calc(100vh-6rem)] overflow-y-auto" aria-label="Dev Console sections"><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Overview</div><button type="button" data-panel-link="overview" onclick="showAdminPanel('overview')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🏠</span><span class="flex-1">Overview</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Payments</div><button type="button" data-panel-link="payments" onclick="showAdminPanel('payments')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🧾</span><span class="flex-1">Verify payments</span><span class="admin-pending-badge hidden min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-black flex items-center justify-center"></span></button><button type="button" data-panel-link="revenue" onclick="showAdminPanel('revenue')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📈</span><span class="flex-1">Revenue & reports</span></button><button type="button" data-panel-link="upi" onclick="showAdminPanel('upi')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">💳</span><span class="flex-1">UPI details</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Website</div><button type="button" data-panel-link="branding" onclick="showAdminPanel('branding')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🎨</span><span class="flex-1">Site branding</span></button><button type="button" data-panel-link="home" onclick="showAdminPanel('home')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🏠</span><span class="flex-1">Home page</span></button><button type="button" data-panel-link="pages" onclick="showAdminPanel('pages')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📝</span><span class="flex-1">Pages</span></button><button type="button" data-panel-link="menus" onclick="showAdminPanel('menus')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🧭</span><span class="flex-1">Menus</span></button><button type="button" data-panel-link="announcements" onclick="showAdminPanel('announcements')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📣</span><span class="flex-1">Announcements</span></button><button type="button" data-panel-link="pdfs" onclick="showAdminPanel('pdfs')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📄</span><span class="flex-1">PDF vault</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Tests & planners</div><button type="button" data-panel-link="examcats" onclick="showAdminPanel('examcats')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🏷️</span><span class="flex-1">Exam categories</span></button><button type="button" data-panel-link="tests" onclick="showAdminPanel('tests')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🗂️</span><span class="flex-1">Test papers</span></button><button type="button" data-panel-link="planners" onclick="showAdminPanel('planners')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">✅</span><span class="flex-1">Study planners</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Products & access</div><button type="button" data-panel-link="bundles" onclick="showAdminPanel('bundles')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📦</span><span class="flex-1">Bundles & passes</span></button><button type="button" data-panel-link="coupons" onclick="showAdminPanel('coupons')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🏷️</span><span class="flex-1">Coupons & promos</span></button><button type="button" data-panel-link="access" onclick="showAdminPanel('access')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🎚️</span><span class="flex-1">Dashboard access</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Students</div><button type="button" data-panel-link="students" onclick="showAdminPanel('students')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🎓</span><span class="flex-1">Student directory</span></button><button type="button" data-panel-link="feedback" onclick="showAdminPanel('feedback')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">💬</span><span class="flex-1">Feedback</span><span id="feedback-nav-badge" class="hidden min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black flex items-center justify-center"></span></button><button type="button" data-panel-link="entitlements" onclick="showAdminPanel('entitlements')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🔑</span><span class="flex-1">Access desk</span></button><button type="button" data-panel-link="login" onclick="showAdminPanel('login')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🔐</span><span class="flex-1">Login & OTP</span></button><button type="button" data-panel-link="email" onclick="showAdminPanel('email')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📧</span><span class="flex-1">Email tools</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Settings</div><button type="button" data-panel-link="account" onclick="showAdminPanel('account')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🛡️</span><span class="flex-1">Admin account</span></button><button type="button" data-panel-link="backup" onclick="showAdminPanel('backup')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">💾</span><span class="flex-1">Backup & restore</span></button></div></aside>
+      <aside class="hidden lg:block w-56 shrink-0 sticky top-20 bg-white border border-slate-200 rounded-2xl p-3 text-xs max-h-[calc(100vh-6rem)] overflow-y-auto" aria-label="Dev Console sections"><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Overview</div><button type="button" data-panel-link="overview" onclick="showAdminPanel('overview')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🏠</span><span class="flex-1">Overview</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Payments</div><button type="button" data-panel-link="payments" onclick="showAdminPanel('payments')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🧾</span><span class="flex-1">Verify payments</span><span class="admin-pending-badge hidden min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-black flex items-center justify-center"></span></button><button type="button" data-panel-link="revenue" onclick="showAdminPanel('revenue')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📈</span><span class="flex-1">Revenue & reports</span></button><button type="button" data-panel-link="upi" onclick="showAdminPanel('upi')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">💳</span><span class="flex-1">UPI details</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Website</div><button type="button" data-panel-link="branding" onclick="showAdminPanel('branding')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🎨</span><span class="flex-1">Site branding</span></button><button type="button" data-panel-link="home" onclick="showAdminPanel('home')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🏠</span><span class="flex-1">Home page</span></button><button type="button" data-panel-link="pages" onclick="showAdminPanel('pages')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📝</span><span class="flex-1">Pages</span></button><button type="button" data-panel-link="menus" onclick="showAdminPanel('menus')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🧭</span><span class="flex-1">Menus</span></button><button type="button" data-panel-link="announcements" onclick="showAdminPanel('announcements')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📣</span><span class="flex-1">Announcements</span></button><button type="button" data-panel-link="pdfs" onclick="showAdminPanel('pdfs')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📄</span><span class="flex-1">PDF vault</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Tests & planners</div><button type="button" data-panel-link="examcats" onclick="showAdminPanel('examcats')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🏷️</span><span class="flex-1">Exam categories</span></button><button type="button" data-panel-link="tests" onclick="showAdminPanel('tests')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🗂️</span><span class="flex-1">Test papers</span></button><button type="button" data-panel-link="mains" onclick="showAdminPanel('mains')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">✍️</span><span class="flex-1">Mains question bank</span></button><button type="button" data-panel-link="planners" onclick="showAdminPanel('planners')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">✅</span><span class="flex-1">Study planners</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Products & access</div><button type="button" data-panel-link="bundles" onclick="showAdminPanel('bundles')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📦</span><span class="flex-1">Bundles & passes</span></button><button type="button" data-panel-link="coupons" onclick="showAdminPanel('coupons')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🏷️</span><span class="flex-1">Coupons & promos</span></button><button type="button" data-panel-link="access" onclick="showAdminPanel('access')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🎚️</span><span class="flex-1">Dashboard access</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Students</div><button type="button" data-panel-link="students" onclick="showAdminPanel('students')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🎓</span><span class="flex-1">Student directory</span></button><button type="button" data-panel-link="feedback" onclick="showAdminPanel('feedback')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">💬</span><span class="flex-1">Feedback</span><span id="feedback-nav-badge" class="hidden min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black flex items-center justify-center"></span></button><button type="button" data-panel-link="entitlements" onclick="showAdminPanel('entitlements')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🔑</span><span class="flex-1">Access desk</span></button><button type="button" data-panel-link="login" onclick="showAdminPanel('login')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🔐</span><span class="flex-1">Login & OTP</span></button><button type="button" data-panel-link="email" onclick="showAdminPanel('email')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📧</span><span class="flex-1">Email tools</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Settings</div><button type="button" data-panel-link="account" onclick="showAdminPanel('account')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🛡️</span><span class="flex-1">Admin account</span></button><button type="button" data-panel-link="backup" onclick="showAdminPanel('backup')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">💾</span><span class="flex-1">Backup & restore</span></button></div></aside>
       <label class="lg:hidden w-full text-xs font-bold text-slate-700">Go to
-        <select id="admin-panel-select" onchange="showAdminPanel(this.value)" class="mt-1 w-full px-3 py-2 border rounded-lg bg-white text-sm"><optgroup label="Overview"><option value="overview">Overview</option></optgroup><optgroup label="Payments"><option value="payments">Verify payments</option><option value="revenue">Revenue & reports</option><option value="upi">UPI details</option></optgroup><optgroup label="Website"><option value="branding">Site branding</option><option value="home">Home page</option><option value="pages">Pages</option><option value="menus">Menus</option><option value="announcements">Announcements</option><option value="pdfs">PDF vault</option></optgroup><optgroup label="Tests & planners"><option value="examcats">Exam categories</option><option value="tests">Test papers</option><option value="planners">Study planners</option></optgroup><optgroup label="Products & access"><option value="bundles">Bundles & passes</option><option value="coupons">Coupons & promos</option><option value="access">Dashboard access</option></optgroup><optgroup label="Students"><option value="students">Student directory</option><option value="feedback">Feedback</option><option value="entitlements">Access desk</option><option value="login">Login & OTP</option><option value="email">Email tools</option></optgroup><optgroup label="Settings"><option value="account">Admin account</option><option value="backup">Backup & restore</option></optgroup></select>
+        <select id="admin-panel-select" onchange="showAdminPanel(this.value)" class="mt-1 w-full px-3 py-2 border rounded-lg bg-white text-sm"><optgroup label="Overview"><option value="overview">Overview</option></optgroup><optgroup label="Payments"><option value="payments">Verify payments</option><option value="revenue">Revenue & reports</option><option value="upi">UPI details</option></optgroup><optgroup label="Website"><option value="branding">Site branding</option><option value="home">Home page</option><option value="pages">Pages</option><option value="menus">Menus</option><option value="announcements">Announcements</option><option value="pdfs">PDF vault</option></optgroup><optgroup label="Tests & planners"><option value="examcats">Exam categories</option><option value="tests">Test papers</option><option value="mains">Mains question bank</option><option value="planners">Study planners</option></optgroup><optgroup label="Products & access"><option value="bundles">Bundles & passes</option><option value="coupons">Coupons & promos</option><option value="access">Dashboard access</option></optgroup><optgroup label="Students"><option value="students">Student directory</option><option value="feedback">Feedback</option><option value="entitlements">Access desk</option><option value="login">Login & OTP</option><option value="email">Email tools</option></optgroup><optgroup label="Settings"><option value="account">Admin account</option><option value="backup">Backup & restore</option></optgroup></select>
       </label>
 
       <div id="admin-panels" class="flex-1 min-w-0 w-full space-y-6">
@@ -1769,6 +1769,88 @@
           </div>
           <div id="tests-catalog-list" class="space-y-2 text-xs max-h-96 overflow-y-auto"></div>
         </div>
+      </div>
+
+      <!-- PANEL: MAINS QUESTION BANK -->
+      <div data-panel="mains" id="mains-admin" class="bg-white p-6 rounded-2xl border border-indigo-300 shadow-sm space-y-4 lg:col-span-2">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
+          <div>
+            <h3 class="font-bold text-base text-slate-900">✍️ Mains Question Bank</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Descriptive-answer questions for KAS and UPSC CSE Mains, each with a model answer and a weighted rubric used by self-assessment and AI evaluation alike.</p>
+          </div>
+          <button onclick="editMainsQuestion(null)" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow">+ New question</button>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <select id="mq-filter-category" onchange="refreshMainsSubjectFilterOptions(); mainsAdminFilterChanged()" class="px-2 py-1.5 border rounded-lg bg-white outline-none">
+            <option value="">All exams</option>
+            <option value="kpsc_kas">KPSC KAS</option>
+            <option value="upsc_cse">UPSC CSE</option>
+          </select>
+          <select id="mq-filter-subject" onchange="mainsAdminFilterChanged()" class="px-2 py-1.5 border rounded-lg bg-white outline-none">
+            <option value="">All subjects</option>
+          </select>
+          <input type="search" id="mq-filter-search" oninput="mainsAdminFilterChanged()" placeholder="Search question text…" class="flex-1 min-w-[10rem] px-2.5 py-1.5 border rounded-lg outline-none" />
+          <span id="mains-questions-count" class="text-slate-400 whitespace-nowrap"></span>
+        </div>
+        <div id="mains-questions-admin-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 text-xs"></div>
+
+        <form id="mains-question-editor" onsubmit="saveMainsQuestion(event)" class="hidden border-t pt-4 space-y-4 text-xs">
+          <div class="flex items-center justify-between">
+            <h4 id="mains-question-editor-title" class="font-bold text-sm text-slate-900">New question</h4>
+            <button type="button" onclick="closeMainsQuestionEditor()" class="text-slate-500 hover:underline">Cancel</button>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Exam</label>
+              <select id="mq-category" onchange="populateMainsSubjectSelect('')" class="w-full px-2.5 py-1.5 border rounded-lg bg-white outline-none"></select>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Subject</label>
+              <select id="mq-subject" onchange="mainsSubjectChanged()" class="w-full px-2.5 py-1.5 border rounded-lg bg-white outline-none"></select>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Marks</label>
+              <input type="number" id="mq-marks" required min="0" step="1" class="w-full px-2.5 py-1.5 border rounded-lg outline-none font-mono font-bold" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Word limit <span class="font-normal text-slate-400">(optional)</span></label>
+              <input type="number" id="mq-word-limit" min="1" step="1" placeholder="e.g. 250" class="w-full px-2.5 py-1.5 border rounded-lg outline-none font-mono" />
+            </div>
+            <div class="md:col-span-4">
+              <label class="block font-bold text-slate-700 mb-1">Question</label>
+              <textarea id="mq-question" required rows="3" class="w-full px-2.5 py-1.5 border rounded-lg outline-none"></textarea>
+            </div>
+            <div class="md:col-span-4">
+              <label class="block font-bold text-slate-700 mb-1">Model answer</label>
+              <textarea id="mq-model-answer" rows="6" class="w-full px-2.5 py-1.5 border rounded-lg outline-none"></textarea>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Previous-year question? <span class="font-normal text-slate-400">(year, optional)</span></label>
+              <input type="number" id="mq-previous-year" min="1990" max="2099" step="1" placeholder="e.g. 2023" class="w-full px-2.5 py-1.5 border rounded-lg outline-none font-mono" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block font-bold text-slate-700 mb-1">Source note <span class="font-normal text-slate-400">(admin-facing, optional)</span></label>
+              <input type="text" id="mq-source-note" maxlength="120" placeholder="e.g. UPSC CSE 2023 GS1" class="w-full px-2.5 py-1.5 border rounded-lg outline-none" />
+            </div>
+            <div class="flex items-end">
+              <label class="flex items-center gap-2 cursor-pointer mb-1.5"><input type="checkbox" id="mq-active" checked class="rounded" /> Active</label>
+            </div>
+          </div>
+
+          <div class="p-3 bg-slate-50 border rounded-xl space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-slate-800">Rubric <span class="font-normal text-slate-400">(criterion + weight %, graded by both self-assessment and AI evaluation)</span></span>
+              <button type="button" onclick="addMainsRubricRow()" class="text-indigo-600 font-bold hover:underline">+ Add criterion</button>
+            </div>
+            <div id="mq-rubric-rows" class="space-y-1.5"></div>
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <button type="button" onclick="closeMainsQuestionEditor()" class="px-4 py-2 border border-slate-300 hover:bg-slate-50 font-bold rounded-lg">Cancel</button>
+            <button type="submit" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg">Save question</button>
+          </div>
+        </form>
       </div>
 
       <!-- SECTION 6: MENU MANAGER -->
@@ -3125,37 +3207,38 @@ B. Article 360 | 2. Financial Emergency</pre>
   </footer>
 
   <!-- ================= JAVASCRIPT ARCHITECTURE ================= -->
-  <script src="js/00_supabase_init.js?v=51"></script>
-  <script src="js/01_exam_category_master.js?v=51"></script>
-  <script src="js/02_pricing_master_storage.js?v=51"></script>
-  <script src="js/02a_bundles.js?v=51"></script>
-  <script src="js/03_pricing_checkout.js?v=51"></script>
-  <script src="js/03a_site_branding.js?v=51"></script>
-  <script src="js/03b_dev_console.js?v=51"></script>
-  <script src="js/03c_bundles_admin_editor.js?v=51"></script>
-  <script src="js/03d_payment_claims.js?v=51"></script>
-  <script src="js/03e_feedback.js?v=51"></script>
-  <script src="js/03f_coupons.js?v=51"></script>
-  <script src="js/04_access_permission_checkers.js?v=51"></script>
-  <script src="js/05_student_entitlements_desk.js?v=51"></script>
-  <script src="js/06_exam_pages_test_ingestion.js?v=51"></script>
-  <script src="js/06a_test_paper_studio.js?v=51"></script>
-  <script src="js/07_pdf_vault.js?v=51"></script>
-  <script src="js/07a_pdf_publishing_wizard.js?v=51"></script>
-  <script src="js/08_word_page_creator.js?v=51"></script>
-  <script src="js/09_navigation_granular_controls.js?v=51"></script>
-  <script src="js/09a_site_search.js?v=51"></script>
-  <script src="js/10_omr_exam_engine.js?v=51"></script>
-  <script src="js/11_dashboard_review_modal.js?v=51"></script>
-  <script src="js/11a_study_planners.js?v=51"></script>
-  <script src="js/11c_dashboard_access_layers.js?v=51"></script>
-  <script src="js/11d_study_planner_admin_csv.js?v=51"></script>
-  <script src="js/11b_practice_mistakes_topic_builder.js?v=51"></script>
-  <script src="js/12_authentication_export.js?v=51"></script>
-  <script src="js/12a_email.js?v=51"></script>
-  <script src="js/12b_home_page_configuration.js?v=51"></script>
-  <script src="js/13_announcements.js?v=51"></script>
-  <script src="js/14_student_directory_admin.js?v=51"></script>
-  <script src="js/15_backup_export_restore.js?v=51"></script>
+  <script src="js/00_supabase_init.js?v=52"></script>
+  <script src="js/01_exam_category_master.js?v=52"></script>
+  <script src="js/02_pricing_master_storage.js?v=52"></script>
+  <script src="js/02a_bundles.js?v=52"></script>
+  <script src="js/03_pricing_checkout.js?v=52"></script>
+  <script src="js/03a_site_branding.js?v=52"></script>
+  <script src="js/03b_dev_console.js?v=52"></script>
+  <script src="js/03c_bundles_admin_editor.js?v=52"></script>
+  <script src="js/03d_payment_claims.js?v=52"></script>
+  <script src="js/03e_feedback.js?v=52"></script>
+  <script src="js/03f_coupons.js?v=52"></script>
+  <script src="js/04_access_permission_checkers.js?v=52"></script>
+  <script src="js/05_student_entitlements_desk.js?v=52"></script>
+  <script src="js/06_exam_pages_test_ingestion.js?v=52"></script>
+  <script src="js/06a_test_paper_studio.js?v=52"></script>
+  <script src="js/06b_mains_studio.js?v=52"></script>
+  <script src="js/07_pdf_vault.js?v=52"></script>
+  <script src="js/07a_pdf_publishing_wizard.js?v=52"></script>
+  <script src="js/08_word_page_creator.js?v=52"></script>
+  <script src="js/09_navigation_granular_controls.js?v=52"></script>
+  <script src="js/09a_site_search.js?v=52"></script>
+  <script src="js/10_omr_exam_engine.js?v=52"></script>
+  <script src="js/11_dashboard_review_modal.js?v=52"></script>
+  <script src="js/11a_study_planners.js?v=52"></script>
+  <script src="js/11c_dashboard_access_layers.js?v=52"></script>
+  <script src="js/11d_study_planner_admin_csv.js?v=52"></script>
+  <script src="js/11b_practice_mistakes_topic_builder.js?v=52"></script>
+  <script src="js/12_authentication_export.js?v=52"></script>
+  <script src="js/12a_email.js?v=52"></script>
+  <script src="js/12b_home_page_configuration.js?v=52"></script>
+  <script src="js/13_announcements.js?v=52"></script>
+  <script src="js/14_student_directory_admin.js?v=52"></script>
+  <script src="js/15_backup_export_restore.js?v=52"></script>
 </body>
 </html>
