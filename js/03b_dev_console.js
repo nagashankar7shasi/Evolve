@@ -25,7 +25,7 @@
       if (id === 'backup') renderStorageUsage();
       if (id === 'payments') renderPaymentOrders();
       if (id === 'coupons') renderCouponsAdmin();
-      if (id === 'mains') { renderMainsQuestionsAdmin(); mainsAiSettingsInit(); mainsHumanEvalQueueInit(); }
+      if (id === 'mains') { renderMainsQuestionsAdmin(); mainsAiSettingsInit(); mainsHumanEvalQueueInit(); mainsAccessPriceInit(); }
       if (id === 'students') renderStudentDirectoryTable();
       if (id === 'home') renderHomeConfigAdmin();
       if (id === 'email') { renderEmailTemplatesAdmin(); setEmailTab('templates'); }
@@ -171,7 +171,7 @@
       const rowHtml = ([k, v]) => `<tr><td class="py-2 pr-3">${escapeHtml(k)}</td><td class="py-2 pr-3">${v.n}</td><td class="py-2 text-right font-mono font-bold">${rupees(v.sum)}</td></tr>`;
       const empty = '<tr><td colspan="3" class="py-4 text-center text-slate-400">No approved payments in this period.</td></tr>';
       document.getElementById('rev-by-item').innerHTML = group(o => o.title).map(rowHtml).join('') || empty;
-      const typeName = { pass: 'Bundles', paper: 'Single papers', page: 'Pages', pdf: 'PDFs' };
+      const typeName = { pass: 'Bundles', paper: 'Single papers', page: 'Pages', pdf: 'PDFs', mains: 'Mains access', mains_human_eval: 'Mains personal review' };
       document.getElementById('rev-by-type').innerHTML = group(o => typeName[o.type] || o.type).map(rowHtml).join('') || empty;
     }
 

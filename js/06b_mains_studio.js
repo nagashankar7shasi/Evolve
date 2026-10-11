@@ -12,6 +12,12 @@
     // pricingMaster/siteBranding/the AI-provider preference already use. This is what shows before
     // that setting has ever been saved.
     const MAINS_HUMAN_EVAL_DEFAULT_PRICE = 49;
+    // Fallback defaults for a standalone Mains-access purchase (app_settings key
+    // 'mains_access_price', value shape { kpsc_kas: 299, upsc_cse: 349 }) -- the price a student
+    // pays to unlock just the Mains question bank for one category, as an alternative to buying the
+    // full category Pass bundle (which also covers it -- see isMainsUnlockedForUser). Shown before
+    // that setting has ever been saved.
+    const MAINS_ACCESS_DEFAULT_PRICE = { kpsc_kas: 299, upsc_cse: 349 };
     let mainsQuestions = [];
     let editingMainsQuestionId = null;
     let mainsAdminFilterCategory = '';
@@ -604,6 +610,34 @@
 
     async function mainsHumanEvalQueueInit() {
       await Promise.all([mainsHumanEvalLoadPrice(), mainsHumanEvalLoadQueue()]);
+    }
+
+    // ---- Standalone Mains-access pricing (per category) ----
+    // Separate from the human-eval price above: this is what unlocks the Mains question bank itself
+    // (browsing/writing/self-assessment) for a student who doesn't hold a covering category Pass or
+    // All-Access bundle -- see isMainsUnlockedForUser() in 04_access_permission_checkers.js and
+    // openCheckout('mains', categoryId, ...) in 06c_mains_practice.js.
+    async function mainsAccessPriceInit() {
+      const stored = (await fetchCloudAppSetting('mains_access_price')) || {};
+      MAINS_CATEGORY_IDS.forEach(catId => {
+        const input = document.getElementById(`mq-mains-access-price-${catId}`);
+        if (input) input.value = stored[catId] != null ? stored[catId] : MAINS_ACCESS_DEFAULT_PRICE[catId];
+      });
+    }
+
+    async function mainsAccessPriceSave() {
+      const status = document.getElementById('mq-mains-access-price-status');
+      const current = (await fetchCloudAppSetting('mains_access_price')) || {};
+      const next = { ...current };
+      MAINS_CATEGORY_IDS.forEach(catId => {
+        const input = document.getElementById(`mq-mains-access-price-${catId}`);
+        if (input) next[catId] = Math.max(0, parseFloat(input.value) || 0);
+      });
+      const ok = await saveCloudAppSetting('mains_access_price', next);
+      if (status) {
+        status.innerText = ok ? '✓ Saved.' : 'Failed to save.';
+        setTimeout(() => { if (status.innerText.startsWith('✓')) status.innerText = ''; }, 5000);
+      }
     }
 
     async function mainsHumanEvalLoadPrice() {
