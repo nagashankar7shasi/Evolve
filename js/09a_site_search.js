@@ -141,6 +141,10 @@
       ['home', 'tests', 'dashboard', 'admin', 'custom-page', 'engine'].forEach(v => {
         document.getElementById(`view-${v}`).classList.add('hidden');
       });
+      // Mains Practice is a self-managed full-screen overlay (like the engine above), never a
+      // navigate() target itself -- just make sure leaving to any of the views above also closes it.
+      const mainsPracticeView = document.getElementById('view-mains-practice');
+      if (mainsPracticeView) mainsPracticeView.classList.add('hidden');
       document.getElementById(`view-${view}`).classList.remove('hidden');
     }
 
