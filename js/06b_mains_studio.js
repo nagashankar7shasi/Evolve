@@ -266,3 +266,246 @@
       mainsQuestions = mainsQuestions.filter(x => x.id !== id);
       renderMainsQuestionsAdmin();
     }
+
+    /* ----------------------------------------------------
+       Bulk upload (CSV file or pasted spreadsheet rows) -- mirrors the Test Paper Studio's
+       header-alias + unknown-header-mapping-UI pattern (studioNormalizeHeader, STUDIO_HEADER_ALIASES,
+       the studio-mapping-panel flow in 06a_test_paper_studio.js) so admins get the same safety net
+       here that fixed the earlier Exp_Image_URL alias bug there -- an unrecognized column is always
+       surfaced for the admin to map, never silently dropped or misread.
+
+       Deliberately a SIMPLER single-stage flow than the Test Paper Studio's CSV path, though: rows
+       are validated/normalized then upserted straight to Supabase (no local-staging-array + separate
+       "Publish" step), because the Mains Studio already has a full rich per-question edit form
+       (editMainsQuestion/saveMainsQuestion above) the admin can use to touch up any row right after a
+       bulk import -- a second staging layer on top of that would just be extra machinery for no real
+       benefit here.
+    ----------------------------------------------------- */
+    // Rubric is a variable-length array of {criterion, weight} pairs, which doesn't fit a fixed set of
+    // CSV columns without either capping how many criteria a question can have or producing a very
+    // sparse sheet (most questions have 2-4 criteria, some none). A single delimited text column reads
+    // naturally in a spreadsheet and round-trips cleanly: "Criterion:Weight; Criterion:Weight; ...".
+    function mainsParseRubricString(s) {
+      if (!s || !String(s).trim()) return [];
+      return String(s).split(';').map(part => part.trim()).filter(Boolean).map(part => {
+        const idx = part.lastIndexOf(':');
+        if (idx === -1) return { criterion: part, weight: 0 };
+        return { criterion: part.slice(0, idx).trim(), weight: Math.max(0, parseFloat(part.slice(idx + 1)) || 0) };
+      }).filter(r => r.criterion);
+    }
+    function mainsRubricToString(rubric) {
+      return (rubric || []).filter(r => r.criterion).map(r => `${r.criterion}:${r.weight}`).join('; ');
+    }
+
+    // Accepts the exam's own id ("kpsc_kas"), its live display name ("KPSC KAS (Gazetted)"), or loose
+    // shorthand ("KAS", "UPSC", "CSE", "IAS") -- reuses studioNormalizeHeader (lowercase + strip to
+    // [a-z0-9], defined in 06a_test_paper_studio.js, generic/standalone, loaded before this file) so a
+    // renamed category in EXAM_CATEGORIES still matches here without a code change.
+    function mainsResolveCategoryId(raw) {
+      const norm = studioNormalizeHeader(raw);
+      if (!norm) return '';
+      if (/kas|kpscka/.test(norm)) return 'kpsc_kas';
+      if (/upsc|cse|ias/.test(norm)) return 'upsc_cse';
+      return '';
+    }
+
+    const MAINS_HEADER_ALIASES = {
+      'category': 'categoryId', 'exam': 'categoryId', 'categoryid': 'categoryId', 'examcategory': 'categoryId', 'examname': 'categoryId',
+      'subject': 'subject', 'topic': 'subject', 'tag': 'subject',
+      'question': 'question', 'questiontext': 'question', 'q': 'question', 'descriptivequestion': 'question', 'qntext': 'question', 'qn': 'question',
+      'modelanswer': 'modelAnswer', 'answer': 'modelAnswer', 'modelans': 'modelAnswer', 'sampleanswer': 'modelAnswer', 'idealanswer': 'modelAnswer',
+      'marks': 'marks', 'mark': 'marks', 'totalmarks': 'marks',
+      'wordlimit': 'wordLimit', 'limit': 'wordLimit', 'words': 'wordLimit',
+      'previousyear': 'previousYear', 'pyq': 'previousYear', 'year': 'previousYear', 'askedinyear': 'previousYear',
+      'sourcenote': 'sourceNote', 'source': 'sourceNote', 'note': 'sourceNote', 'notes': 'sourceNote',
+      'rubric': 'rubric', 'rubriccriteria': 'rubric', 'criteria': 'rubric', 'gradingrubric': 'rubric',
+      'active': 'active', 'status': 'active', 'isactive': 'active'
+    };
+    const MAINS_FIELD_LABELS = {
+      categoryId: 'Exam (KPSC KAS / UPSC CSE)', subject: 'Subject', question: 'Question',
+      modelAnswer: 'Model Answer', marks: 'Marks', wordLimit: 'Word Limit',
+      previousYear: 'Previous Year (PYQ)', sourceNote: 'Source Note',
+      rubric: 'Rubric ("Criterion:Weight; Criterion:Weight")', active: 'Active (Yes/No)',
+      _ignore: '— Ignore this column —'
+    };
+    const MAINS_CSV_HEADERS = ['Category', 'Subject', 'Question', 'Model_Answer', 'Marks', 'Word_Limit', 'Previous_Year', 'Source_Note', 'Rubric', 'Active'];
+
+    let mainsPendingMapping = null;
+
+    function mainsIngestCsvFile(input) {
+      if (!input.files || !input.files[0]) return;
+      Papa.parse(input.files[0], {
+        header: true, skipEmptyLines: true,
+        complete: (res) => mainsIngestParsed(res.meta.fields || [], res.data),
+        error: (err) => alert('CSV parse failed: ' + err.message)
+      });
+      input.value = ''; // allow re-selecting the same file
+    }
+
+    function mainsIngestPasted() {
+      const txt = document.getElementById('mq-paste-box').value.trim();
+      if (!txt) return alert('Paste some rows first.');
+      const firstLine = txt.split(/\r?\n/, 1)[0];
+      const delim = firstLine.includes('\t') ? '\t' : ','; // Excel/Sheets paste is tab-separated; comma otherwise
+      const res = Papa.parse(txt, { header: true, skipEmptyLines: true, delimiter: delim });
+      if (!res.data || !res.data.length) return alert("Couldn't find any rows to import.");
+      mainsIngestParsed(res.meta.fields || [], res.data);
+      document.getElementById('mq-paste-box').value = '';
+    }
+
+    function mainsIngestParsed(headers, rows) {
+      const mapping = {}; // headerName -> canonicalField or '_unknown'
+      const unknown = [];
+      headers.forEach(h => {
+        if (!h) return;
+        const norm = studioNormalizeHeader(h);
+        if (MAINS_HEADER_ALIASES[norm]) mapping[h] = MAINS_HEADER_ALIASES[norm];
+        else { mapping[h] = '_unknown'; unknown.push(h); }
+      });
+      if (!unknown.length) return mainsApplyMappingAndAdd(mapping, rows);
+
+      mainsPendingMapping = { headers, mapping, rows };
+      const box = document.getElementById('mq-mapping-panel');
+      const list = document.getElementById('mq-mapping-rows');
+      list.innerHTML = unknown.map(h => `
+        <div class="flex items-center gap-2">
+          <span class="font-mono text-[11px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded">${escapeHtml(h)}</span>
+          <span class="text-slate-500">→</span>
+          <select data-map-header="${escapeHtml(h)}" class="px-2 py-1 border rounded bg-white outline-none flex-1">
+            <option value="_ignore">— Ignore this column —</option>
+            ${Object.entries(MAINS_FIELD_LABELS).filter(([k]) => k !== '_ignore').map(([k, lbl]) => `<option value="${k}">${escapeHtml(lbl)}</option>`).join('')}
+          </select>
+        </div>
+      `).join('');
+      box.classList.remove('hidden');
+      box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    async function mainsApplyMapping() {
+      if (!mainsPendingMapping) return;
+      document.querySelectorAll('[data-map-header]').forEach(sel => {
+        const h = sel.dataset.mapHeader;
+        mainsPendingMapping.mapping[h] = sel.value;
+      });
+      // Awaited (not fire-and-forget) so a caller that awaits this -- e.g. a test, or any future
+      // code that needs to know the upsert actually finished -- isn't told it's done before the
+      // cloud write + local-array update have actually happened.
+      await mainsApplyMappingAndAdd(mainsPendingMapping.mapping, mainsPendingMapping.rows);
+      mainsPendingMapping = null;
+      document.getElementById('mq-mapping-panel').classList.add('hidden');
+    }
+
+    async function mainsApplyMappingAndAdd(mapping, rows) {
+      // Rows with no recognizable exam column fall back to whatever exam the admin has filtered to
+      // (defaulting to KAS) rather than being rejected outright -- a sheet of KAS-only questions
+      // reasonably has no "Category" column at all.
+      const defaultCategory = MAINS_CATEGORY_IDS.includes(mainsAdminFilterCategory) ? mainsAdminFilterCategory : 'kpsc_kas';
+      const toUpsert = [];
+      const seenSubjectsByCategory = {};
+      const weightWarnings = [];
+      let skipped = 0;
+
+      rows.forEach((row, i) => {
+        const raw = { categoryId: '', subject: '', question: '', modelAnswer: '', marks: '', wordLimit: '', previousYear: '', sourceNote: '', rubric: '', active: '' };
+        let sawActive = false;
+        for (const [colName, field] of Object.entries(mapping)) {
+          const val = row[colName];
+          if (val == null || field === '_unknown' || field === '_ignore') continue;
+          if (field === 'active') sawActive = true;
+          if (field in raw) raw[field] = val;
+        }
+
+        const question = String(raw.question || '').trim();
+        // Skip a row with nothing recognizable as a question -- but only count it as "skipped" (and
+        // worth mentioning) if the row wasn't just entirely blank to begin with.
+        if (!question) { if (Object.values(row).some(v => String(v || '').trim())) skipped++; return; }
+
+        const categoryId = mainsResolveCategoryId(raw.categoryId) || defaultCategory;
+        // Canonicalize against the same examSubjects[categoryId] registry the Test Paper Studio uses,
+        // so "polity" and "Polity" from different uploads collapse onto one canonical spelling.
+        const subjectRaw = String(raw.subject || '').trim();
+        const subject = subjectRaw ? canonicalizeSubject(categoryId, subjectRaw) : '';
+        if (subject) (seenSubjectsByCategory[categoryId] = seenSubjectsByCategory[categoryId] || new Set()).add(subject);
+
+        const marksRaw = String(raw.marks || '').trim();
+        const marks = marksRaw ? Math.max(0, parseFloat(marksRaw) || 0) : 10; // schema default when left blank
+        const wlNum = parseInt(String(raw.wordLimit || '').trim(), 10);
+        const wordLimit = Number.isInteger(wlNum) && wlNum > 0 ? wlNum : null;
+        const pyNum = parseInt(String(raw.previousYear || '').trim(), 10);
+        const previousYear = (Number.isInteger(pyNum) && pyNum > 1900) ? pyNum : null;
+        const rubric = mainsParseRubricString(raw.rubric);
+        const activeStr = String(raw.active || '').trim().toLowerCase();
+        const active = sawActive ? !['no', 'false', '0', 'inactive', 'off'].includes(activeStr) : true;
+
+        const weightTotal = rubric.reduce((sum, r) => sum + r.weight, 0);
+        if (rubric.length && Math.abs(weightTotal - 100) > 0.5) weightWarnings.push({ question, weightTotal });
+
+        toUpsert.push({
+          id: 'mq_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 6),
+          category_id: categoryId, subject, question, model_answer: String(raw.modelAnswer || '').trim(),
+          rubric, marks, word_limit: wordLimit, previous_year: previousYear,
+          source_note: String(raw.sourceNote || '').trim(), active
+        });
+      });
+
+      if (!toUpsert.length) {
+        return alert(skipped ? `No valid rows found -- ${skipped} row(s) had no question text and were skipped.` : 'No rows to import.');
+      }
+
+      const { error } = await supabaseClient.from('mains_questions').upsert(toUpsert);
+      if (error) return alert('Failed to upload questions to cloud: ' + error.message);
+
+      Object.entries(seenSubjectsByCategory).forEach(([cat, set]) => registerSubjectsIfNew(cat, [...set]));
+
+      const now = new Date().toISOString();
+      toUpsert.forEach(data => {
+        mainsQuestions.unshift({
+          id: data.id, categoryId: data.category_id, subject: data.subject, question: data.question,
+          modelAnswer: data.model_answer, rubric: data.rubric, marks: data.marks, wordLimit: data.word_limit,
+          previousYear: data.previous_year, sourceNote: data.source_note, active: data.active, createdAt: now
+        });
+      });
+      renderMainsQuestionsAdmin();
+
+      let msg = `${toUpsert.length} question${toUpsert.length === 1 ? '' : 's'} added.` + (skipped ? ` ${skipped} blank row(s) skipped.` : '');
+      if (weightWarnings.length) {
+        msg += `\n\n⚠️ ${weightWarnings.length} question(s) have a rubric that doesn't add up to 100% -- review and fix in the editor:\n` +
+          weightWarnings.slice(0, 8).map(w => `• "${w.question.slice(0, 70)}" -- totals ${w.weightTotal}%`).join('\n') +
+          (weightWarnings.length > 8 ? `\n…and ${weightWarnings.length - 8} more.` : '');
+      }
+      alert(msg);
+    }
+
+    // ---- Template download / round-trip export (same CSV shape both directions) ----
+    function mainsRowsToCsv(rows) {
+      return rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    }
+    function mainsTriggerCsvDownload(csvText, filename) {
+      const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+    function mainsDownloadTemplate() {
+      const sample = [
+        MAINS_CSV_HEADERS,
+        ['KPSC KAS', 'Polity', 'Discuss the significance of the 73rd Constitutional Amendment in strengthening local self-government in India.', 'The 73rd Amendment (1992) institutionalized Panchayati Raj as a three-tier system...', '15', '250', '2023', 'KAS Mains 2023 GS2', 'Historical context:20; Constitutional provisions:30; Impact & critique:50', 'Yes'],
+        ['UPSC CSE', 'International Relations', 'Examine the evolving dynamics of India-China relations in the context of regional security.', 'India-China relations are shaped by historical border disputes, economic interdependence...', '12', '200', '', '', 'Facts & background:40; Analysis:60', 'Yes']
+      ];
+      mainsTriggerCsvDownload(mainsRowsToCsv(sample), 'mains_question_template.csv');
+    }
+    // Exports whatever the current filter shows -- lets an admin grab a CSV of a subset (e.g. one
+    // exam/subject), fix things in a spreadsheet, and re-upload the corrected file.
+    function mainsDownloadCurrentCsv() {
+      const rows = mainsFilteredQuestions();
+      if (!rows.length) return alert('No questions to export with the current filter.');
+      const catName = (id) => EXAM_CATEGORIES[id] ? EXAM_CATEGORIES[id].name : id;
+      const data = rows.map(q => [
+        catName(q.categoryId), q.subject || '', q.question, q.modelAnswer || '',
+        q.marks, q.wordLimit != null ? q.wordLimit : '', q.previousYear != null ? q.previousYear : '', q.sourceNote || '',
+        mainsRubricToString(q.rubric), q.active ? 'Yes' : 'No'
+      ]);
+      mainsTriggerCsvDownload(mainsRowsToCsv([MAINS_CSV_HEADERS, ...data]), 'mains_questions_export.csv');
+    }
