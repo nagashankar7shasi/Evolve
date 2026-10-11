@@ -24,6 +24,7 @@
       if (id === 'revenue') renderRevenue();
       if (id === 'backup') renderStorageUsage();
       if (id === 'payments') renderPaymentOrders();
+      if (id === 'coupons') renderCouponsAdmin();
       if (id === 'students') renderStudentDirectoryTable();
       if (id === 'home') renderHomeConfigAdmin();
       if (id === 'email') { renderEmailTemplatesAdmin(); setEmailTab('templates'); }

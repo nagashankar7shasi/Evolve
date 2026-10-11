@@ -247,6 +247,7 @@
         return;
       }
       checkoutItem = { type, id, title, price };
+      resetCheckoutCoupon();
       document.getElementById('checkout-utr').value = '';
       document.getElementById('checkout-utr-error').classList.add('hidden');
       const pending = paymentOrders.find(o => o.email === normalizeEmail(currentUser.email) && o.type === type && o.itemId === id && o.status === 'pending');
@@ -308,6 +309,11 @@
       // <img> src above. On desktop this just does nothing (no upi:// handler) -- harmless.
       document.getElementById('checkout-upi-app-btn').href = upiUrl;
       document.getElementById('checkout-upi-app-btn-label').innerText = `Pay ₹${price} via UPI App`;
+
+      // If an eligible no-code (early-bird) coupon exists for this item, this re-renders the coupon
+      // box, bill total and UPI amount/QR with the discount already applied -- before the student
+      // sees the modal at all, nothing to type or click.
+      autoApplyCheckoutCoupon();
 
       openModal('checkout-modal');
     }

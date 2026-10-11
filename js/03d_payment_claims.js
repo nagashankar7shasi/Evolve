@@ -53,6 +53,11 @@ async function submitPaymentClaim() {
 
   // Prepare the order object matching your Supabase columns
   const email = normalizeEmail(currentUser.email);
+  // `amount` is what's actually charged -- if a coupon (typed or auto-applied early-bird) is active
+  // in the checkout modal right now, that's the discounted finalAmount, not the item's list price.
+  // original_amount/coupon_code/discount_amount only get set when a coupon was actually applied, so
+  // every pre-existing order (and every order with no coupon) keeps original_amount = null, which is
+  // exactly the "no coupon was used" signal the admin UI and revenue math rely on.
   const order = {
     id: 'ord_' + Date.now(),
     email: email,
@@ -60,10 +65,13 @@ async function submitPaymentClaim() {
     type: checkoutItem.type,
     item_id: checkoutItem.id,
     title: checkoutItem.title,
-    amount: checkoutItem.price,
+    amount: checkoutCoupon ? checkoutCoupon.finalAmount : checkoutItem.price,
     utr: utr,
     status: 'pending',
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    coupon_code: checkoutCoupon ? (checkoutCoupon.coupon.code || checkoutCoupon.coupon.label || null) : null,
+    discount_amount: checkoutCoupon ? checkoutCoupon.discount : 0,
+    original_amount: checkoutCoupon ? checkoutItem.price : null
   };
 
   // Change the button text to show loading state
@@ -87,7 +95,11 @@ async function submitPaymentClaim() {
   }
 
   // Update the local UI immediately so the user sees success
-  paymentOrders.unshift({ ...order, itemId: order.item_id, createdAt: order.created_at }); 
+  paymentOrders.unshift({
+    ...order, itemId: order.item_id, createdAt: order.created_at,
+    couponCode: order.coupon_code, discountAmount: order.discount_amount, originalAmount: order.original_amount
+  });
+  resetCheckoutCoupon();
   showCheckoutStatus(order);
   renderPaymentOrders();
   renderDashboard();
@@ -118,7 +130,10 @@ async function submitPaymentClaim() {
       adminNote: o.admin_note || null,
       refundedAmount: +o.refunded_amount || 0,
       refundedAt: o.refunded_at || null,
-      refundReason: o.refund_reason || null
+      refundReason: o.refund_reason || null,
+      couponCode: o.coupon_code || null,
+      discountAmount: +o.discount_amount || 0,
+      originalAmount: o.original_amount != null ? +o.original_amount : null
     }));
     
     // Refresh the admin dashboard UI with the cloud data
@@ -209,8 +224,11 @@ async function approveOrder(orderId) {
   const dupWarning = dups.length
     ? `\n\n⚠️ WARNING: this UPI reference also appears on ${dups.length} other order${dups.length > 1 ? 's' : ''} (${dups.slice(0, 3).map(d => `${d.email} — ${ORDER_STATUS_LABEL[d.status] || d.status}`).join('; ')}${dups.length > 3 ? '; …' : ''}).\nDouble-check this isn't a reused or guessed reference before approving.`
     : '';
+  // Per-coupon limits can only be checked authoritatively here (admin session can read
+  // coupon_redemptions; a student's browser can't) -- see couponApprovalWarning in 03f_coupons.js.
+  const couponWarning = order.couponCode ? couponApprovalWarning(order) : '';
 
-  if (!confirm(`${complimentary ? 'Approve as COMPLIMENTARY (no payment received)' : `Approve ₹${order.amount}`} from ${order.email}?\n\nUPI ref: ${order.utr}\nUnlocks: ${order.title}${complimentary ? '' : '\n\nOnly approve after you\'ve seen this reference in your bank statement.'}${dupWarning}`)) return;
+  if (!confirm(`${complimentary ? 'Approve as COMPLIMENTARY (no payment received)' : `Approve ₹${order.amount}`} from ${order.email}?\n\nUPI ref: ${order.utr}\nUnlocks: ${order.title}${complimentary ? '' : '\n\nOnly approve after you\'ve seen this reference in your bank statement.'}${dupWarning}${couponWarning}`)) return;
 
   const decidedAt = new Date().toISOString();
   const receiptNo = nextReceiptNo();
@@ -229,6 +247,10 @@ async function approveOrder(orderId) {
   order.decidedAt = decidedAt;
   order.receiptNo = receiptNo;
   order.complimentary = complimentary;
+
+  // Only now -- at approval, never at submit -- does a coupon's redemption actually count (see
+  // sql/add_coupons_and_redemptions.sql for why). Best-effort: doesn't block or undo the approval above.
+  if (order.couponCode) recordCouponRedemption(order);
 
   // Round 2: notify student — non-blocking, silent in demo mode
   sendAutoEmail('payment_approved', order.email, {
