@@ -172,6 +172,11 @@
     .word-canvas .kb-warn  { background: #fffbeb; border-color: #fde68a; border-left-color: #d97706; color: #78350f; }
     .word-canvas .kb-facts { background: #f5f3ff; border-color: #ddd6fe; border-left-color: #7c3aed; color: #3b0764; }
     .word-canvas .kb-table-wrap { position: relative; overflow-x: auto; margin: 1rem 0; border: 1px solid #e2e8f0; border-radius: 10px; }
+    /* Responsive 16:9 embed -- the padding-bottom % trick (classic "intrinsic ratio box") rather
+       than aspect-ratio, so this still works in the handful of older in-app webviews aspect-ratio
+       support can't be assumed on. The iframe itself is absolutely positioned to fill that box. */
+    .word-canvas .kb-video-wrap { position: relative; width: 100%; padding-bottom: 56.25%; margin: 1rem 0; border-radius: 10px; overflow: hidden; background: #0f172a; }
+    .word-canvas .kb-video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
     .word-canvas table.kb-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .word-canvas .kb-table th, .word-canvas .kb-table td { border-bottom: 1px solid #e2e8f0; border-right: 1px solid #f1f5f9; padding: 0.5rem 0.7rem; text-align: left; vertical-align: top; min-width: 80px; }
     .word-canvas .kb-table th { background: #f1f5f9; font-weight: 700; color: #0f172a; }
@@ -237,6 +242,10 @@
        toolbar that appears while the cursor sits in a cell -- easy to miss, and the only block
        type here without the same obvious ✕ every other block got. */
     #word-editor-canvas .kb-table-wrap .kb-block-delete { top: 6px; right: 6px; }
+    /* Same overlay, on a video embed -- the whole block is a non-editable island (no typeable
+       text inside it, unlike the table/columns wrappers above), so the button sits on top of the
+       iframe rather than beside editable content. */
+    #word-editor-canvas .kb-video-wrap .kb-block-delete { top: 6px; right: 6px; }
     /* Same overlay, on a multi-column block -- the block itself (.kb-cols/-3/-4) stays normal
        editable content (each column's text is typed into directly), only the button is an
        island. An absolutely-positioned grid child like this is taken out of normal grid flow, so
