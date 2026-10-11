@@ -11,11 +11,17 @@
     // a given category) is gated like test papers -- see isMainsUnlockedForUser() in
     // 04_access_permission_checkers.js -- and is linked from the student dashboard
     // (renderMainsDashboardCard, #dash-mains-section) now that access-control is wired in.
+    // Max size for an attached answer photo/PDF -- enforced here (fast feedback before upload even
+    // starts) AND server-side on the 'mains_answer_photos' storage bucket itself (file_size_limit +
+    // allowed_mime_types, set directly on the bucket -- see sql/limit_mains_answer_photos_bucket.sql)
+    // so a student can't bypass this by skipping the UI. Kept well under the admin PDF Vault's 25MB
+    // (full study documents) since this is one scanned answer, not a document.
+    const MAX_MAINS_ANSWER_FILE_BYTES = 10 * 1024 * 1024;
     let mainsSubmissions = [];        // this student's own submissions only (server-side .eq filter, even though RLS itself is public-read)
     let mainsPracticeFilterCategory = 'kpsc_kas';
     let mainsPracticeFilterSubject = '';
     let mainsPracticeCurrentQuestion = null; // question object currently being answered (write screen)
-    let mainsPracticeAnswerPhotoFile = null; // staged File, not yet uploaded
+    let mainsPracticeAnswerPhotoFile = null; // staged File (image or PDF), not yet uploaded
     let mainsPracticeCurrentSubmissionId = null; // submission currently shown on the self-assess screen (AI-feedback button target)
     let mainsAccessPriceCache = null; // lazy-loaded app_settings('mains_access_price'), {kpsc_kas, upsc_cse}
 
@@ -188,8 +194,8 @@
       document.getElementById('mp-write-rubric-hint').innerText = q.rubric.length
         ? `Covers: ${q.rubric.map(r => r.criterion).join(' · ')}` : '';
       document.getElementById('mp-answer-text').value = '';
-      document.getElementById('mp-answer-photo').value = '';
-      document.getElementById('mp-photo-preview').classList.add('hidden');
+      document.getElementById('mp-answer-file').value = '';
+      document.getElementById('mp-answer-file-preview').classList.add('hidden');
       document.getElementById('mp-submit-error').classList.add('hidden');
       mainsPracticeWordCount();
       mainsPracticeSwitchScreen('write');
@@ -202,18 +208,33 @@
       document.getElementById('mp-word-count').innerText = limit ? `${words} / ${limit} words` : `${words} words`;
     }
 
-    function mainsPracticeChoosePhoto(inputEl) {
+    // Accepts either a photo or a PDF scan of a handwritten answer. Validated client-side for fast
+    // feedback (type + size) -- the 'mains_answer_photos' storage bucket enforces the same size cap
+    // and mime allow-list server-side too, so this can't be bypassed by skipping the UI.
+    function mainsPracticeChooseAnswerFile(inputEl) {
       const file = inputEl.files[0];
       if (!file) return;
+      const isImage = file.type.startsWith('image/');
+      const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+      if (!isImage && !isPdf) {
+        alert('Please attach a photo (JPG/PNG) or a PDF.');
+        inputEl.value = '';
+        return;
+      }
+      if (file.size > MAX_MAINS_ANSWER_FILE_BYTES) {
+        alert(`"${file.name}" is ${(file.size / 1048576).toFixed(1)} MB. The limit is 10 MB -- try a lower-resolution scan or photo.`);
+        inputEl.value = '';
+        return;
+      }
       mainsPracticeAnswerPhotoFile = file;
-      document.getElementById('mp-photo-filename').innerText = file.name;
-      document.getElementById('mp-photo-preview').classList.remove('hidden');
+      document.getElementById('mp-answer-filename').innerText = `${file.name} (${(file.size / 1048576).toFixed(1)} MB)`;
+      document.getElementById('mp-answer-file-preview').classList.remove('hidden');
     }
 
     function mainsPracticeRemovePhoto() {
       mainsPracticeAnswerPhotoFile = null;
-      document.getElementById('mp-answer-photo').value = '';
-      document.getElementById('mp-photo-preview').classList.add('hidden');
+      document.getElementById('mp-answer-file').value = '';
+      document.getElementById('mp-answer-file-preview').classList.add('hidden');
     }
 
     async function submitMainsAnswer() {
@@ -222,7 +243,7 @@
       errBox.classList.add('hidden');
       if (!mainsPracticeCurrentQuestion || !currentUser) return;
       const answerText = document.getElementById('mp-answer-text').value.trim();
-      if (!answerText && !mainsPracticeAnswerPhotoFile) return showErr('Type an answer or attach a photo before submitting.');
+      if (!answerText && !mainsPracticeAnswerPhotoFile) return showErr('Type an answer or attach a photo/PDF before submitting.');
 
       const btn = document.querySelector('#mp-screen-write button[onclick="submitMainsAnswer()"]');
       const originalLabel = btn ? btn.innerText : '';
@@ -276,13 +297,21 @@
 
       const myAnswerEl = document.getElementById('mp-assess-my-answer');
       const myPhotoEl = document.getElementById('mp-assess-my-photo');
+      const myPdfLinkEl = document.getElementById('mp-assess-my-pdf-link');
       myAnswerEl.innerText = sub.answerText || (sub.answerImagePath ? '' : 'No answer text.');
       myPhotoEl.classList.add('hidden');
+      myPdfLinkEl.classList.add('hidden');
       if (sub.answerImagePath) {
+        const isPdf = /\.pdf$/i.test(sub.answerImagePath);
         const { data, error } = await supabaseClient.storage.from('mains_answer_photos').createSignedUrl(sub.answerImagePath, 300);
         if (!error && data && data.signedUrl) {
-          myPhotoEl.src = data.signedUrl;
-          myPhotoEl.classList.remove('hidden');
+          if (isPdf) {
+            myPdfLinkEl.href = data.signedUrl;
+            myPdfLinkEl.classList.remove('hidden');
+          } else {
+            myPhotoEl.src = data.signedUrl;
+            myPhotoEl.classList.remove('hidden');
+          }
         }
       }
 
