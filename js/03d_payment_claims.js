@@ -252,6 +252,11 @@ async function approveOrder(orderId) {
   // sql/add_coupons_and_redemptions.sql for why). Best-effort: doesn't block or undo the approval above.
   if (order.couponCode) recordCouponRedemption(order);
 
+  // Mains human-evaluation requests don't unlock anything via grantOrder()'s allow-lists above --
+  // approving the payment is what actually puts the submission into the admin's review queue (see
+  // activateMainsHumanEvalOrder in 06b_mains_studio.js).
+  if (order.type === 'mains_human_eval') await activateMainsHumanEvalOrder(order);
+
   // Round 2: notify student — non-blocking, silent in demo mode
   sendAutoEmail('payment_approved', order.email, {
     name: displayNameFor(order.email, order.name),
