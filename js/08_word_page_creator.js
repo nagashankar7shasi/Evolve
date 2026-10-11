@@ -182,6 +182,24 @@
       applyColsWidth(block);
     }
 
+    // Pulls the 11-char video ID out of any YouTube URL shape an admin might paste (watch link,
+    // share link, youtu.be, an existing embed link, or a Shorts link) -- used by insertBlock('video')
+    // below. Returns null for anything that isn't recognizably a YouTube video URL, rather than
+    // guessing, so a bad paste gets a clear "couldn't find a video ID" instead of a broken embed.
+    function extractYouTubeId(url) {
+      const patterns = [
+        /youtube(?:-nocookie)?\.com\/watch\?[^#]*\bv=([a-zA-Z0-9_-]{6,})/,
+        /youtube(?:-nocookie)?\.com\/embed\/([a-zA-Z0-9_-]{6,})/,
+        /youtube\.com\/shorts\/([a-zA-Z0-9_-]{6,})/,
+        /youtu\.be\/([a-zA-Z0-9_-]{6,})/,
+      ];
+      for (const re of patterns) {
+        const m = url.match(re);
+        if (m) return m[1];
+      }
+      return null;
+    }
+
     const BLOCK_TEMPLATES = {
       info: '<div class="kb-box kb-info"><div class="kb-box-title">ℹ️ Note</div><p>Write the note here.</p></div>',
       tip: '<div class="kb-box kb-tip"><div class="kb-box-title">✅ Exam tip</div><p>Write the tip here.</p></div>',
@@ -339,6 +357,21 @@
         html = `<div class="kb-table-wrap">` +
           `<button type="button" class="kb-block-delete" contenteditable="false" title="Delete this table" onclick="event.preventDefault(); event.stopPropagation(); if (confirm('Delete this table?')) this.closest('.kb-table-wrap').remove();">✕</button>` +
           `<table class="kb-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+      }
+      if (kind === 'video') {
+        const url = (prompt('Paste the YouTube video URL:') || '').trim();
+        if (!url) return;
+        const videoId = extractYouTubeId(url);
+        if (!videoId) return alert("Couldn't find a YouTube video in that link. Paste the full video URL (e.g. https://youtube.com/watch?v=... or https://youtu.be/...).");
+        // Whole block is a non-editable island, same as resource/page/test-paper cards (there's no
+        // typeable text inside it, unlike the columns/table blocks above) -- contenteditable="false"
+        // on the wrapper itself, not just the delete button. Embeds via youtube-nocookie.com: same
+        // video, same player, but YouTube doesn't set tracking cookies until the student actually
+        // presses play.
+        html = `<div class="kb-video-wrap" contenteditable="false">` +
+          `<button type="button" class="kb-block-delete" contenteditable="false" title="Delete this video" onclick="event.preventDefault(); event.stopPropagation(); if (confirm('Delete this video?')) this.closest('.kb-video-wrap').remove();">✕</button>` +
+          `<iframe src="https://www.youtube-nocookie.com/embed/${videoId}" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" loading="lazy" allowfullscreen></iframe>` +
+          `</div>`;
       }
       if (!html) return;
       placeCaretInEditor();
@@ -1709,7 +1742,7 @@
     // ✎/✕ overlay buttons the same way the public page does.
     function downloadWordEditorPagePdf() {
       const canvas = document.getElementById('word-editor-canvas');
-      if (!canvas.textContent.trim() && !canvas.querySelector('img, table, .kb-pagelink, .kb-resource-card')) {
+      if (!canvas.textContent.trim() && !canvas.querySelector('img, table, .kb-pagelink, .kb-resource-card, .kb-video-wrap')) {
         return alert('This page has no content yet to export.');
       }
       const title = (document.getElementById('page-title-input').value || '').trim() || 'Untitled page';
@@ -1718,6 +1751,14 @@
       const temp = document.createElement('div');
       temp.innerHTML = canvas.innerHTML;
       temp.querySelectorAll('.kb-block-delete').forEach(btn => btn.remove());
+      // A print window can't reliably render a cross-origin YouTube iframe (and a static PDF
+      // couldn't play it anyway) -- swap each video block for a plain clickable link to the real
+      // video instead of shipping a blank/broken rectangle in the exported PDF.
+      temp.querySelectorAll('.kb-video-wrap').forEach(wrap => {
+        const src = wrap.querySelector('iframe')?.src || '';
+        const watchUrl = src.replace('https://www.youtube-nocookie.com/embed/', 'https://youtu.be/');
+        wrap.outerHTML = `<p>🎬 <a href="${escapeHtml(watchUrl)}">Watch the video</a> (${escapeHtml(watchUrl)})</p>`;
+      });
       hydratePageCards(temp);
 
       const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${escapeHtml(title)}</title>
