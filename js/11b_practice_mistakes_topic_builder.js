@@ -588,6 +588,10 @@
           ${practice.source === 'mistakes' ? '<span class="px-2 py-0.5 rounded bg-rose-50 text-rose-700 font-medium">You missed this before</span>' : ''}
         </div>
         <div class="font-medium text-slate-900 leading-relaxed mb-4">${renderQuestionTextHtml(text)}</div>
+        ${(() => {
+          const qImg = practice.lang === 'kn' ? (q.image_url_kn || q.image_url) : q.image_url;
+          return isRealImageUrl(qImg) ? `<img src="${escapeHtml(qImg)}" alt="Question diagram" class="max-w-full max-h-72 rounded-lg border border-slate-200 mb-4 mx-auto block" />` : '';
+        })()}
         <div class="space-y-2">
           ${['A', 'B', 'C', 'D'].map((l, i) => {
             let cls = 'border-slate-200 hover:bg-slate-50 cursor-pointer';
@@ -608,6 +612,10 @@
           <div class="mt-4 p-3 rounded-lg border text-xs ${ans.correct ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-amber-50 border-amber-200 text-amber-950'}">
             <b>${ans.correct ? (practice.source === 'mistakes' ? 'Correct. This one is off your mistakes list.' : 'Correct.') : `Not quite. The answer is ${q.correct}.`}</b> ${askedBadgeHtml(q)}
             <div class="mt-1 text-slate-700">${escapeHtml(practice.lang === 'kn' ? (q.exp_kn || q.exp || '') : (q.exp || ''))}</div>
+            ${(() => {
+              const expImg = practice.lang === 'kn' ? (q.exp_image_url_kn || q.exp_image_url) : q.exp_image_url;
+              return isRealImageUrl(expImg) ? `<img src="${escapeHtml(expImg)}" alt="Explanation diagram" class="max-w-full max-h-72 rounded-lg border border-slate-200 mt-2 mx-auto block" />` : '';
+            })()}
           </div>` : ''}`;
 
       footer.innerHTML = ans
@@ -933,10 +941,14 @@
               <span class="st ${status}">${status === 'right' ? 'Correct' : status === 'wrong' ? 'Wrong' : 'Not answered'} · ${marks}</span></div>
             <div class="qt">${renderQuestionTextHtml(q.q_en || '')}</div>
             ${hasKn ? `<div class="qt kn">${renderQuestionTextHtml(q.q_kn)}</div>` : ''}
+            ${isRealImageUrl(q.image_url) ? `<img class="qimg" src="${escapeHtml(q.image_url)}" alt="Question diagram" />` : ''}
+            ${isRealImageUrl(q.image_url_kn) && q.image_url_kn !== q.image_url ? `<img class="qimg" src="${escapeHtml(q.image_url_kn)}" alt="Question diagram (Kannada)" />` : ''}
             ${opts}
             <p class="ans">Your answer: <b>${c || '—'}</b> · Correct answer: <b>${escapeHtml(q.correct)}</b>${(Array.isArray(q.askedInYears) && q.askedInYears.length) ? `<span class="pyq">⭐ Asked in ${escapeHtml(q.askedInYears.join(', '))}</span>` : ''}</p>
             ${q.exp ? `<div class="exp"><b>Explanation:</b> ${escapeHtml(q.exp)}</div>` : ''}
             ${q.exp_kn ? `<div class="exp kn">${escapeHtml(q.exp_kn)}</div>` : ''}
+            ${isRealImageUrl(q.exp_image_url) ? `<img class="expimg" src="${escapeHtml(q.exp_image_url)}" alt="Explanation diagram" />` : ''}
+            ${isRealImageUrl(q.exp_image_url_kn) && q.exp_image_url_kn !== q.exp_image_url ? `<img class="expimg" src="${escapeHtml(q.exp_image_url_kn)}" alt="Explanation diagram (Kannada)" />` : ''}
           </section>`;
       }).join('');
       return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${escapeHtml(a.paperTitle)} - answers</title>
@@ -962,6 +974,7 @@
           .opt { padding: 2px 6px; border-radius: 4px; margin: 1px 0; } .opt.key { background: #d1fae5; } .opt.picked { background: #ffe4e6; }
           .mark { font-weight: 700; } .ans { margin: 4px 0; color: #334155; }
           .exp { background: #f8fafc; border-left: 3px solid #f59e0b; padding: 5px 8px; margin-top: 4px; }
+          .qimg, .expimg { max-width: 100%; max-height: 220px; display: block; margin: 6px 0; border: 1px solid #cbd5e1; border-radius: 4px; break-inside: avoid; }
           .foot { color: #94a3b8; font-size: 10px; margin-top: 14px; }
           .noprint { background: #fffbeb; border: 1px solid #fde68a; padding: 8px 10px; border-radius: 6px; margin-bottom: 10px; }
           @media print { .noprint { display: none; } }
@@ -1132,10 +1145,14 @@
           </div>
           <div class="font-medium text-slate-900 mb-1 leading-relaxed">${renderQuestionTextHtml(q.q_en)}</div>
           <div class="text-slate-600 font-kannada text-xs mb-3 leading-relaxed">${renderQuestionTextHtml(q.q_kn || '')}</div>
+          ${isRealImageUrl(q.image_url) ? `<img src="${escapeHtml(q.image_url)}" alt="Question diagram" class="max-w-full max-h-64 rounded-lg border border-slate-200 mb-3 mx-auto block" />` : ''}
+          ${isRealImageUrl(q.image_url_kn) && q.image_url_kn !== q.image_url ? `<img src="${escapeHtml(q.image_url_kn)}" alt="Question diagram (Kannada)" class="max-w-full max-h-64 rounded-lg border border-slate-200 mb-3 mx-auto block" />` : ''}
           <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">${optsHtml}</div>
           <div class="p-2.5 bg-white rounded-lg border border-slate-200 text-[11px] text-slate-600">
             <b class="text-slate-800">Official Solution & Syllabus Note:</b> ${q.exp}
+            ${isRealImageUrl(q.exp_image_url) ? `<img src="${escapeHtml(q.exp_image_url)}" alt="Explanation diagram" class="max-w-full max-h-64 rounded-lg border border-slate-200 mt-1.5 mx-auto block" />` : ''}
             ${q.exp_kn ? `<div class="mt-1 font-kannada" style="font-family:'Noto Sans Kannada',sans-serif">${q.exp_kn}</div>` : ''}
+            ${isRealImageUrl(q.exp_image_url_kn) && q.exp_image_url_kn !== q.exp_image_url ? `<img src="${escapeHtml(q.exp_image_url_kn)}" alt="Explanation diagram (Kannada)" class="max-w-full max-h-64 rounded-lg border border-slate-200 mt-1.5 mx-auto block" />` : ''}
           </div>
         `;
         container.appendChild(card);
