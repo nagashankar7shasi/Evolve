@@ -231,6 +231,7 @@
       renderMainsAssessRubric(q.rubric);
       mainsPracticeCurrentSubmissionId = submissionId;
       await mainsAiFeedbackInit(submissionId);
+      await mainsHumanReviewInit(submissionId);
       mainsPracticeSwitchScreen('assess');
     }
 
@@ -330,4 +331,71 @@
       } catch (err) {
         mainsShowAiFeedbackError({ error: 'network_error', message: err.message });
       }
+    }
+
+    // ---- Personal (human) review -- third evaluation tier ----
+    // Purchased through the exact same manual UTR + admin-approval flow as every other purchase in
+    // this app (openCheckout -> payment_orders, see 03_pricing_checkout.js / 03d_payment_claims.js) --
+    // 'mains_human_eval' is just another order `type`, with the submission id as its item id.
+    // Approving that order is what actually queues the submission (activateMainsHumanEvalOrder in
+    // 06b_mains_studio.js); this file only has to show the right state back to the student.
+    let mainsHumanReviewPrice = null;
+
+    function mainsHumanReviewHideAll() {
+      ['mp-human-review-idle', 'mp-human-review-pending', 'mp-human-review-queued', 'mp-human-review-done', 'mp-human-review-rejected'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+    }
+
+    async function mainsHumanReviewInit(submissionId) {
+      mainsHumanReviewHideAll();
+
+      // A row here means the submission was already queued (status 'pending') or graded ('done') --
+      // either way, there's nothing left to request, so this takes priority over payment-order state.
+      const { data: evalRow, error } = await supabaseClient.from('mains_human_evaluations')
+        .select('*').eq('submission_id', submissionId).order('created_at', { ascending: false }).limit(1).maybeSingle();
+      if (!error && evalRow) {
+        if (evalRow.status === 'done') { renderMainsHumanEvalResult(evalRow); return; }
+        document.getElementById('mp-human-review-queued').classList.remove('hidden');
+        return;
+      }
+
+      // No queue row yet -- fall back to the latest payment_orders entry for this submission
+      // (paymentOrders is already loaded globally at boot for everyone, public-read, no extra fetch).
+      const order = (typeof paymentOrders !== 'undefined' ? paymentOrders : [])
+        .filter(o => o.type === 'mains_human_eval' && o.itemId === submissionId)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+      if (order) {
+        if (order.status === 'pending') { document.getElementById('mp-human-review-pending').classList.remove('hidden'); return; }
+        if (order.status === 'approved') { document.getElementById('mp-human-review-queued').classList.remove('hidden'); return; } // safety net -- should already have an eval row by now
+        if (order.status === 'rejected') {
+          document.getElementById('mp-human-review-reject-reason').innerText = order.rejectReason || 'please try again.';
+          document.getElementById('mp-human-review-rejected').classList.remove('hidden');
+          return;
+        }
+      }
+
+      // Idle -- nothing requested yet (or the only prior attempt was refunded, which never happens
+      // here since this isn't a persistent entitlement).
+      mainsHumanReviewPrice = (await fetchCloudAppSetting('mains_human_eval_price')) || MAINS_HUMAN_EVAL_DEFAULT_PRICE;
+      document.getElementById('mp-human-review-price').innerText = `₹${mainsHumanReviewPrice}`;
+      document.getElementById('mp-human-review-idle').classList.remove('hidden');
+    }
+
+    function renderMainsHumanEvalResult(evalRow) {
+      mainsHumanReviewHideAll();
+      document.getElementById('mp-human-review-done').classList.remove('hidden');
+      document.getElementById('mp-human-review-score').innerText = `${evalRow.score} / ${evalRow.max_score} marks`;
+      document.getElementById('mp-human-review-feedback').innerText = evalRow.feedback || '';
+    }
+
+    function requestMainsHumanReview() {
+      const submissionId = mainsPracticeCurrentSubmissionId;
+      if (!submissionId) return;
+      const sub = mainsSubmissions.find(s => s.id === submissionId);
+      const q = sub ? getMainsQuestion(sub.questionId) : null;
+      const price = mainsHumanReviewPrice || MAINS_HUMAN_EVAL_DEFAULT_PRICE;
+      const qText = q ? q.question : 'Mains answer';
+      const title = 'Personal review — ' + (qText.length > 60 ? qText.slice(0, 60) + '…' : qText);
+      openCheckout('mains_human_eval', submissionId, title, price);
     }

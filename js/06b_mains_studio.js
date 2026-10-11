@@ -3,9 +3,15 @@
     ----------------------------------------------------- */
     // Scoped to KPSC KAS + UPSC CSE only -- the two exams with a real Mains/descriptive stage (PSI and
     // FDA-SDA are prelims-only objective exams). See sql/add_mains_ecosystem.sql for the full schema
-    // and RLS rationale. This module only manages the question bank itself (mains_questions) -- student
-    // submissions, AI evaluation and the human-eval queue are separate, later pieces.
+    // and RLS rationale. This module manages the question bank (mains_questions), the AI-eval settings
+    // further down, and the human-evaluation queue further still -- student-facing submission/
+    // self-assessment/request flows live in 06c_mains_practice.js.
     const MAINS_CATEGORY_IDS = ['kpsc_kas', 'upsc_cse'];
+    // Fallback only -- the real price lives in app_settings ('mains_human_eval_price') via
+    // fetchCloudAppSetting/saveCloudAppSetting (03_pricing_checkout.js), same generic key/value store
+    // pricingMaster/siteBranding/the AI-provider preference already use. This is what shows before
+    // that setting has ever been saved.
+    const MAINS_HUMAN_EVAL_DEFAULT_PRICE = 49;
     let mainsQuestions = [];
     let editingMainsQuestionId = null;
     let mainsAdminFilterCategory = '';
@@ -583,4 +589,130 @@
       status.innerText = `✓ ${email} now has ${newBalance} credit${newBalance === 1 ? '' : 's'}.`;
       amountInput.value = '';
       setTimeout(() => { if (status.innerText.startsWith('✓')) status.innerText = ''; }, 6000);
+    }
+
+    /* ----------------------------------------------------
+       Human evaluation queue (third evaluation tier) -- "no hard cap, ad hoc": the admin works
+       through whatever's pending at his own pace, no promised SLA, no per-student cap. A student
+       pays per submission (same manual UTR + admin-approval flow as every other purchase in this
+       app -- see 03d_payment_claims.js) via openCheckout('mains_human_eval', submissionId, ...) from
+       06c_mains_practice.js. Approving that order is what actually queues the submission here
+       (activateMainsHumanEvalOrder, called from approveOrder() in 03d_payment_claims.js) -- this
+       section is purely the "work the queue" side: price setting + the grading UI itself.
+    ----------------------------------------------------- */
+    let mainsHumanEvalQueue = [];
+
+    async function mainsHumanEvalQueueInit() {
+      await Promise.all([mainsHumanEvalLoadPrice(), mainsHumanEvalLoadQueue()]);
+    }
+
+    async function mainsHumanEvalLoadPrice() {
+      const input = document.getElementById('mq-human-eval-price');
+      if (!input) return;
+      const price = await fetchCloudAppSetting('mains_human_eval_price');
+      input.value = price != null ? price : MAINS_HUMAN_EVAL_DEFAULT_PRICE;
+    }
+
+    async function mainsHumanEvalSavePrice() {
+      const input = document.getElementById('mq-human-eval-price');
+      const status = document.getElementById('mq-human-eval-price-status');
+      const price = Math.max(0, parseFloat(input.value) || 0);
+      const ok = await saveCloudAppSetting('mains_human_eval_price', price);
+      status.innerText = ok ? `✓ Saved -- ₹${price} per review.` : 'Failed to save.';
+      setTimeout(() => { if (status.innerText.startsWith('✓')) status.innerText = ''; }, 5000);
+    }
+
+    // One query, two levels of FK embedding (mains_human_evaluations -> mains_submissions ->
+    // mains_questions) -- PostgREST resolves both from the foreign keys already in
+    // sql/add_mains_ecosystem.sql, so this never needs a second round-trip per row.
+    async function mainsHumanEvalLoadQueue() {
+      const box = document.getElementById('mains-human-eval-queue-list');
+      if (!box) return;
+      box.innerHTML = '<p class="text-slate-400">Loading…</p>';
+      const { data, error } = await supabaseClient
+        .from('mains_human_evaluations')
+        .select('*, mains_submissions(*, mains_questions(*))')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true });
+      if (error) { box.innerHTML = `<p class="text-rose-600">Failed to load the queue: ${escapeHtml(error.message)}</p>`; return; }
+      mainsHumanEvalQueue = data || [];
+      renderMainsHumanEvalQueue();
+    }
+
+    function renderMainsHumanEvalQueue() {
+      const box = document.getElementById('mains-human-eval-queue-list');
+      if (!box) return;
+      const countEl = document.getElementById('mains-human-eval-queue-count');
+      if (countEl) countEl.innerText = `${mainsHumanEvalQueue.length} pending`;
+      if (!mainsHumanEvalQueue.length) { box.innerHTML = '<p class="text-slate-400">Nothing in the queue right now.</p>'; return; }
+      box.innerHTML = mainsHumanEvalQueue.map(row => {
+        const sub = row.mains_submissions || {};
+        const q = sub.mains_questions || {};
+        const maxMarks = (+q.marks) || 10;
+        const catName = EXAM_CATEGORIES[q.category_id] ? EXAM_CATEGORIES[q.category_id].name : (q.category_id || '');
+        return `
+        <div class="p-3 border rounded-xl bg-white space-y-2">
+          <div class="flex flex-wrap gap-1.5 text-[10px] font-bold">
+            <span class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800">${escapeHtml(catName)}</span>
+            ${q.subject ? `<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">${escapeHtml(q.subject)}</span>` : ''}
+            <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800">${escapeHtml(sub.student_email || '')}</span>
+          </div>
+          <p class="text-slate-800 font-semibold">${escapeHtml(q.question || '')}</p>
+          ${q.model_answer ? `<details class="text-slate-600"><summary class="cursor-pointer font-bold text-slate-500">Model answer</summary><p class="whitespace-pre-wrap mt-1">${escapeHtml(q.model_answer)}</p></details>` : ''}
+          <div class="bg-slate-50 border rounded-lg p-2">
+            <p class="font-bold text-slate-700 mb-1">Student's answer</p>
+            ${sub.answer_text ? `<p class="whitespace-pre-wrap">${escapeHtml(sub.answer_text)}</p>` : '<p class="text-slate-400 italic">No typed answer.</p>'}
+            ${sub.answer_image_path ? `<button type="button" onclick="mainsHumanEvalViewPhoto('${sub.answer_image_path}')" class="text-indigo-600 font-bold hover:underline mt-1">View handwritten photo →</button>` : ''}
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="font-bold text-slate-700">Score</label>
+            <input type="number" id="mhe-score-${row.id}" min="0" max="${maxMarks}" step="0.5" class="w-20 px-2 py-1 border rounded-lg font-mono outline-none" />
+            <span class="text-slate-400">/ ${maxMarks}</span>
+          </div>
+          <textarea id="mhe-feedback-${row.id}" rows="3" placeholder="Feedback for the student…" class="w-full px-2 py-1.5 border rounded-lg outline-none"></textarea>
+          <button type="button" onclick="mainsHumanEvalSubmitScore(${row.id}, ${maxMarks})" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg">Save evaluation</button>
+        </div>`;
+      }).join('');
+    }
+
+    async function mainsHumanEvalViewPhoto(path) {
+      const { data, error } = await supabaseClient.storage.from('mains_answer_photos').createSignedUrl(path, 300);
+      if (error || !data) return alert('Could not load the photo: ' + (error ? error.message : 'unknown error'));
+      window.open(data.signedUrl, '_blank');
+    }
+
+    async function mainsHumanEvalSubmitScore(id, maxMarks) {
+      const scoreInput = document.getElementById(`mhe-score-${id}`);
+      const feedbackInput = document.getElementById(`mhe-feedback-${id}`);
+      const score = parseFloat(scoreInput.value);
+      if (isNaN(score) || score < 0 || score > maxMarks) return alert(`Enter a score between 0 and ${maxMarks}.`);
+      const feedback = feedbackInput.value.trim();
+      if (!feedback) return alert("Add a short feedback note for the student before saving -- a bare score with nothing to explain it isn't much of a \"personal\" review.");
+      const { error } = await supabaseClient.from('mains_human_evaluations').update({
+        status: 'done', score, max_score: maxMarks, feedback, evaluated_at: new Date().toISOString()
+      }).eq('id', id);
+      if (error) return alert('Failed to save the evaluation: ' + error.message);
+      mainsHumanEvalQueue = mainsHumanEvalQueue.filter(r => r.id !== id);
+      renderMainsHumanEvalQueue();
+    }
+
+    // Called from approveOrder() in 03d_payment_claims.js the moment a 'mains_human_eval' payment
+    // claim is approved -- this is what actually puts the submission into the queue above. Guards
+    // against creating a second queue row for the same submission (e.g. a duplicate/retry order
+    // somehow also gets approved) by checking for an existing row first, regardless of its status.
+    async function activateMainsHumanEvalOrder(order) {
+      const submissionId = order.itemId;
+      const { data: existing, error: existErr } = await supabaseClient
+        .from('mains_human_evaluations').select('id').eq('submission_id', submissionId).limit(1).maybeSingle();
+      if (existErr) console.error('activateMainsHumanEvalOrder existing check:', fmtErr(existErr));
+      if (!existing) {
+        const { error: insErr } = await supabaseClient.from('mains_human_evaluations').insert({ submission_id: submissionId, status: 'pending' });
+        if (insErr) console.error('activateMainsHumanEvalOrder insert:', fmtErr(insErr));
+      }
+      const { error: subErr } = await supabaseClient.from('mains_submissions')
+        .update({ wants_human_eval: true, human_eval_order_id: order.id }).eq('id', submissionId);
+      if (subErr) console.error('activateMainsHumanEvalOrder submission update:', fmtErr(subErr));
+      // So the admin sees the newly-approved request immediately if the Mains panel happens to
+      // already be open, rather than only after a manual refresh click.
+      if (typeof mainsHumanEvalLoadQueue === 'function') mainsHumanEvalLoadQueue();
     }
