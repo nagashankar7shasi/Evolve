@@ -389,6 +389,8 @@ window.onload = async function() {
         fetchCloudPlanners(),
         fetchCloudAnnouncements(),
         fetchCloudSiteBranding(),  // header logo/name/tagline — same generic app_settings pattern
+        fetchCloudCoupons(),
+        fetchCloudCouponRedemptions(), // admin-only (RLS); no-op data for everyone else
       ]);
       if (typeof renderStudentDirectoryTable === 'function') renderStudentDirectoryTable();
       if (typeof renderAnnouncements === 'function') renderAnnouncements();

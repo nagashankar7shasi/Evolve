@@ -55,7 +55,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
   <!-- Add Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="css/main.css?v=50">
+  <link rel="stylesheet" href="css/main.css?v=51">
 
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col select-none">
@@ -526,9 +526,9 @@
 
     <div class="flex flex-col lg:flex-row gap-6 items-start">
       <!-- Task menu -->
-      <aside class="hidden lg:block w-56 shrink-0 sticky top-20 bg-white border border-slate-200 rounded-2xl p-3 text-xs max-h-[calc(100vh-6rem)] overflow-y-auto" aria-label="Dev Console sections"><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Overview</div><button type="button" data-panel-link="overview" onclick="showAdminPanel('overview')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🏠</span><span class="flex-1">Overview</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Payments</div><button type="button" data-panel-link="payments" onclick="showAdminPanel('payments')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🧾</span><span class="flex-1">Verify payments</span><span class="admin-pending-badge hidden min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-black flex items-center justify-center"></span></button><button type="button" data-panel-link="revenue" onclick="showAdminPanel('revenue')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📈</span><span class="flex-1">Revenue & reports</span></button><button type="button" data-panel-link="upi" onclick="showAdminPanel('upi')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">💳</span><span class="flex-1">UPI details</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Website</div><button type="button" data-panel-link="branding" onclick="showAdminPanel('branding')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🎨</span><span class="flex-1">Site branding</span></button><button type="button" data-panel-link="home" onclick="showAdminPanel('home')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🏠</span><span class="flex-1">Home page</span></button><button type="button" data-panel-link="pages" onclick="showAdminPanel('pages')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📝</span><span class="flex-1">Pages</span></button><button type="button" data-panel-link="menus" onclick="showAdminPanel('menus')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🧭</span><span class="flex-1">Menus</span></button><button type="button" data-panel-link="announcements" onclick="showAdminPanel('announcements')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📣</span><span class="flex-1">Announcements</span></button><button type="button" data-panel-link="pdfs" onclick="showAdminPanel('pdfs')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📄</span><span class="flex-1">PDF vault</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Tests & planners</div><button type="button" data-panel-link="examcats" onclick="showAdminPanel('examcats')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🏷️</span><span class="flex-1">Exam categories</span></button><button type="button" data-panel-link="tests" onclick="showAdminPanel('tests')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🗂️</span><span class="flex-1">Test papers</span></button><button type="button" data-panel-link="planners" onclick="showAdminPanel('planners')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">✅</span><span class="flex-1">Study planners</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Products & access</div><button type="button" data-panel-link="bundles" onclick="showAdminPanel('bundles')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📦</span><span class="flex-1">Bundles & passes</span></button><button type="button" data-panel-link="access" onclick="showAdminPanel('access')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🎚️</span><span class="flex-1">Dashboard access</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Students</div><button type="button" data-panel-link="students" onclick="showAdminPanel('students')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🎓</span><span class="flex-1">Student directory</span></button><button type="button" data-panel-link="feedback" onclick="showAdminPanel('feedback')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">💬</span><span class="flex-1">Feedback</span><span id="feedback-nav-badge" class="hidden min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black flex items-center justify-center"></span></button><button type="button" data-panel-link="entitlements" onclick="showAdminPanel('entitlements')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🔑</span><span class="flex-1">Access desk</span></button><button type="button" data-panel-link="login" onclick="showAdminPanel('login')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🔐</span><span class="flex-1">Login & OTP</span></button><button type="button" data-panel-link="email" onclick="showAdminPanel('email')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📧</span><span class="flex-1">Email tools</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Settings</div><button type="button" data-panel-link="account" onclick="showAdminPanel('account')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🛡️</span><span class="flex-1">Admin account</span></button><button type="button" data-panel-link="backup" onclick="showAdminPanel('backup')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">💾</span><span class="flex-1">Backup & restore</span></button></div></aside>
+      <aside class="hidden lg:block w-56 shrink-0 sticky top-20 bg-white border border-slate-200 rounded-2xl p-3 text-xs max-h-[calc(100vh-6rem)] overflow-y-auto" aria-label="Dev Console sections"><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Overview</div><button type="button" data-panel-link="overview" onclick="showAdminPanel('overview')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🏠</span><span class="flex-1">Overview</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Payments</div><button type="button" data-panel-link="payments" onclick="showAdminPanel('payments')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🧾</span><span class="flex-1">Verify payments</span><span class="admin-pending-badge hidden min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-black flex items-center justify-center"></span></button><button type="button" data-panel-link="revenue" onclick="showAdminPanel('revenue')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📈</span><span class="flex-1">Revenue & reports</span></button><button type="button" data-panel-link="upi" onclick="showAdminPanel('upi')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">💳</span><span class="flex-1">UPI details</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Website</div><button type="button" data-panel-link="branding" onclick="showAdminPanel('branding')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🎨</span><span class="flex-1">Site branding</span></button><button type="button" data-panel-link="home" onclick="showAdminPanel('home')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🏠</span><span class="flex-1">Home page</span></button><button type="button" data-panel-link="pages" onclick="showAdminPanel('pages')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📝</span><span class="flex-1">Pages</span></button><button type="button" data-panel-link="menus" onclick="showAdminPanel('menus')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🧭</span><span class="flex-1">Menus</span></button><button type="button" data-panel-link="announcements" onclick="showAdminPanel('announcements')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📣</span><span class="flex-1">Announcements</span></button><button type="button" data-panel-link="pdfs" onclick="showAdminPanel('pdfs')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📄</span><span class="flex-1">PDF vault</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Tests & planners</div><button type="button" data-panel-link="examcats" onclick="showAdminPanel('examcats')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🏷️</span><span class="flex-1">Exam categories</span></button><button type="button" data-panel-link="tests" onclick="showAdminPanel('tests')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🗂️</span><span class="flex-1">Test papers</span></button><button type="button" data-panel-link="planners" onclick="showAdminPanel('planners')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">✅</span><span class="flex-1">Study planners</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Products & access</div><button type="button" data-panel-link="bundles" onclick="showAdminPanel('bundles')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📦</span><span class="flex-1">Bundles & passes</span></button><button type="button" data-panel-link="coupons" onclick="showAdminPanel('coupons')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🏷️</span><span class="flex-1">Coupons & promos</span></button><button type="button" data-panel-link="access" onclick="showAdminPanel('access')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🎚️</span><span class="flex-1">Dashboard access</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Students</div><button type="button" data-panel-link="students" onclick="showAdminPanel('students')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🎓</span><span class="flex-1">Student directory</span></button><button type="button" data-panel-link="feedback" onclick="showAdminPanel('feedback')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">💬</span><span class="flex-1">Feedback</span><span id="feedback-nav-badge" class="hidden min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black flex items-center justify-center"></span></button><button type="button" data-panel-link="entitlements" onclick="showAdminPanel('entitlements')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🔑</span><span class="flex-1">Access desk</span></button><button type="button" data-panel-link="login" onclick="showAdminPanel('login')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🔐</span><span class="flex-1">Login & OTP</span></button><button type="button" data-panel-link="email" onclick="showAdminPanel('email')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">📧</span><span class="flex-1">Email tools</span></button></div><div class="mb-3"><div class="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Settings</div><button type="button" data-panel-link="account" onclick="showAdminPanel('account')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">🛡️</span><span class="flex-1">Admin account</span></button><button type="button" data-panel-link="backup" onclick="showAdminPanel('backup')" class="admin-nav-btn w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-slate-700 hover:bg-slate-100"><span aria-hidden="true">💾</span><span class="flex-1">Backup & restore</span></button></div></aside>
       <label class="lg:hidden w-full text-xs font-bold text-slate-700">Go to
-        <select id="admin-panel-select" onchange="showAdminPanel(this.value)" class="mt-1 w-full px-3 py-2 border rounded-lg bg-white text-sm"><optgroup label="Overview"><option value="overview">Overview</option></optgroup><optgroup label="Payments"><option value="payments">Verify payments</option><option value="revenue">Revenue & reports</option><option value="upi">UPI details</option></optgroup><optgroup label="Website"><option value="branding">Site branding</option><option value="home">Home page</option><option value="pages">Pages</option><option value="menus">Menus</option><option value="announcements">Announcements</option><option value="pdfs">PDF vault</option></optgroup><optgroup label="Tests & planners"><option value="examcats">Exam categories</option><option value="tests">Test papers</option><option value="planners">Study planners</option></optgroup><optgroup label="Products & access"><option value="bundles">Bundles & passes</option><option value="access">Dashboard access</option></optgroup><optgroup label="Students"><option value="students">Student directory</option><option value="feedback">Feedback</option><option value="entitlements">Access desk</option><option value="login">Login & OTP</option><option value="email">Email tools</option></optgroup><optgroup label="Settings"><option value="account">Admin account</option><option value="backup">Backup & restore</option></optgroup></select>
+        <select id="admin-panel-select" onchange="showAdminPanel(this.value)" class="mt-1 w-full px-3 py-2 border rounded-lg bg-white text-sm"><optgroup label="Overview"><option value="overview">Overview</option></optgroup><optgroup label="Payments"><option value="payments">Verify payments</option><option value="revenue">Revenue & reports</option><option value="upi">UPI details</option></optgroup><optgroup label="Website"><option value="branding">Site branding</option><option value="home">Home page</option><option value="pages">Pages</option><option value="menus">Menus</option><option value="announcements">Announcements</option><option value="pdfs">PDF vault</option></optgroup><optgroup label="Tests & planners"><option value="examcats">Exam categories</option><option value="tests">Test papers</option><option value="planners">Study planners</option></optgroup><optgroup label="Products & access"><option value="bundles">Bundles & passes</option><option value="coupons">Coupons & promos</option><option value="access">Dashboard access</option></optgroup><optgroup label="Students"><option value="students">Student directory</option><option value="feedback">Feedback</option><option value="entitlements">Access desk</option><option value="login">Login & OTP</option><option value="email">Email tools</option></optgroup><optgroup label="Settings"><option value="account">Admin account</option><option value="backup">Backup & restore</option></optgroup></select>
       </label>
 
       <div id="admin-panels" class="flex-1 min-w-0 w-full space-y-6">
@@ -1207,6 +1207,95 @@
           <div class="flex justify-end gap-2">
             <button type="button" onclick="closeBundleEditor()" class="px-4 py-2 border border-slate-300 hover:bg-slate-50 font-bold rounded-lg">Cancel</button>
             <button type="submit" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg">Save bundle</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- PANEL: COUPONS & PROMOS -->
+      <div data-panel="coupons" id="coupons-admin" class="bg-white p-6 rounded-2xl border border-emerald-300 shadow-sm space-y-4 lg:col-span-2">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
+          <div>
+            <h3 class="font-bold text-base text-slate-900">🏷️ Coupons &amp; Promos</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Typed promo codes and no-code early-bird discounts share the same engine — switch off "Requires a code" to make one auto-apply instead of needing a code.</p>
+          </div>
+          <button onclick="editCoupon(null)" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow">+ New coupon</button>
+        </div>
+        <div id="coupons-admin-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 text-xs"></div>
+
+        <form id="coupon-editor" onsubmit="saveCoupon(event)" class="hidden border-t pt-4 space-y-4 text-xs">
+          <div class="flex items-center justify-between">
+            <h4 id="coupon-editor-title" class="font-bold text-sm text-slate-900">New coupon</h4>
+            <button type="button" onclick="closeCouponEditor()" class="text-slate-500 hover:underline">Cancel</button>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div class="md:col-span-4 flex items-center gap-2">
+              <label class="flex items-center gap-2 cursor-pointer font-bold">
+                <input type="checkbox" id="cpn-requires-code" checked onchange="document.getElementById('cpn-code-row').classList.toggle('hidden', !this.checked)" class="rounded" />
+                Requires a code <span class="font-normal text-slate-400">(off = auto-applies to everyone, e.g. early-bird)</span>
+              </label>
+            </div>
+            <div id="cpn-code-row">
+              <label class="block font-bold text-slate-700 mb-1">Code</label>
+              <input type="text" id="cpn-code" maxlength="30" placeholder="KAS25" class="w-full px-2.5 py-1.5 border rounded-lg outline-none font-mono font-bold uppercase" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block font-bold text-slate-700 mb-1">Label <span class="font-normal text-slate-400">(admin-facing name)</span></label>
+              <input type="text" id="cpn-label" maxlength="80" placeholder="Diwali Sale / KAS Prelims Early Bird" class="w-full px-2.5 py-1.5 border rounded-lg outline-none" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Active</label>
+              <label class="flex items-center gap-2 cursor-pointer mt-1.5"><input type="checkbox" id="cpn-active" checked class="rounded" /> On</label>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Discount type</label>
+              <select id="cpn-type" class="w-full px-2.5 py-1.5 border rounded-lg bg-white outline-none">
+                <option value="percent">Percent off</option><option value="flat">Flat ₹ off</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Value</label>
+              <input type="number" id="cpn-value" required min="0" step="1" class="w-full px-2.5 py-1.5 border rounded-lg outline-none font-mono font-bold" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Max discount (₹) <span class="font-normal text-slate-400">(percent only)</span></label>
+              <input type="number" id="cpn-max-discount" min="0" step="1" placeholder="No cap" class="w-full px-2.5 py-1.5 border rounded-lg outline-none font-mono" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Min order amount (₹)</label>
+              <input type="number" id="cpn-min-order" min="0" step="1" placeholder="0" class="w-full px-2.5 py-1.5 border rounded-lg outline-none font-mono" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Applies to</label>
+              <select id="cpn-scope" onchange="refreshCouponScopeFields()" class="w-full px-2.5 py-1.5 border rounded-lg bg-white outline-none">
+                <option value="all">Everything</option><option value="bundle">Specific bundles</option><option value="paper">Specific papers</option><option value="category">Exam categories</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Starts at <span class="font-normal text-slate-400">(optional)</span></label>
+              <input type="datetime-local" id="cpn-starts-at" class="w-full px-2.5 py-1.5 border rounded-lg outline-none" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Ends at <span class="font-normal text-slate-400">(optional)</span></label>
+              <input type="datetime-local" id="cpn-ends-at" class="w-full px-2.5 py-1.5 border rounded-lg outline-none" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Total redemption limit <span class="font-normal text-slate-400">(optional)</span></label>
+              <input type="number" id="cpn-usage-total" min="0" step="1" placeholder="Unlimited" class="w-full px-2.5 py-1.5 border rounded-lg outline-none font-mono" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Per-student limit</label>
+              <input type="number" id="cpn-usage-per-student" min="1" step="1" value="1" class="w-full px-2.5 py-1.5 border rounded-lg outline-none font-mono" />
+            </div>
+          </div>
+
+          <div id="cpn-scope-ids-wrap" class="hidden p-3 bg-slate-50 border rounded-xl">
+            <span class="font-bold text-slate-800 block mb-1.5" id="cpn-scope-ids-label">Bundles</span>
+            <div id="cpn-scope-ids" class="space-y-1 max-h-56 overflow-y-auto"></div>
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <button type="button" onclick="closeCouponEditor()" class="px-4 py-2 border border-slate-300 hover:bg-slate-50 font-bold rounded-lg">Cancel</button>
+            <button type="submit" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg">Save coupon</button>
           </div>
         </form>
       </div>
@@ -1906,8 +1995,25 @@
         </div>
         <div class="border-t pt-2 flex justify-between items-center text-sm font-bold text-slate-900">
           <span>Total Payable Amount:</span>
-          <span class="text-emerald-700 text-lg font-black" id="checkout-bill-amount">₹99</span>
+          <span class="text-right">
+            <span class="block text-slate-400 line-through font-normal text-xs hidden" id="checkout-bill-original">₹99</span>
+            <span class="text-emerald-700 text-lg font-black" id="checkout-bill-amount">₹99</span>
+          </span>
         </div>
+      </div>
+
+      <!-- Coupon / promo code box: shows an entry field, or the applied-coupon state once a code
+           (typed or auto-applied early-bird) is active. See js/03f_coupons.js. -->
+      <div id="checkout-coupon-box" class="mb-5 text-xs">
+        <div id="checkout-coupon-entry" class="flex gap-2">
+          <input type="text" id="checkout-coupon-code" maxlength="30" placeholder="Have a promo code?" class="flex-1 px-3 py-2 border rounded-lg outline-none font-mono uppercase" />
+          <button type="button" onclick="applyCheckoutCoupon()" class="px-3 py-2 border border-slate-300 hover:bg-slate-50 font-bold rounded-lg">Apply</button>
+        </div>
+        <div id="checkout-coupon-applied" class="hidden flex items-center justify-between gap-2 p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg">
+          <span class="text-emerald-800">Coupon <b id="checkout-coupon-applied-label">CODE</b> applied — you saved <b id="checkout-coupon-applied-savings">₹0</b></span>
+          <button type="button" onclick="removeCheckoutCoupon()" class="text-slate-500 hover:underline font-bold">Remove</button>
+        </div>
+        <div id="checkout-coupon-error" class="hidden mt-1.5 p-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-800"></div>
       </div>
 
       <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-4 text-center space-y-3 mb-5">
@@ -3019,36 +3125,37 @@ B. Article 360 | 2. Financial Emergency</pre>
   </footer>
 
   <!-- ================= JAVASCRIPT ARCHITECTURE ================= -->
-  <script src="js/00_supabase_init.js?v=50"></script>
-  <script src="js/01_exam_category_master.js?v=50"></script>
-  <script src="js/02_pricing_master_storage.js?v=50"></script>
-  <script src="js/02a_bundles.js?v=50"></script>
-  <script src="js/03_pricing_checkout.js?v=50"></script>
-  <script src="js/03a_site_branding.js?v=50"></script>
-  <script src="js/03b_dev_console.js?v=50"></script>
-  <script src="js/03c_bundles_admin_editor.js?v=50"></script>
-  <script src="js/03d_payment_claims.js?v=50"></script>
-  <script src="js/03e_feedback.js?v=50"></script>
-  <script src="js/04_access_permission_checkers.js?v=50"></script>
-  <script src="js/05_student_entitlements_desk.js?v=50"></script>
-  <script src="js/06_exam_pages_test_ingestion.js?v=50"></script>
-  <script src="js/06a_test_paper_studio.js?v=50"></script>
-  <script src="js/07_pdf_vault.js?v=50"></script>
-  <script src="js/07a_pdf_publishing_wizard.js?v=50"></script>
-  <script src="js/08_word_page_creator.js?v=50"></script>
-  <script src="js/09_navigation_granular_controls.js?v=50"></script>
-  <script src="js/09a_site_search.js?v=50"></script>
-  <script src="js/10_omr_exam_engine.js?v=50"></script>
-  <script src="js/11_dashboard_review_modal.js?v=50"></script>
-  <script src="js/11a_study_planners.js?v=50"></script>
-  <script src="js/11c_dashboard_access_layers.js?v=50"></script>
-  <script src="js/11d_study_planner_admin_csv.js?v=50"></script>
-  <script src="js/11b_practice_mistakes_topic_builder.js?v=50"></script>
-  <script src="js/12_authentication_export.js?v=50"></script>
-  <script src="js/12a_email.js?v=50"></script>
-  <script src="js/12b_home_page_configuration.js?v=50"></script>
-  <script src="js/13_announcements.js?v=50"></script>
-  <script src="js/14_student_directory_admin.js?v=50"></script>
-  <script src="js/15_backup_export_restore.js?v=50"></script>
+  <script src="js/00_supabase_init.js?v=51"></script>
+  <script src="js/01_exam_category_master.js?v=51"></script>
+  <script src="js/02_pricing_master_storage.js?v=51"></script>
+  <script src="js/02a_bundles.js?v=51"></script>
+  <script src="js/03_pricing_checkout.js?v=51"></script>
+  <script src="js/03a_site_branding.js?v=51"></script>
+  <script src="js/03b_dev_console.js?v=51"></script>
+  <script src="js/03c_bundles_admin_editor.js?v=51"></script>
+  <script src="js/03d_payment_claims.js?v=51"></script>
+  <script src="js/03e_feedback.js?v=51"></script>
+  <script src="js/03f_coupons.js?v=51"></script>
+  <script src="js/04_access_permission_checkers.js?v=51"></script>
+  <script src="js/05_student_entitlements_desk.js?v=51"></script>
+  <script src="js/06_exam_pages_test_ingestion.js?v=51"></script>
+  <script src="js/06a_test_paper_studio.js?v=51"></script>
+  <script src="js/07_pdf_vault.js?v=51"></script>
+  <script src="js/07a_pdf_publishing_wizard.js?v=51"></script>
+  <script src="js/08_word_page_creator.js?v=51"></script>
+  <script src="js/09_navigation_granular_controls.js?v=51"></script>
+  <script src="js/09a_site_search.js?v=51"></script>
+  <script src="js/10_omr_exam_engine.js?v=51"></script>
+  <script src="js/11_dashboard_review_modal.js?v=51"></script>
+  <script src="js/11a_study_planners.js?v=51"></script>
+  <script src="js/11c_dashboard_access_layers.js?v=51"></script>
+  <script src="js/11d_study_planner_admin_csv.js?v=51"></script>
+  <script src="js/11b_practice_mistakes_topic_builder.js?v=51"></script>
+  <script src="js/12_authentication_export.js?v=51"></script>
+  <script src="js/12a_email.js?v=51"></script>
+  <script src="js/12b_home_page_configuration.js?v=51"></script>
+  <script src="js/13_announcements.js?v=51"></script>
+  <script src="js/14_student_directory_admin.js?v=51"></script>
+  <script src="js/15_backup_export_restore.js?v=51"></script>
 </body>
 </html>
