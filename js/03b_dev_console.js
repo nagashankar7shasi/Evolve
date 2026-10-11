@@ -25,7 +25,7 @@
       if (id === 'backup') renderStorageUsage();
       if (id === 'payments') renderPaymentOrders();
       if (id === 'coupons') renderCouponsAdmin();
-      if (id === 'mains') renderMainsQuestionsAdmin();
+      if (id === 'mains') { renderMainsQuestionsAdmin(); mainsAiSettingsInit(); }
       if (id === 'students') renderStudentDirectoryTable();
       if (id === 'home') renderHomeConfigAdmin();
       if (id === 'email') { renderEmailTemplatesAdmin(); setEmailTab('templates'); }

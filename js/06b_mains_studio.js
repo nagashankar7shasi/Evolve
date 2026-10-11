@@ -509,3 +509,78 @@
       ]);
       mainsTriggerCsvDownload(mainsRowsToCsv([MAINS_CSV_HEADERS, ...data]), 'mains_questions_export.csv');
     }
+
+    /* ----------------------------------------------------
+       AI evaluation settings (admin side) -- the 'mains-ai-evaluate' Edge Function (see
+       sql/add_mains_ecosystem.sql for the credits tables it reads/writes) is provider-agnostic: a
+       Claude adapter and an OpenAI adapter sit behind one interface, and either one works the moment
+       its API key secret is set on the function, with no code change needed. This panel lets the
+       admin (a) see which provider(s) currently have a key configured -- without ever exposing the
+       key itself to the browser, the Edge Function only reports true/false -- (b) pick which one is
+       tried first when both are configured, and (c) grant ad-hoc eval credits to a student's own
+       email for testing, since the real credits economy (purchases + bundle monthly allowance) is a
+       later, separate piece of work.
+    ----------------------------------------------------- */
+    async function mainsAiSettingsInit() {
+      await Promise.all([mainsAiLoadProviderPref(), mainsAiCheckConfig()]);
+    }
+
+    async function mainsAiLoadProviderPref() {
+      const sel = document.getElementById('mq-ai-provider-pref');
+      if (!sel) return;
+      const { data, error } = await supabaseClient.from('app_settings').select('value').eq('key', 'mains_ai_provider').maybeSingle();
+      if (error) { console.error('mainsAiLoadProviderPref:', fmtErr(error)); return; }
+      sel.value = (data && data.value && data.value.preferred === 'openai') ? 'openai' : 'claude';
+    }
+
+    async function mainsAiSaveProviderPref() {
+      const sel = document.getElementById('mq-ai-provider-pref');
+      const status = document.getElementById('mq-ai-provider-status');
+      const { error } = await supabaseClient.from('app_settings').upsert({ key: 'mains_ai_provider', value: { preferred: sel.value } });
+      if (error) { status.innerText = 'Failed to save: ' + error.message; return; }
+      status.innerText = `✓ Saved -- ${sel.value === 'openai' ? 'OpenAI' : 'Claude'} tried first (falls back to whichever key is actually configured).`;
+      setTimeout(() => { if (status.innerText.startsWith('✓')) status.innerText = ''; }, 5000);
+    }
+
+    // Asks the Edge Function which provider(s) have a key set -- it only ever answers true/false,
+    // never the key itself, so this is safe to call straight from the admin browser.
+    async function mainsAiCheckConfig() {
+      const box = document.getElementById('mq-ai-config-status');
+      if (!box) return;
+      box.innerText = 'Checking…';
+      try {
+        const { data, error } = await supabaseClient.functions.invoke('mains-ai-evaluate', { body: { action: 'status' } });
+        if (error) throw error;
+        const claudeOn = !!data?.claude_configured;
+        const openaiOn = !!data?.openai_configured;
+        box.innerHTML = `Claude: <b class="${claudeOn ? 'text-emerald-700' : 'text-slate-400'}">${claudeOn ? 'configured' : 'not configured'}</b> &nbsp;·&nbsp; OpenAI: <b class="${openaiOn ? 'text-emerald-700' : 'text-slate-400'}">${openaiOn ? 'configured' : 'not configured'}</b>`;
+      } catch (err) {
+        box.innerText = 'Could not reach the evaluation function: ' + (err.message || err);
+      }
+    }
+
+    // Ad-hoc credit grant for testing the AI-eval flow end-to-end before the real purchase/bundle-
+    // allowance economy exists. Writes straight to the same tables that economy will later write to
+    // (mains_eval_credits + mains_eval_credit_transactions with reason 'admin_adjustment'), so nothing
+    // here needs to change when that later piece ships.
+    async function mainsAiGrantCredits() {
+      const emailInput = document.getElementById('mq-ai-grant-email');
+      const amountInput = document.getElementById('mq-ai-grant-amount');
+      const status = document.getElementById('mq-ai-grant-status');
+      const email = normalizeEmail(emailInput.value);
+      const amount = parseInt(amountInput.value, 10);
+      if (!email) return alert('Enter the student\'s email first.');
+      if (!Number.isInteger(amount) || amount === 0) return alert('Enter a non-zero whole number of credits.');
+
+      const { data: existing, error: fetchErr } = await supabaseClient.from('mains_eval_credits').select('balance').eq('student_email', email).maybeSingle();
+      if (fetchErr) return alert('Failed to look up current balance: ' + fetchErr.message);
+      const newBalance = Math.max(0, (existing ? existing.balance : 0) + amount);
+      const { error: upsertErr } = await supabaseClient.from('mains_eval_credits').upsert({ student_email: email, balance: newBalance, updated_at: new Date().toISOString() });
+      if (upsertErr) return alert('Failed to update balance: ' + upsertErr.message);
+      const { error: txnErr } = await supabaseClient.from('mains_eval_credit_transactions').insert({ student_email: email, delta: amount, reason: 'admin_adjustment' });
+      if (txnErr) console.error('mainsAiGrantCredits transaction log:', fmtErr(txnErr));
+
+      status.innerText = `✓ ${email} now has ${newBalance} credit${newBalance === 1 ? '' : 's'}.`;
+      amountInput.value = '';
+      setTimeout(() => { if (status.innerText.startsWith('✓')) status.innerText = ''; }, 6000);
+    }

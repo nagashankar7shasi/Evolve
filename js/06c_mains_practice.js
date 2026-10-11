@@ -3,18 +3,20 @@
     ----------------------------------------------------- */
     // Full-screen overlay (#view-mains-practice), same pattern as the exam engine / Studio -- a
     // focused, single-task view rather than another dashboard widget. Three screens inside it:
-    // browse -> write -> self-assess. AI-assisted and human-reviewed evaluation (the other two tiers
-    // from sql/add_mains_ecosystem.sql) show as "coming soon" placeholders on the self-assessment
-    // screen for now -- they're separate, not-yet-built pieces (Edge Function + credits economy, and
-    // the admin review queue). INTENTIONALLY NOT LINKED from any dashboard button or nav yet -- same
-    // staged-rollout discipline as the admin Question Studio PR: feature-complete, reachable only by
-    // calling openMainsPractice() directly, until the other tiers exist and access-control (Task
-    // "wire into bundle scope") is wired in.
+    // browse -> write -> self-assess. AI-assisted evaluation calls the provider-agnostic
+    // 'mains-ai-evaluate' Edge Function (Claude + OpenAI adapters, see that function's own comments);
+    // it reports a clean "not configured yet" error until an admin adds a real API key, rather than
+    // failing. Human-reviewed evaluation (the third tier) is still a "coming soon" placeholder -- the
+    // admin review queue hasn't been built yet. INTENTIONALLY NOT LINKED from any dashboard button or
+    // nav yet -- same staged-rollout discipline as the admin Question Studio PR: feature-complete,
+    // reachable only by calling openMainsPractice() directly, until all tiers exist and
+    // access-control (Task "wire into bundle scope") is wired in.
     let mainsSubmissions = [];        // this student's own submissions only (server-side .eq filter, even though RLS itself is public-read)
     let mainsPracticeFilterCategory = 'kpsc_kas';
     let mainsPracticeFilterSubject = '';
     let mainsPracticeCurrentQuestion = null; // question object currently being answered (write screen)
     let mainsPracticeAnswerPhotoFile = null; // staged File, not yet uploaded
+    let mainsPracticeCurrentSubmissionId = null; // submission currently shown on the self-assess screen (AI-feedback button target)
 
     async function fetchCloudMainsSubmissions() {
       if (!currentUser) { mainsSubmissions = []; return; }
@@ -227,6 +229,8 @@
       }
 
       renderMainsAssessRubric(q.rubric);
+      mainsPracticeCurrentSubmissionId = submissionId;
+      await mainsAiFeedbackInit(submissionId);
       mainsPracticeSwitchScreen('assess');
     }
 
@@ -247,4 +251,83 @@
       const covered = boxes.filter(b => b.checked).reduce((s, b) => s + (parseFloat(b.dataset.weight) || 0), 0);
       const el = document.getElementById('mp-assess-coverage');
       el.innerText = total ? `Self-assessed coverage: ${Math.round(covered)}%` : '';
+    }
+
+    // ---- AI-assisted feedback (second evaluation tier) ----
+    // Calls the provider-agnostic 'mains-ai-evaluate' Edge Function. On open, checks whether this
+    // submission already has a saved evaluation (so re-opening a past attempt shows it again rather
+    // than re-offering the button / re-spending a credit), and otherwise shows the current credit
+    // balance alongside the button.
+    function mainsAiFeedbackHideAll() {
+      ['mp-ai-feedback-idle', 'mp-ai-feedback-loading', 'mp-ai-feedback-error', 'mp-ai-feedback-result'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+    }
+
+    async function mainsAiFeedbackInit(submissionId) {
+      mainsAiFeedbackHideAll();
+      document.getElementById('mp-ai-credits-label').innerText = '';
+
+      const { data: existing, error } = await supabaseClient.from('mains_ai_evaluations')
+        .select('*').eq('submission_id', submissionId).order('created_at', { ascending: false }).limit(1).maybeSingle();
+      if (!error && existing) { renderMainsAiEvaluationResult(existing); return; }
+
+      document.getElementById('mp-ai-feedback-idle').classList.remove('hidden');
+      if (currentUser) {
+        const { data: creditRow } = await supabaseClient.from('mains_eval_credits').select('balance').eq('student_email', normalizeEmail(currentUser.email)).maybeSingle();
+        const bal = creditRow ? creditRow.balance : 0;
+        document.getElementById('mp-ai-credits-label').innerText = `${bal} credit${bal === 1 ? '' : 's'} left`;
+      }
+    }
+
+    function renderMainsAiEvaluationResult(evalRow) {
+      mainsAiFeedbackHideAll();
+      document.getElementById('mp-ai-feedback-result').classList.remove('hidden');
+      document.getElementById('mp-ai-score').innerText = `${evalRow.overall_score} / ${evalRow.max_score} marks`;
+      const criteria = Array.isArray(evalRow.criteria_scores) ? evalRow.criteria_scores : [];
+      document.getElementById('mp-ai-criteria').innerHTML = criteria.map(c => `
+        <div class="flex justify-between gap-2">
+          <span>${escapeHtml(c.criterion)}${c.comment ? `<span class="text-slate-400"> — ${escapeHtml(c.comment)}</span>` : ''}</span>
+          <span class="font-mono font-bold text-indigo-700 whitespace-nowrap">${c.score}/${c.max}</span>
+        </div>`).join('');
+      document.getElementById('mp-ai-summary').innerText = evalRow.summary_feedback || '';
+    }
+
+    // supabase-js v2 raises non-2xx Edge Function responses as a FunctionsHttpError whose parsed
+    // JSON body lives on error.context (a Response) -- this pulls the { error, message } our
+    // function sends back out of it, falling back to a generic message if that shape ever changes.
+    async function mainsExtractFunctionErrorBody(error) {
+      try {
+        if (error && error.context && typeof error.context.json === 'function') return await error.context.json();
+      } catch (_) { /* fall through to generic message below */ }
+      return { error: 'call_failed', message: (error && error.message) || 'Unknown error' };
+    }
+
+    function mainsShowAiFeedbackError(body) {
+      mainsAiFeedbackHideAll();
+      const code = body && body.error;
+      let msg;
+      if (code === 'insufficient_credits') msg = "You're out of AI evaluation credits.";
+      else if (code === 'not_configured') msg = "AI evaluation isn't set up yet — check back once an API key has been added.";
+      else msg = 'Could not get AI feedback right now: ' + ((body && body.message) || 'please try again.');
+      const errorBox = document.getElementById('mp-ai-feedback-error');
+      errorBox.innerText = msg;
+      errorBox.classList.remove('hidden');
+      document.getElementById('mp-ai-feedback-idle').classList.remove('hidden'); // let them retry
+    }
+
+    async function requestMainsAiEvaluation() {
+      const submissionId = mainsPracticeCurrentSubmissionId;
+      if (!submissionId) return;
+      mainsAiFeedbackHideAll();
+      document.getElementById('mp-ai-feedback-loading').classList.remove('hidden');
+
+      try {
+        const { data, error } = await supabaseClient.functions.invoke('mains-ai-evaluate', { body: { submission_id: submissionId } });
+        if (error) return mainsShowAiFeedbackError(await mainsExtractFunctionErrorBody(error));
+        if (!data || !data.success) return mainsShowAiFeedbackError(data);
+        renderMainsAiEvaluationResult(data.evaluation);
+      } catch (err) {
+        mainsShowAiFeedbackError({ error: 'network_error', message: err.message });
+      }
     }
