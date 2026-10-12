@@ -296,44 +296,20 @@ function recordDailyVisit() {
 
 window.onload = async function() {
       recordDailyVisit();
-      // --- FETCH LIVE DATA FROM GITHUB JSON ---
-      try {
-        const response = await fetch('data.json');
-        if (response.ok) {
-          const liveData = await response.json();
-
-          // 1. Support both backup format ('nav') and code format ('initialNav')
-          const newNav = liveData.nav || liveData.initialNav;
-          const newPages = liveData.pages || liveData.initialPages;
-          const newCatalog = liveData.catalog || liveData.initialPapersCatalog;
-          const newPricing = liveData.pricing || liveData.initialPricingMaster;
-          const newPdfs = liveData.pdfs || liveData.initialPdfs;
-
-          // 2. Overwrite state and update browser storage
-          if (newNav) {
-            navStructure = newNav;
-            localStorage.setItem('kas_nav_menu', JSON.stringify(navStructure));
-          }
-          if (newPages) {
-            customPages = newPages;
-            localStorage.setItem('kas_custom_pages', JSON.stringify(customPages));
-          }
-          if (newCatalog) {
-            testsCatalog = newCatalog;
-            localStorage.setItem('kas_tests_catalog', JSON.stringify(testsCatalog));
-          }
-          if (newPricing) {
-            pricingMaster = newPricing;
-            localStorage.setItem('kas_pricing_master', JSON.stringify(pricingMaster));
-          }
-          if (newPdfs) {
-            pdfVault = newPdfs;
-            localStorage.setItem('kas_pdf_vault', JSON.stringify(pdfVault));
-          }
-        }
-      } catch (err) {
-        console.warn("Could not fetch data.json. Using local storage or defaults.");
-      }
+      // REMOVED (2026-10-12): this used to fetch a static data.json from the repo root and
+      // unconditionally overwrite pricingMaster/navStructure/customPages/testsCatalog/pdfVault with
+      // it, racing against the real Supabase fetch further below. Supabase is the actual source of
+      // truth now (fetchCloudPricingMaster() etc., in the Promise.all below) -- data.json was a
+      // leftover pre-Supabase bootstrap seed that nothing regenerates. A stale copy of it uploaded
+      // to the repo on 2026-10-01 still carried the hardcoded placeholder UPI ID
+      // ('yourkasacademy@upi'); whenever the Supabase pricing-master fetch hiccupped on a page load,
+      // that placeholder won the race, got persisted to localStorage, and then got written straight
+      // into the live Supabase app_settings row the moment the admin next clicked "Save Pricing
+      // Settings" for *any* reason (that one save button re-saves the whole pricingMaster object,
+      // not just whatever field was actually changed) -- silently clobbering the real UPI ID both
+      // locally and in the cloud. Same unconditional-overwrite risk applied to nav/pages/catalog/pdfs.
+      // Deleted entirely rather than patched, since nothing depends on data.json anymore (see repo
+      // root -- also removed).
       // ----------------------------------------
 
       // Resume normal startup sequence
