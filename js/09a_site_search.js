@@ -127,7 +127,17 @@
         return;
       }
       if (view === 'admin') {
-        setTimeout(() => { showAdminPanel(currentAdminPanel); }, 0);
+        // Covers a mid-session admin login (completeAdminLogin() -> navigate('admin')): boot's own
+        // ensureAdminConsoleLoaded() calls (js/02a_bundles.js) only ran while isAdmin() was still
+        // false, so admin-console.html's shell may not be filled in yet. A no-op once it already
+        // is. When this call is the one that actually just filled it in, paintAdminConsoleOnce()
+        // (js/03b_dev_console.js) replays the one-time render calls that boot's own startup
+        // sequence skipped for the same reason -- the console wasn't there yet for them to render
+        // into. Otherwise the panel-level renders below (and showAdminPanel inside
+        // paintAdminConsoleOnce) already cover a plain re-entry into a console that's been loaded
+        // all along.
+        if (await ensureAdminConsoleLoaded()) paintAdminConsoleOnce();
+        else setTimeout(() => { showAdminPanel(currentAdminPanel); }, 0);
         const emailLabel = document.getElementById('admin-account-email');
         if (emailLabel) emailLabel.textContent = currentUser.email;
         renderPaymentOrders();

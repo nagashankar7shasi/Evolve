@@ -20,6 +20,16 @@ for name in ('css', 'js'):
         shutil.rmtree(dst)
     shutil.copytree(os.path.join(REPO_ROOT, name), dst)
 
+# admin-console.html: the Dev Console/Word Page Editor/etc. markup that index.html's
+# <main id="view-admin"> now fetches on demand (ensureAdminConsoleLoaded() in
+# js/03b_dev_console.js) instead of shipping inline -- needs to sit next to test-visual.html
+# the same way index.html expects to find it next to itself in production, or every admin
+# test against the harness gets an empty console shell.
+shutil.copyfile(
+    os.path.join(REPO_ROOT, 'admin-console.html'),
+    os.path.join(HERE, 'admin-console.html')
+)
+
 html = open(SRC, encoding='utf-8').read()
 
 # Tailwind no longer needs stubbing here: production index.html itself now links a precompiled

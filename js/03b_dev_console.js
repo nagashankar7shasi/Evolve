@@ -3,6 +3,71 @@
     ----------------------------------------------------- */
     let currentAdminPanel = localStorage.getItem('kas_admin_panel') || 'overview';
 
+    // The Dev Console panels, Word Page Editor canvas, etc. used to ship inside index.html's
+    // <main id="view-admin"> for every visitor, admin or not (132KB, ~47% of the page at the
+    // time this was split out). That markup now lives in its own file, admin-console.html, at
+    // the repo root, fetched and injected into the still-present-but-now-empty <main id=
+    // "view-admin"> shell only once a visitor is confirmed to be an admin -- either at boot
+    // (js/02a_bundles.js's window.onload, both before and after restoreSupabaseSession() resolves
+    // isAdmin(), covering an already-logged-in admin device) or the moment a mid-session admin
+    // login succeeds (navigate('admin') in js/09a_site_search.js). adminConsoleLoaded/
+    // adminConsoleLoadPromise make repeat calls a cheap no-op instead of re-fetching or racing two
+    // fetches against each other. Returns true only the one time it actually performs the
+    // fetch+inject, so a caller can tell "just appeared" apart from "was already there" and decide
+    // whether it still needs to paint the console's content (see paintAdminConsoleOnce below) --
+    // window.onload's existing render calls don't need that signal since they already sit later in
+    // the same function, in their original order, and now simply find real DOM once this has run.
+    // NOTE: the hardcoded ?v= below is index.html's own cache-bust number, bumped by hand in
+    // step with every other ?v=N tag in index.html (see CLAUDE.md) -- there's no shared JS
+    // constant for it, so bumping one without the other means this fetch keeps serving a stale
+    // cached admin-console.html after a change to it.
+    let adminConsoleLoaded = false;
+    let adminConsoleLoadPromise = null;
+    async function ensureAdminConsoleLoaded() {
+      if (adminConsoleLoaded) return false;
+      if (adminConsoleLoadPromise) return adminConsoleLoadPromise;
+      adminConsoleLoadPromise = (async () => {
+        const shell = document.getElementById('view-admin');
+        if (!shell) return false; // shouldn't happen -- the empty shell ships in every index.html
+        try {
+          const res = await fetch('admin-console.html?v=63');
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          shell.innerHTML = await res.text();
+          adminConsoleLoaded = true;
+          return true;
+        } catch (err) {
+          console.error('Failed to load admin-console.html', fmtErr(err));
+          shell.innerHTML = '<p class="text-center text-red-600 py-10">Couldn\'t load the admin console. Please refresh to try again.</p>';
+          return false;
+        } finally {
+          adminConsoleLoadPromise = null; // a failed load should be retryable on the next call
+        }
+      })();
+      return adminConsoleLoadPromise;
+    }
+
+    // One-time paint of the admin console's content from whatever's already in memory, run exactly
+    // once, right after admin-console.html's shell is first filled in. Mirrors the render calls that
+    // already sit later in window.onload for the common "admin already logged in on this device"
+    // boot path (those just work once ensureAdminConsoleLoaded() has run early enough) -- this
+    // covers the other path, a mid-session admin login via the modal, where boot already ran and
+    // skipped all of them (the console wasn't there yet for them to render into).
+    function paintAdminConsoleOnce() {
+      renderGranularNavTree();
+      renderPagesList();
+      renderPdfVault();
+      renderFeatureAccessAdmin();
+      renderPlannersAdmin();
+      resetMenuForm();
+      renderPricingMasterSettings();
+      resetWordEditorToNew();
+      if (typeof hydrateBrandingAdmin === 'function') hydrateBrandingAdmin();
+      if (typeof renderCouponsAdmin === 'function') renderCouponsAdmin();
+      if (typeof renderMainsQuestionsAdmin === 'function') renderMainsQuestionsAdmin();
+      if (typeof renderStudentDirectoryTable === 'function') renderStudentDirectoryTable();
+      showAdminPanel(currentAdminPanel);
+    }
+
     function showAdminPanel(id) {
       const panels = document.querySelectorAll('#admin-panels [data-panel]');
       if (![...panels].some(p => p.dataset.panel === id)) id = 'overview';
