@@ -4,10 +4,14 @@
   "description": "Evolve+ exam-prep platform — regression test tooling (see /tests)",
   "scripts": {
     "build-harness": "python3 tests/harness/build_test_visual.py",
+    "build-css": "tailwindcss -i css/tailwind-src.css -o css/tailwind.css --minify",
     "test": "node tests/run.js"
   },
   "license": "UNLICENSED",
   "dependencies": {
     "playwright": "^1.63.0"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.19"
   }
 }

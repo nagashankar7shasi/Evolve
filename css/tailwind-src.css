@@ -1,0 +1,8 @@
+/* Source file for the Tailwind CLI build -- NOT shipped to the browser. See css/tailwind.css
+   (generated, committed) and the "build-css" npm script in package.json. Rebuild this whenever a
+   new Tailwind utility class is used anywhere in index.html or js/*.js that doesn't already
+   appear literally in those files -- the CLI only picks up classes it can see as text, same as
+   the Play CDN it replaced, just at commit time instead of in every visitor's browser. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
