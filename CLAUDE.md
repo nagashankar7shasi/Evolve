@@ -7,7 +7,8 @@ versioning — read that first. This file is about *workflow*: how changes get m
 - **GitHub repo:** `nagashankar7shasi/Evolve` (remote may show as `nagashankar7shasi/evolve`,
   same repo — GitHub just normalized the case).
 - **Supabase project_id:** `zghoanrwgihlefgmqmrr`.
-- **Live site:** https://evolveplus.in (GitHub Pages, serves `index.html` directly, no build step).
+- **Live site:** https://evolveplus.in (GitHub Pages, serves `index.html` directly — no *deploy*
+  build step; `css/tailwind.css` is a committed, precompiled file, not built at request time).
 
 ## Shipping an app-code change (index.html, /css, /js)
 
@@ -15,14 +16,20 @@ Always use a feature branch + PR, never commit straight to `main`:
 
 1. `git checkout -b feature/<short-name>`
 2. Make the change.
-3. **Bump the cache-bust version**: `grep -o '?v=[0-9]*' index.html | sort -u` to see the current
+3. **If you used any new Tailwind utility class** (one that doesn't already appear literally
+   somewhere in `index.html` or `js/*.js`), run `npm run build-css` to regenerate `css/tailwind.css`
+   — Tailwind is a precompiled static build now (`css/tailwind-src.css` → `css/tailwind.css` via
+   `tailwind.config.js`'s content scan), not the old Play CDN, so a class that was never compiled
+   simply won't render. Forgetting this step is the one way this specific change can silently break
+   styling — nothing else in the test suite catches a missing utility class.
+4. **Bump the cache-bust version**: `grep -o '?v=[0-9]*' index.html | sort -u` to see the current
    number, then `sed -i 's/?v=OLD/?v=NEW/g' index.html` to bump every tag together (see README).
-4. Test before pushing (see below) — don't open a PR on unverified code.
-5. Commit, `git push -u origin feature/<short-name>`.
-6. Open the PR: `gh api repos/nagashankar7shasi/Evolve/pulls -f title=... -f head=... -f base=main -f body=...`
-7. Poll CI: `gh api repos/nagashankar7shasi/Evolve/commits/<SHA>/check-runs` until `completed`/`success`.
-8. Merge: `gh api repos/nagashankar7shasi/Evolve/pulls/<N>/merge -X PUT -f merge_method=merge`.
-9. `git checkout main && git pull origin main && git branch -d feature/<short-name>`.
+5. Test before pushing (see below) — don't open a PR on unverified code.
+6. Commit, `git push -u origin feature/<short-name>`.
+7. Open the PR: `gh api repos/nagashankar7shasi/Evolve/pulls -f title=... -f head=... -f base=main -f body=...`
+8. Poll CI: `gh api repos/nagashankar7shasi/Evolve/commits/<SHA>/check-runs` until `completed`/`success`.
+9. Merge: `gh api repos/nagashankar7shasi/Evolve/pulls/<N>/merge -X PUT -f merge_method=merge`.
+10. `git checkout main && git pull origin main && git branch -d feature/<short-name>`.
 
 ## Shipping a pure data/DB fix (no app-code change)
 
@@ -43,8 +50,10 @@ they'd conceptually belong.
 ```
 npm run build-harness
 ```
-builds `tests/harness/test-visual.html` from the real `index.html`/`css`/`js` (CDN `<script>` tags
-get rewritten to local vendor stubs — see `tests/harness/vendor/stubs.js`).
+builds `tests/harness/test-visual.html` from the real `index.html`/`css`/`js` (remaining CDN
+`<script>` tags — PapaParse, pdf-lib, Supabase — get rewritten to local vendor stubs, see
+`tests/harness/vendor/stubs.js`; Tailwind needs no stubbing since `css/tailwind.css` is already a
+plain static file production uses directly, same as `css/main.css`).
 
 Serve it (the simple one-liner often fails with exit 144 or an unreachable port — this detached
 form is reliable, sometimes needing a second attempt):

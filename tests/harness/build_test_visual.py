@@ -22,12 +22,9 @@ for name in ('css', 'js'):
 
 html = open(SRC, encoding='utf-8').read()
 
-# Tailwind CDN -> local compiled CSS (already built once, still valid: static utility classes
-# haven't changed) + no-op tailwind.config global some code may reference.
-html = html.replace(
-    '<script src="https://cdn.tailwindcss.com"></script>',
-    '<link rel="stylesheet" href="compiled-tailwind.css">\n  <script>window.tailwind = { config: {} };</script>'
-)
+# Tailwind no longer needs stubbing here: production index.html itself now links a precompiled
+# css/tailwind.css (see css/tailwind-src.css + `npm run build-css`) instead of the old Play CDN
+# script, and that file is already copied into place by the css/ copytree above like main.css is.
 
 html = html.replace(
     '<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>',
