@@ -101,6 +101,7 @@
     }
 
     function resetMenuForm(parentId = '') {
+      if (!document.getElementById('menu-form')) return; // admin console (view-admin) not loaded -- not an admin
       editingMenu = null;
       document.getElementById('menu-form').reset();
       document.getElementById('menu-form-title').innerText = 'Add a menu item';

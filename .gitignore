@@ -3,3 +3,4 @@ tests/harness/test-visual.html
 # Copied in from the repo root by build_test_visual.py on every build -- not the source of truth.
 tests/harness/css/
 tests/harness/js/
+tests/harness/admin-console.html

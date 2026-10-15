@@ -361,6 +361,7 @@
     const passwordFails = {};
 
     function renderAuthSettings() {
+      if (!document.getElementById('cfg-otp-mode')) return; // admin console (view-admin) not loaded -- not an admin, nothing to render
       document.getElementById('cfg-otp-mode').value = authSettings.otpMode;
       document.getElementById('cfg-allow-signup').checked = !!authSettings.allowSignup;
       document.getElementById('cfg-show-otp-login').checked = !!authSettings.showOtpLogin;

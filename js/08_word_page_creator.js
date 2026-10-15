@@ -1259,6 +1259,7 @@
     }
 
     function resetWordEditorToNew() {
+      if (!document.getElementById('load-existing-page-picker')) return; // admin console (view-admin) not loaded -- not an admin
       editingPageId = null;
       slugManuallyEdited = false;
       document.getElementById('load-existing-page-picker').value = '';
@@ -1677,6 +1678,7 @@
     function renderPagesList() {
       const container = document.getElementById('pages-list-display');
       const picker = document.getElementById('load-existing-page-picker');
+      if (!container || !picker) return; // admin console (view-admin) not loaded -- not an admin, nothing to render
 
       container.innerHTML = '';
       picker.innerHTML = '<option value="">-- Choose Existing Page to Edit --</option>';

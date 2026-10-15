@@ -7,6 +7,7 @@
     }
 
     function renderPricingMasterSettings() {
+      if (!document.getElementById('cfg-upi-id')) return; // admin console (view-admin) not loaded -- not an admin, nothing to render
       document.getElementById('cfg-upi-id').value = pricingMaster.upiId;
       document.getElementById('cfg-payee-name').value = pricingMaster.payeeName;
       const wa = document.getElementById('cfg-whatsapp-number');

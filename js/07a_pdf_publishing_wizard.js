@@ -308,6 +308,7 @@
 
     function renderPdfVault() {
       const container = document.getElementById('pdf-vault-list');
+      if (!container) return; // admin console (view-admin) not loaded -- not an admin, nothing to render
       container.innerHTML = '';
 
       pdfVault.forEach(doc => {

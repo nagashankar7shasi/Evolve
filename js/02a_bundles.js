@@ -313,6 +313,13 @@ window.onload = async function() {
       // ----------------------------------------
 
       // Resume normal startup sequence
+      // Admin console HTML (admin-console.html) is fetched/injected into the empty <main
+      // id="view-admin"> shell here, as early as possible -- covers the common case (the admin
+      // revisiting on a device where kas_user was already saved as role:'admin' from a previous
+      // visit), BEFORE any of the render calls below that touch its DOM run. A second check sits
+      // right after restoreSupabaseSession() below for the rarer case where isAdmin() only
+      // becomes true once that resolves; ensureAdminConsoleLoaded() is a no-op the second time.
+      if (isAdmin()) await ensureAdminConsoleLoaded();
       if (typeof validateSession === 'function') validateSession();
       if (typeof renderAuthSettings === 'function') renderAuthSettings();
       applyPricingLabels();
@@ -339,6 +346,14 @@ window.onload = async function() {
       // network round trip at all, so it costs boot next to nothing; it only becomes a real network call
       // when the stored session's token needs a refresh.
       await restoreSupabaseSession(); // PHASE 3: recognize a real Supabase Auth session, admin or student, if one exists
+      // Second check (see the comment above the first one near the top of this function) -- a
+      // no-op if it already ran, but catches a live Supabase Auth admin session that
+      // restoreSupabaseSession() just promoted currentUser to, which the earlier check couldn't
+      // have seen yet. Must land before the Promise.all below, since several of its fetches
+      // render straight into admin-console.html's DOM (fetchCloudStudents, fetchCloudPricingMaster,
+      // fetchCloudAuthSettings, fetchCloudFeatureAccess, fetchCloudPlanners, fetchCloudCoupons,
+      // fetchCloudMainsQuestions, fetchCloudSiteBranding, fetchCloudVisitStats).
+      if (isAdmin()) await ensureAdminConsoleLoaded();
 
       // Everything below reads Supabase into its OWN distinct global (testsCatalog, studentDirectory,
       // pricingMaster, etc.) and none of them need another one to have finished first — except two
