@@ -503,8 +503,21 @@
       e.preventDefault();
       placeCaretInNode(ensureTrailingParagraphAfter(block));
     }
-    const _wordEditorCanvasEl = document.getElementById('word-editor-canvas');
-    if (_wordEditorCanvasEl) _wordEditorCanvasEl.addEventListener('keydown', handleColsBlockEnterKey);
+    // BUG (found 2026-10-16, introduced by the admin-console lazy-load split): this used to be a
+    // top-level `const _wordEditorCanvasEl = document.getElementById('word-editor-canvas'); if
+    // (...) .addEventListener(...)` that ran once, immediately, at script-parse time -- which was
+    // fine while #word-editor-canvas always existed inline in index.html, but that element now
+    // lives inside admin-console.html, fetched on demand (see js/03b_dev_console.js's
+    // ensureAdminConsoleLoaded). Script-parse-time code runs long before that fetch, for every
+    // visitor including admins, so the lookup was always null and this handler never attached --
+    // Enter at the end of the last column of a multi-column block just split the paragraph
+    // normally instead of escaping the block, with no error to notice. Wrapped in a function and
+    // called from ensureAdminConsoleLoaded() right after the console's HTML is actually in the
+    // DOM, instead of at parse time.
+    function attachWordEditorCanvasKeydownHandler() {
+      const el = document.getElementById('word-editor-canvas');
+      if (el) el.addEventListener('keydown', handleColsBlockEnterKey);
+    }
 
     function insertBlock(kind) {
       let html = BLOCK_TEMPLATES[kind];
@@ -776,7 +789,15 @@
       el.textContent = `${words} word${words === 1 ? '' : 's'} · ${chars} character${chars === 1 ? '' : 's'}`;
     }
 
-    (function wireWordCount() {
+    // BUG (found 2026-10-16, introduced by the admin-console lazy-load split, same root cause as
+    // attachWordEditorCanvasKeydownHandler above): this used to be a top-level IIFE -- `(function
+    // wireWordCount() { ... })();` -- invoked immediately at script-parse time. #word-editor-canvas
+    // now lives inside admin-console.html, fetched on demand, so the canvas lookup below was
+    // always null at that point and this whole function returned before wiring anything up: the
+    // live word/character count silently stopped updating for everyone, admin included. Turned
+    // into a plain named function, called from ensureAdminConsoleLoaded() (js/03b_dev_console.js)
+    // once the console's real markup is actually in the DOM.
+    function wireWordCount() {
       const canvas = document.getElementById('word-editor-canvas');
       if (!canvas) return;
       // A MutationObserver (rather than hooking every insertBlock/resetWordEditorToNew/
@@ -792,9 +813,14 @@
       new MutationObserver(schedule).observe(canvas, { childList: true, subtree: true, characterData: true });
       canvas.addEventListener('input', schedule);
       schedule();
-    })();
+    }
 
-    (function wireEditorImages() {
+    // BUG (found 2026-10-16, same root cause/fix pattern as wireWordCount above): was a top-level
+    // IIFE, ran at parse time before #word-editor-canvas existed, so none of this ever attached --
+    // focus-triggered paragraph-separator fix, image paste-insert, image drag-drop, and
+    // click-to-select for images/video blocks were all silently broken. Now a plain named
+    // function, called from ensureAdminConsoleLoaded().
+    function wireEditorImages() {
       const canvas = document.getElementById('word-editor-canvas');
       if (!canvas) return;
       canvas.addEventListener('focus', ensureWordLikeParagraphs);
@@ -839,7 +865,7 @@
           videoTools.classList.toggle('inline-flex', !!videoWrap);
         }
       });
-    })();
+    }
 
     function openPageCardPicker() {
       const sel = document.getElementById('pagecard-select');
