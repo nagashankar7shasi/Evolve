@@ -30,10 +30,19 @@
         const shell = document.getElementById('view-admin');
         if (!shell) return false; // shouldn't happen -- the empty shell ships in every index.html
         try {
-          const res = await fetch('admin-console.html?v=63');
+          const res = await fetch('admin-console.html?v=64');
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           shell.innerHTML = await res.text();
           adminConsoleLoaded = true;
+          // Wires up the Word Page Editor's canvas listeners (keydown for the multi-column
+          // Enter-key escape, live word count, and image paste/drag-drop/click handling), which
+          // all used to attach at script-parse time directly against #word-editor-canvas -- fine
+          // while it was always inline in index.html, broken (silently -- no error, just dead
+          // features) now that it only exists from this point on. See the comments on each of
+          // these three functions (js/08_word_page_creator.js) for the bugs this fixes.
+          if (typeof attachWordEditorCanvasKeydownHandler === 'function') attachWordEditorCanvasKeydownHandler();
+          if (typeof wireWordCount === 'function') wireWordCount();
+          if (typeof wireEditorImages === 'function') wireEditorImages();
           return true;
         } catch (err) {
           console.error('Failed to load admin-console.html', fmtErr(err));
