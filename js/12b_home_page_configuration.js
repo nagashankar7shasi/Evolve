@@ -23,6 +23,18 @@
         heroImageDataUrl: '',   // NEW: optional admin-uploaded background photo. '' = plain dark hero (today's look).
         size: 'normal'          // NEW: 'minimal' | 'compact' | 'normal' | 'spacious' — vertical size of the hero panel
       },
+      banners: {
+        // Promo banner/carousel strip for "test series on offer" -- similar to a typical exam-prep
+        // site's hero promo area. Off in effect (renderHomeBanners auto-hides) until the admin
+        // actually uploads at least one banner image, same reasoning as ticker/stats/why/etc. below.
+        enabled: true,
+        order: 1.5,   // sits between the hero (1) and Study Rooms (2)
+        title: '',       // optional small heading shown above the strip; blank = no heading
+        autoplaySec: 5,  // 0 = no auto-advance; only applies when there's more than one banner
+        items: []        // { id, image (dataURL), caption, action } -- action uses the same
+                         // 'tests' | 'dashboard' | 'signup' | 'page:<id>' | 'bundle:<id>' |
+                         // 'test:<id>' | 'url:<...>' | '' (image-only, no link) scheme as the hero CTAs
+      },
       studyrooms: {
         enabled: true,
         order: 2,
@@ -233,6 +245,7 @@
       const safe = (name, fn) => { try { fn(); } catch (err) { console.error(`renderHomePage: ${name} threw`, fmtErr(err)); } };
       safe('typography', renderHomeTypography);
       safe('hero',        renderHomeHero);
+      safe('banners',     renderHomeBanners);
       safe('studyrooms',  renderHomeStudyRooms);
       safe('passes',      renderHomePasses);
       safe('ticker',      renderHomeTicker);
@@ -256,7 +269,7 @@
     // section's homeConfig.<key>.order, sorts, and re-appends them to their shared parent in sequence
     // (appendChild on a node already in the DOM relocates it rather than duplicating it).
     const HOME_SECTION_DOM_IDS = {
-      hero: 'home-hero', studyrooms: 'home-sections', passes: 'home-passes', ticker: 'home-ticker',
+      hero: 'home-hero', banners: 'home-banners', studyrooms: 'home-sections', passes: 'home-passes', ticker: 'home-ticker',
       stats: 'home-stats', upcoming: 'home-upcoming', whatsnew: 'home-whatsnew', news: 'home-news',
       why: 'home-why', toppers: 'home-toppers', ratings: 'home-ratings', faq: 'home-faq', cta: 'home-cta'
     };
@@ -287,7 +300,7 @@
       const bodyFont = enabled && c.bodyFont ? c.bodyFont : '';
       const headingFont = enabled && c.headingFont ? c.headingFont : '';
       // Target every home section wrapper: hero, ticker, stats, whatsnew, news, why, toppers, faq, cta, sections, passes
-      const sel = '#home-hero, #home-ticker, #home-stats, #home-whatsnew, #home-news, #home-why, #home-toppers, #home-faq, #home-cta, #home-sections, #home-passes';
+      const sel = '#home-hero, #home-banners, #home-ticker, #home-stats, #home-whatsnew, #home-news, #home-why, #home-toppers, #home-faq, #home-cta, #home-sections, #home-passes';
       sheet.textContent = `
         ${bodyFont ? `${sel} { font-family: ${bodyFont}; }` : ''}
         ${headingFont ? `${sel.split(', ').map(s => `${s} h1, ${s} h2, ${s} h3, ${s} h4`).join(', ')} { font-family: ${headingFont}; }` : ''}
@@ -298,6 +311,8 @@
     function runHomeAction(action) {
       if (!action) return;
       if (action.startsWith('page:')) return renderDynamicCustomPage(action.slice(5));
+      if (action.startsWith('bundle:')) return renderBundleLandingPage(action.slice(7));
+      if (action.startsWith('test:')) return openExamModePicker(action.slice(5));
       if (action.startsWith('url:')) { window.open(action.slice(4), '_blank', 'noopener'); return; }
       if (action === 'signup') { openLoginModal && openLoginModal(); return; }
       navigate(action);
@@ -375,6 +390,60 @@
         Object.values(HERO_SIZES).forEach(s => heroBtnRow.classList.remove(s.btnTop));
         heroBtnRow.classList.add(sizes.btnTop);
       }
+    }
+
+    // Promo banner/carousel strip. Autoplay uses a plain setInterval (cleared and re-armed on every
+    // render, so navigating away or re-saving the config never leaves a stray timer running).
+    let homeBannersAutoplayTimer = null;
+    let homeBannersIndex = 0;
+    function homeBannersItems() {
+      return ((homeConfig.banners && homeConfig.banners.items) || []).filter(x => x && x.image);
+    }
+    function renderHomeBanners() {
+      const c = homeConfig.banners || {};
+      if (homeBannersAutoplayTimer) { clearInterval(homeBannersAutoplayTimer); homeBannersAutoplayTimer = null; }
+      const items = homeBannersItems();
+      const show = !!c.enabled && items.length > 0;
+      toggleSection('home-banners', show);
+      if (!show) return;
+      const titleEl = document.getElementById('home-banners-title');
+      if (titleEl) { titleEl.innerText = c.title || ''; titleEl.classList.toggle('hidden', !c.title); }
+      homeBannersIndex = 0;
+      const track = document.getElementById('home-banners-track');
+      track.innerHTML = items.map((it, i) => {
+        const inner = `<img src="${escapeHtml(it.image)}" alt="${escapeHtml(it.caption || '')}" />` +
+          (it.caption ? `<span class="home-banner-caption">${escapeHtml(it.caption)}</span>` : '');
+        return it.action
+          ? `<a href="javascript:void(0)" class="home-banner-slide" onclick="homeBannerSlideClick(${i})">${inner}</a>`
+          : `<div class="home-banner-slide">${inner}</div>`;
+      }).join('');
+      const multi = items.length > 1;
+      const dots = document.getElementById('home-banners-dots');
+      dots.innerHTML = multi ? items.map((_, i) => `<button type="button" class="home-banner-dot" onclick="homeBannersGoTo(${i})" aria-label="Slide ${i + 1}"></button>`).join('') : '';
+      toggleSection('home-banners-prev', multi);
+      toggleSection('home-banners-next', multi);
+      homeBannersApplyTransform();
+      const sec = Math.max(0, Math.min(20, parseInt(c.autoplaySec, 10) || 0));
+      if (multi && sec > 0) homeBannersAutoplayTimer = setInterval(() => homeBannersNav(1), sec * 1000);
+    }
+    function homeBannersApplyTransform() {
+      const track = document.getElementById('home-banners-track');
+      if (track) track.style.transform = `translateX(-${homeBannersIndex * 100}%)`;
+      document.querySelectorAll('#home-banners-dots .home-banner-dot').forEach((d, i) => d.classList.toggle('active', i === homeBannersIndex));
+    }
+    function homeBannersNav(dir) {
+      const items = homeBannersItems();
+      if (!items.length) return;
+      homeBannersIndex = (homeBannersIndex + dir + items.length) % items.length;
+      homeBannersApplyTransform();
+    }
+    function homeBannersGoTo(i) {
+      homeBannersIndex = i;
+      homeBannersApplyTransform();
+    }
+    function homeBannerSlideClick(i) {
+      const it = homeBannersItems()[i];
+      if (it && it.action) runHomeAction(it.action);
     }
 
     function renderHomeStudyRooms() {
@@ -649,6 +718,12 @@
              </div>
            </div>`
         )}
+        ${sectionShell('banners', 'Promo banners (featured test series strip, near the top of home)',
+          hcTextField('banners', 'title', 'Optional small heading above the strip (leave blank for none)') +
+          hcNumberField('banners', 'autoplaySec', 'Auto-advance every N seconds (0 = off, only matters with 2+ banners)', 0, 20) +
+          hcBannerEditor() +
+          `<p class="text-[11px] text-slate-500 pl-1 pt-1">Stays hidden from visitors until at least one banner has a photo uploaded. Each banner can optionally link to a bundle, a page, a specific test paper, or an external URL.</p>`
+        )}
         ${sectionShell('studyrooms', 'Study Rooms strip (auto-populated from your pages)',
           hcTextField('studyrooms', 'title', 'Section title') +
           hcTextField('studyrooms', 'subtitle', 'Subtitle') +
@@ -765,6 +840,7 @@
     function hcActionField(sec, field, label) {
       const current = (homeConfig[sec] && homeConfig[sec][field]) || '';
       const pageOpts = (customPages || []).map(p => `<option value="page:${p.id}">Page: ${escapeHtml(p.title)}</option>`).join('');
+      const bundleOpts = (bundles || []).map(b => `<option value="bundle:${b.id}">Bundle: ${escapeHtml(b.name)}</option>`).join('');
       return `<div class="mb-2">
         <label class="block font-bold text-slate-700 mb-1 text-xs">${escapeHtml(label)}</label>
         <select data-hc-field="${sec}.${field}" onchange="hcFieldChange(this)" class="w-full px-2.5 py-1.5 border rounded-lg bg-white outline-none text-xs">
@@ -772,10 +848,135 @@
           <option value="tests">Exam Hub</option>
           <option value="dashboard">Dashboard</option>
           <option value="signup">Open login/sign-up modal</option>
+          ${bundleOpts}
           ${pageOpts}
         </select>
-        <input type="text" data-hc-field="${sec}.${field}" oninput="hcFieldChange(this)" value="${escapeHtml(current)}" placeholder="…or paste an action like page:p_abc or url:https://…" class="w-full px-2.5 py-1.5 border rounded-lg outline-none text-xs mt-1 font-mono" />
+        <input type="text" data-hc-field="${sec}.${field}" oninput="hcFieldChange(this)" value="${escapeHtml(current)}" placeholder="…or paste an action like page:p_abc, bundle:kpsc_kas, test:p_123 or url:https://…" class="w-full px-2.5 py-1.5 border rounded-lg outline-none text-xs mt-1 font-mono" />
       </div>`;
+    }
+
+    // Per-item action picker for the promo banner editor -- same dual select+free-text-input idea as
+    // hcActionField above, but keyed to a banners.items[idx] entry instead of a flat homeConfig field.
+    function hcBannerActionField(it, idx) {
+      const current = it.action || '';
+      const opt = (value, label) => `<option value="${escapeHtml(value)}"${current === value ? ' selected' : ''}>${escapeHtml(label)}</option>`;
+      const bundleOpts = (bundles || []).map(b => opt(`bundle:${b.id}`, `Bundle: ${b.name}`)).join('');
+      const pageOpts = (customPages || []).map(p => opt(`page:${p.id}`, `Page: ${p.title}`)).join('');
+      return `<div>
+        <select onchange="hcBannerFieldChange(${idx}, 'action', this.value)" class="w-full px-2.5 py-1.5 border rounded-lg bg-white outline-none text-xs">
+          ${opt('', 'No link (image only)')}
+          ${opt('tests', 'Exam Hub')}
+          ${opt('dashboard', 'Dashboard')}
+          ${bundleOpts}
+          ${pageOpts}
+        </select>
+        <input type="text" value="${escapeHtml(current)}" oninput="hcBannerFieldChange(${idx}, 'action', this.value)" placeholder="…or paste bundle:<id>, page:<id>, test:<id> or url:https://…" class="w-full px-2.5 py-1.5 border rounded-lg outline-none text-xs mt-1 font-mono" />
+      </div>`;
+    }
+
+    // ---------- Promo banner list editor (add/reorder/remove, per-item image upload) ----------
+    // Not built on the generic hcListEditor/hcListRow above because those only handle plain
+    // text/textarea/date columns -- a banner needs a real image upload (mirroring hcImageField's
+    // FileReader -> canvas resize -> dataURL pipeline) plus a link-target picker per row, neither of
+    // which the generic column system supports.
+    function hcBannerEditor() {
+      const items = (homeConfig.banners && homeConfig.banners.items) || [];
+      const rows = items.map((it, idx) => hcBannerRow(it, idx, items.length)).join('');
+      return `<div class="mt-1">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Banners (${items.length})</span>
+          <button type="button" onclick="hcAddBanner()" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold rounded">+ Add banner</button>
+        </div>
+        <div id="hc-banners-rows" class="space-y-2">${rows || '<p class="text-[11px] text-slate-400 pl-1">No banners yet — add one to feature a test series here.</p>'}</div>
+      </div>`;
+    }
+
+    function hcBannerRow(it, idx, total) {
+      return `<div class="hc-editor-row">
+        <div class="flex gap-3">
+          <div class="w-24 h-16 bg-slate-100 border rounded-lg flex items-center justify-center overflow-hidden shrink-0">
+            ${it.image ? `<img src="${escapeHtml(it.image)}" class="w-full h-full object-cover" />` : `<span class="text-[9px] text-slate-400 text-center px-1 leading-tight">No photo</span>`}
+          </div>
+          <div class="flex-1 min-w-0 space-y-1.5">
+            <label class="inline-block px-2.5 py-1 border rounded-lg bg-white font-bold cursor-pointer hover:bg-slate-50 text-[11px]">
+              ${it.image ? 'Replace photo' : 'Upload photo'}
+              <input type="file" accept="image/*" class="hidden" onchange="hcBannerImageChange(this, ${idx})" />
+            </label>
+            <input type="text" value="${escapeHtml(it.caption || '')}" oninput="hcBannerFieldChange(${idx}, 'caption', this.value)" placeholder="Caption shown on the banner (optional)" class="w-full px-2.5 py-1.5 border rounded-lg outline-none text-xs" />
+            ${hcBannerActionField(it, idx)}
+          </div>
+        </div>
+        <div class="flex flex-col gap-1">
+          <button type="button" onclick="hcMoveBanner(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Move up" class="w-7 h-7 rounded-lg border text-slate-600 hover:bg-slate-50 font-bold disabled:opacity-30">↑</button>
+          <button type="button" onclick="hcMoveBanner(${idx}, 1)" ${idx === total - 1 ? 'disabled' : ''} title="Move down" class="w-7 h-7 rounded-lg border text-slate-600 hover:bg-slate-50 font-bold disabled:opacity-30">↓</button>
+          <button type="button" onclick="hcRemoveBanner(${idx})" title="Remove" class="w-7 h-7 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 font-bold">×</button>
+        </div>
+      </div>`;
+    }
+
+    function hcAddBanner() {
+      if (!homeConfig.banners) homeConfig.banners = { enabled: true, order: 1.5, items: [] };
+      if (!Array.isArray(homeConfig.banners.items)) homeConfig.banners.items = [];
+      homeConfig.banners.items.push({ id: 'bnr_' + Math.random().toString(36).slice(2, 9), image: '', caption: '', action: '' });
+      renderHomeConfigAdmin();
+      renderHomePage();
+    }
+
+    function hcRemoveBanner(idx) {
+      const items = homeConfig.banners && homeConfig.banners.items;
+      if (!Array.isArray(items)) return;
+      if (!confirm('Remove this banner?')) return;
+      items.splice(idx, 1);
+      renderHomeConfigAdmin();
+      renderHomePage();
+    }
+
+    function hcMoveBanner(idx, dir) {
+      const items = homeConfig.banners && homeConfig.banners.items;
+      if (!Array.isArray(items)) return;
+      const j = idx + dir;
+      if (j < 0 || j >= items.length) return;
+      const tmp = items[idx]; items[idx] = items[j]; items[j] = tmp;
+      renderHomeConfigAdmin();
+      renderHomePage();
+    }
+
+    function hcBannerFieldChange(idx, field, value) {
+      if (!homeConfig.banners) homeConfig.banners = { items: [] };
+      if (!Array.isArray(homeConfig.banners.items)) homeConfig.banners.items = [];
+      if (!homeConfig.banners.items[idx]) homeConfig.banners.items[idx] = {};
+      homeConfig.banners.items[idx][field] = value;
+      renderHomePage();
+    }
+
+    function hcBannerImageChange(input, idx) {
+      const file = input.files && input.files[0];
+      input.value = '';
+      if (!file) return;
+      if (!file.type || !file.type.startsWith('image/')) { alert('Please choose an image file (PNG, JPG, etc).'); return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          // Wide banner photo -- same cap/encode choice as the hero background photo (hcImageFieldChange).
+          const maxDim = 1600;
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale) || img.width;
+          canvas.height = Math.round(img.height * scale) || img.height;
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          if (!homeConfig.banners) homeConfig.banners = { items: [] };
+          if (!Array.isArray(homeConfig.banners.items)) homeConfig.banners.items = [];
+          if (!homeConfig.banners.items[idx]) homeConfig.banners.items[idx] = {};
+          homeConfig.banners.items[idx].image = canvas.toDataURL('image/jpeg', 0.82);
+          renderHomeConfigAdmin();
+          renderHomePage();
+        };
+        img.onerror = () => alert("That file couldn't be read as an image.");
+        img.src = reader.result;
+      };
+      reader.onerror = () => alert("That file couldn't be read.");
+      reader.readAsDataURL(file);
     }
 
     function hcTextareaField(sec, field, label) {

@@ -488,6 +488,20 @@
     .home-faq-item[open] summary { margin-bottom: 8px; }
     .home-faq-item p { font-size: 13px; color: #475569; line-height: 1.55; }
 
+    .home-banner-carousel { position: relative; overflow: hidden; border-radius: 16px; background: #0f172a; }
+    .home-banner-track { display: flex; transition: transform .45s ease; }
+    .home-banner-slide { flex: 0 0 100%; position: relative; display: block; }
+    .home-banner-slide img { width: 100%; max-height: 360px; object-fit: cover; display: block; }
+    .home-banner-caption { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 18px; font-size: 13px; font-weight: 700; color: #fff; background: linear-gradient(to top, rgba(15,23,42,.85), rgba(15,23,42,0)); }
+    .home-banner-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border-radius: 999px; background: rgba(15,23,42,.55); color: #fff; border: none; font-size: 20px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .home-banner-arrow:hover { background: rgba(15,23,42,.8); }
+    .home-banner-arrow-prev { left: 10px; }
+    .home-banner-arrow-next { right: 10px; }
+    .home-banner-dots { display: none; justify-content: center; gap: 6px; padding: 10px 0; background: #0f172a; }
+    .home-banner-dots:not(:empty) { display: flex; }
+    .home-banner-dot { width: 7px; height: 7px; border-radius: 999px; background: rgba(255,255,255,.5); border: none; padding: 0; cursor: pointer; }
+    .home-banner-dot.active { background: #f59e0b; width: 18px; border-radius: 999px; }
+
     .hc-editor-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start; padding: 8px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
     .hc-editor-row + .hc-editor-row { margin-top: 6px; }
     .hc-editor-row .hc-fields { display: grid; gap: 6px; }
