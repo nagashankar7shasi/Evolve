@@ -16,13 +16,20 @@
       // checkout, instead of only revealing the saving once they click through. A code-required
       // coupon never shows here (nothing to type on a card).
       const { autoCoupon, finalPrice } = bundlePricingInfo(b);
+      // The coupon's own admin-entered `label` (e.g. "Early Bird — first 100 buyers") is shown as a
+      // free-text remark under the price, alongside the computed "X% off"/"₹X off" pill -- this is
+      // what actually lets an admin say "first 100" or anything else in their own words; the usage
+      // cap itself is enforced separately by usageLimitTotal/redemptionCount in couponIsLive(), so once
+      // that cap is hit the coupon simply stops auto-applying and this whole block reverts to the
+      // plain price, with no extra wiring needed here.
       const priceHtml = autoCoupon
         ? `<div class="my-4">
-             <div class="flex items-baseline gap-2">
+             <div class="flex items-baseline gap-2 flex-wrap">
                <span class="text-3xl font-black ${theme.price}">₹${finalPrice}</span>
                <span class="text-sm font-bold line-through ${theme.sub}">₹${b.price}</span>
                <span class="text-[10px] font-bold uppercase text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">${autoCoupon.type === 'flat' ? `₹${autoCoupon.value} off` : `${autoCoupon.value}% off`}</span>
              </div>
+             ${autoCoupon.label ? `<div class="text-xs font-bold text-amber-600 mt-1">🔥 ${escapeHtml(autoCoupon.label)}</div>` : ''}
              <span class="text-xs font-normal ${theme.sub}">${b.validityDays > 0 ? `for ${b.validityDays >= 360 && b.validityDays % 365 === 0 ? (b.validityDays / 365) + ' year' + (b.validityDays > 365 ? 's' : '') : b.validityDays + ' days'}` : 'one-time'}</span>
            </div>`
         : `<div class="my-4 text-3xl font-black ${theme.price}">₹${b.price} <span class="text-xs font-normal ${theme.sub}">${b.validityDays > 0 ? `for ${b.validityDays >= 360 && b.validityDays % 365 === 0 ? (b.validityDays / 365) + ' year' + (b.validityDays > 365 ? 's' : '') : b.validityDays + ' days'}` : 'one-time'}</span></div>`;
@@ -142,6 +149,7 @@
         ? `<span class="text-4xl font-black text-slate-900">₹${finalPrice}</span>
            <span class="text-lg font-bold line-through text-slate-400 ml-2">₹${b.price}</span>
            <span class="text-[11px] font-bold uppercase text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full ml-2">${autoCoupon.type === 'flat' ? `₹${autoCoupon.value} off` : `${autoCoupon.value}% off`}</span>
+           ${autoCoupon.label ? `<span class="block text-sm font-bold text-amber-600 mt-1">🔥 ${escapeHtml(autoCoupon.label)}</span>` : ''}
            <span class="block text-xs font-normal text-slate-500 mt-1">${validityLabel}</span>`
         : `<span class="text-4xl font-black text-slate-900">₹${b.price}</span>
            <span class="block text-xs font-normal text-slate-500 mt-1">${validityLabel}</span>`;
