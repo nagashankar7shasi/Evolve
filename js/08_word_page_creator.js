@@ -175,7 +175,7 @@
     // be nested arbitrarily deep inside one of these (e.g. a resource card inside a column), so this
     // climbs to find the actual block to relocate rather than the button's immediate parent.
     function closestMovableBlock(btn) {
-      return btn.closest('.kb-table-wrap, .kb-cols, .kb-cols-3, .kb-cols-4, .kb-video-wrap, .kb-pagelink, .kb-resource-card');
+      return btn.closest('.kb-table-wrap, .kb-cols, .kb-cols-3, .kb-cols-4, .kb-video-wrap, .kb-pagelink, .kb-resource-card, .kb-section-nav');
     }
 
     // Every block inserted via insertBlockWithTrailingParagraph (every type above) is immediately
@@ -889,6 +889,73 @@
         `</div><p><br></p>`,
         el => el.innerHTML.includes('Page card:'),
         'page card'
+      );
+    }
+
+    // ---- In-page section nav (a row of jump links to other headings further down this SAME page,
+    // e.g. "Description / Schedule / FAQ" -- mirrors the kind of in-page nav competitor course pages
+    // use). Deliberately plain CONTENT, not a hydrated-from-external-data block like page/paper
+    // cards above: a heading's text and generated id only ever change here, by re-inserting this
+    // block, so there's nothing external for a public render to re-sync against. ----
+    function sectionNavHeadingCandidates() {
+      const canvas = document.getElementById('word-editor-canvas');
+      return [...canvas.querySelectorAll('h1, h2, h3, h4, h5, h6')].filter(h => h.textContent.trim());
+    }
+
+    function openSectionNavPicker() {
+      const headings = sectionNavHeadingCandidates();
+      if (!headings.length) return alert('Add some headings (H1/H2/H3…) to this page first — the nav links jump to them.');
+      document.getElementById('sectionnav-heading-list').innerHTML = headings.map((h, i) => `
+        <label class="flex items-center gap-2 cursor-pointer py-1">
+          <input type="checkbox" value="${i}" class="sectionnav-heading-cb rounded" />
+          <span>${escapeHtml(h.textContent.trim())} <span class="text-slate-400">(${h.tagName})</span></span>
+        </label>`).join('');
+      openModal('sectionnav-modal');
+    }
+
+    // Scrolls to a heading targeted by a section-nav link. Deliberately NOT a real '#id' anchor
+    // href -- that would change location.hash and fire routeFromHash() (js/08_word_page_creator.js),
+    // which doesn't recognize a bare heading id and would navigate away to Home instead of just
+    // scrolling within the page that's already open.
+    function scrollToPageAnchor(id) {
+      const target = document.getElementById(id);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function insertSectionNav() {
+      const headings = sectionNavHeadingCandidates();
+      const picked = [...document.querySelectorAll('.sectionnav-heading-cb:checked')]
+        .map(cb => headings[+cb.value]).filter(Boolean);
+      closeModal('sectionnav-modal');
+      if (!picked.length) return alert('Pick at least one section to link to.');
+
+      // Reuses a heading's existing id (e.g. from an earlier section-nav block already pointing at
+      // it) rather than minting a second one -- so two nav blocks can safely target the same
+      // heading. Only generates a fresh id (slugify(), deduped against every id already in the
+      // canvas) for a heading that doesn't have one yet.
+      const usedIds = new Set([...document.getElementById('word-editor-canvas').querySelectorAll('[id]')].map(el => el.id));
+      const links = picked.map(h => {
+        let id = h.id;
+        if (!id) {
+          const base = slugify(h.textContent.trim()) || 'section';
+          id = base;
+          let n = 2;
+          while (usedIds.has(id)) { id = `${base}-${n}`; n++; }
+          h.id = id;
+          usedIds.add(id);
+        }
+        return { id, label: h.textContent.trim() };
+      });
+
+      placeCaretInEditor();
+      insertHtmlWithIntegrityCheck(
+        `<div class="kb-section-nav" contenteditable="false">` +
+          `<button type="button" class="kb-block-delete" contenteditable="false" title="Delete this section nav" onclick="event.preventDefault(); event.stopPropagation(); if (confirm('Delete this section nav?')) this.closest('.kb-section-nav').remove();">✕</button>` +
+          BLOCK_MOVE_BTNS +
+          links.map(l => `<a href="javascript:void(0)" onclick="scrollToPageAnchor('${l.id}')" class="kb-section-nav-link">${escapeHtml(l.label)}</a>`).join('') +
+        `</div><p><br></p>`,
+        el => el.classList.contains('kb-section-nav'),
+        'section nav'
       );
     }
 
