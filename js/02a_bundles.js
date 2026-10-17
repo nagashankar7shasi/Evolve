@@ -650,8 +650,13 @@ async function fetchCloudVisitStats() {
       parentId: p.parent_id, icon: p.icon, image: p.image, summary: p.summary, childStyle: p.child_style,
       order: p.order_num, showOnHome: p.show_on_home, bundleOnly: p.bundle_only, oldSlugs: p.old_slugs || [],
       // published_at/date_position: optional "posted on <date>" display for daily content (current
-      // affairs, etc.) -- see sql/add_custom_pages_published_date.sql. null means "don't show one".
-      publishedAt: p.published_at || null, datePosition: p.date_position || 'above'
+      // affairs, etc.) -- see sql/add_custom_pages_published_date.sql. null/'hidden' means "don't
+      // show one" (see sql/add_custom_pages_date_hidden_and_pdf_toggle.sql for the 'hidden' value).
+      publishedAt: p.published_at || null, datePosition: p.date_position || 'above',
+      // allow_pdf_download defaults to true at the DB level for every row (new and pre-existing),
+      // but guard defensively anyway: undefined/null (a row read before this column existed in a
+      // stale cache) should still mean "show the button", not "hide it".
+      allowPdfDownload: p.allow_pdf_download !== false
     }));
   }
 

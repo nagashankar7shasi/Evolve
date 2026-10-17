@@ -1242,6 +1242,9 @@
       // daily post almost always wants -- the admin can still clear it before saving.
       document.getElementById('page-published-at-input').value = dateToLocalInputValue(page ? page.publishedAt : new Date());
       document.getElementById('page-date-position-input').value = (page && page.datePosition) || 'above';
+      // allowPdfDownload defaults to true for both a brand-new page and a page saved before this
+      // field existed (undefined !== false) -- opt-out, not opt-in, same reasoning as the DB default.
+      document.getElementById('page-allow-pdf-check').checked = !page || page.allowPdfDownload !== false;
       setPageImage(page ? (page.image || '') : '');
       document.getElementById('page-icon-picks').innerHTML = PAGE_ICON_PICKS.map(ic =>
         `<button type="button" onclick="document.getElementById('page-icon-input').value='${ic}'" class="hover:scale-125 transition" aria-label="Use ${ic}">${ic}</button>`).join('');
@@ -1773,7 +1776,8 @@
     showOnHome: document.getElementById('page-home-check').checked,
     bundleOnly,
     publishedAt,
-    datePosition: document.getElementById('page-date-position-input').value || 'above'
+    datePosition: document.getElementById('page-date-position-input').value || 'above',
+    allowPdfDownload: document.getElementById('page-allow-pdf-check').checked
   };
 
   const id = editingPageId || ('p_' + Date.now());
@@ -1811,7 +1815,8 @@
     bundle_only: bundleOnly,
     old_slugs: oldSlugs,
     published_at: meta.publishedAt,
-    date_position: meta.datePosition
+    date_position: meta.datePosition,
+    allow_pdf_download: meta.allowPdfDownload
   };
 
   // --- SYNC TO SUPABASE CLOUD ---
@@ -2060,12 +2065,14 @@
       document.getElementById('page-render-title').innerText = `${page.icon && page.icon !== '📄' ? page.icon + ' ' : ''}${page.title}`;
 
       // Published date & time -- at most one of the above/below elements is shown, matching
-      // whichever position the admin picked; publishedAt null/blank means "don't show one".
+      // whichever position the admin picked. "hidden" suppresses the display while KEEPING the
+      // saved publishedAt (so turning it back on doesn't need re-entering the date); a blank/null
+      // publishedAt also hides it, same as before this toggle existed.
       const dateAboveEl = document.getElementById('page-render-date-above');
       const dateBelowEl = document.getElementById('page-render-date-below');
       dateAboveEl.classList.add('hidden');
       dateBelowEl.classList.add('hidden');
-      if (page.publishedAt) {
+      if (page.publishedAt && page.datePosition !== 'hidden') {
         const target = page.datePosition === 'below' ? dateBelowEl : dateAboveEl;
         target.innerText = `🗓️ Posted ${formatPublishedAt(page.publishedAt)}`;
         target.classList.remove('hidden');
@@ -2087,9 +2094,10 @@
         ? (inherited ? `Part of "${lockNode.title}"` : 'Paid study material')
         : (chain.some(isGatedPage) ? 'Unlocked for you' : 'Free resource');
 
-      // Public "download as PDF" only makes sense once there's real content to export -- hidden
-      // whenever the locked banner is showing instead of the actual page.
-      document.getElementById('page-download-row').classList.toggle('hidden', !!lockNode);
+      // Public "download as PDF": hidden whenever the locked banner is showing instead of the
+      // actual page (nothing real to export yet), or whenever the admin turned it off for this
+      // specific page (allowPdfDownload === false -- an index/landing page, say).
+      document.getElementById('page-download-row').classList.toggle('hidden', !!lockNode || page.allowPdfDownload === false);
 
       if (lockNode) {
         lockedBanner.classList.remove('hidden');
@@ -2483,7 +2491,9 @@
         wrap.outerHTML = `<p>🎬 <a href="${escapeHtml(watchUrl)}">Watch the video</a> (${escapeHtml(watchUrl)})</p>`;
       });
 
-      const dateLine = page.publishedAt
+      // Matches the public page's own display rule (renderDynamicCustomPage): "hidden" suppresses
+      // this even though publishedAt is still saved.
+      const dateLine = (page.publishedAt && page.datePosition !== 'hidden')
         ? `<p style="color:#64748b;font-size:12px;margin:-4px 0 14px;">🗓️ Posted ${escapeHtml(formatPublishedAt(page.publishedAt))}</p>`
         : '';
 
