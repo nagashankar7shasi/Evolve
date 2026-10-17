@@ -300,6 +300,19 @@
     #word-editor-canvas .kb-resource-card .kb-block-move-down { top: 24px; left: 6px; }
     #word-editor-canvas .kb-pagelink .kb-block-move-up   { top: 50%; right: 30px; transform: translateY(-50%); }
     #word-editor-canvas .kb-pagelink .kb-block-move-down { top: 50%; right: 54px; transform: translateY(-50%); }
+    /* In-page section nav: a row of pill links that scroll (never navigate -- see
+       scrollToPageAnchor() in 08_word_page_creator.js) to headings further down the SAME page.
+       Shared under .word-canvas (not editor-only) since the pills ARE the real published content --
+       only the delete/move overlay buttons below are editor-only, same convention as every other
+       block type above. */
+    .word-canvas .kb-section-nav { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.75rem 1rem; margin: 1rem 0; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
+    .word-canvas .kb-section-nav-link { font-size: 12px; font-weight: 700; padding: 0.35rem 0.85rem; border-radius: 999px; background: #fff; border: 1px solid #cbd5e1; color: #334155; text-decoration: none; cursor: pointer; }
+    .word-canvas .kb-section-nav-link:hover { background: #0f172a; color: #fff; border-color: #0f172a; }
+    /* Same non-editable-island overlay pattern as the table/video/columns wrappers above. */
+    #word-editor-canvas .kb-section-nav { position: relative; }
+    #word-editor-canvas .kb-section-nav .kb-block-delete { top: 6px; right: 6px; }
+    #word-editor-canvas .kb-section-nav .kb-block-move-up   { top: 6px;  left: 6px; }
+    #word-editor-canvas .kb-section-nav .kb-block-move-down { top: 24px; left: 6px; }
     /* Click-to-select for the video embed, same idea as img.kb-selected below -- the iframe itself
        is pointer-events:none ONLY inside the editor (never on the public page, where it must stay
        playable), so a click lands on the wrapper div underneath instead of being swallowed by the
