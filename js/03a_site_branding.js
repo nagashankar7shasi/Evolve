@@ -271,6 +271,39 @@
       renderPdfWatermarkPreview();
     }
 
+    // ---- Telegram broadcast (Dev Console -> Site branding -> "Telegram broadcast") ----
+    // Posts a message to the Evolve+ Telegram channel via the send-telegram-message Edge
+    // Function, rather than calling the Telegram Bot API directly from this public, client-side
+    // code -- the bot token can never be shipped in a <script> tag everyone can read. The Edge
+    // Function itself re-checks the caller is an admin (same email allowlist as is_admin()), so
+    // this button being admin-only in the UI isn't the only thing stopping a random visitor.
+    async function postTelegramAnnouncement() {
+      const textarea = document.getElementById('telegram-broadcast-text');
+      const statusEl = document.getElementById('telegram-broadcast-status');
+      const text = textarea ? textarea.value.trim() : '';
+      if (!text) return alert('Type a message first.');
+      if (!isAdmin()) return alert('Admin only.');
+
+      const btn = document.querySelector('[onclick="postTelegramAnnouncement()"]');
+      const originalText = btn ? btn.innerText : 'Post to Telegram';
+      if (btn) { btn.disabled = true; btn.innerText = 'Posting…'; }
+      if (statusEl) statusEl.innerText = '';
+
+      try {
+        const { data, error } = await supabaseClient.functions.invoke('send-telegram-message', { body: { text } });
+        if (error) throw error;
+        if (data && data.error) throw new Error(data.error);
+        if (statusEl) statusEl.innerText = '✓ Posted to Telegram';
+        if (textarea) textarea.value = '';
+      } catch (err) {
+        console.error('Telegram broadcast failed:', fmtErr(err));
+        if (statusEl) statusEl.innerText = '⚠ Failed — see console for details';
+        alert(`Couldn't post to Telegram: ${fmtErr(err)}\n\nCheck that TELEGRAM_BOT_TOKEN is set as a Supabase secret and the bot is still an admin of the channel.`);
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerText = originalText; }
+      }
+    }
+
     async function saveSiteBranding() {
       siteBranding.name = (document.getElementById('branding-name').value || '').trim() || 'EVOLVE+';
       siteBranding.tagline = (document.getElementById('branding-tagline').value || '').trim();

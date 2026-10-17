@@ -216,6 +216,13 @@
           </div>
         </div>
         <div class="border-t pt-4 space-y-2">
+          <label class="block font-bold text-slate-700 mb-1">📢 Telegram broadcast</label>
+          <p class="text-slate-400 text-[11px]">Posts a message straight to the Evolve+ Telegram channel (<a href="https://t.me/evolveplus_studyhub" target="_blank" rel="noopener" class="text-sky-700 hover:underline">@evolveplus_studyhub</a>) using the bot added as its admin. Needs <code class="font-mono">TELEGRAM_BOT_TOKEN</code> set as a Supabase Edge Function secret.</p>
+          <textarea id="telegram-broadcast-text" rows="3" class="w-full px-2.5 py-1.5 border rounded-lg outline-none text-xs" placeholder="New mock test is live now — tap to attempt: https://evolveplus.in/..."></textarea>
+          <button type="button" onclick="postTelegramAnnouncement()" class="px-3 py-1.5 border rounded-lg bg-white font-bold text-[11px] hover:bg-slate-50">Post to Telegram</button>
+          <p id="telegram-broadcast-status" class="text-[11px] font-bold text-slate-500"></p>
+        </div>
+        <div class="border-t pt-4 space-y-2">
           <label class="block font-bold text-slate-700 mb-1">🧹 Storage maintenance (one-time)</label>
           <p class="text-slate-400 text-[11px]">Images uploaded here (logo, watermark, home banners, page thumbnails/content) now go straight to Supabase Storage instead of being embedded in the database — keeps every page load small. Run this once to move any images uploaded before that change out of the database too; safe to run again later, it skips anything already migrated.</p>
           <button type="button" onclick="migrateLegacyImagesToStorage()" class="px-3 py-1.5 border rounded-lg bg-white font-bold text-[11px] hover:bg-slate-50">Migrate legacy images to Storage</button>
