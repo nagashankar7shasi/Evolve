@@ -283,11 +283,24 @@
           </div>
           
           <!-- LOAD EXISTING PAGE DROPDOWN -->
-          <div class="flex items-center gap-2 text-xs w-full md:w-auto">
-            <span class="font-bold text-slate-700 whitespace-nowrap">Load Page to Edit:</span>
-            <select id="load-existing-page-picker" onchange="loadPageIntoWordEditor(this.value)" class="px-3 py-1.5 border border-amber-400 bg-amber-50/70 rounded-lg font-bold text-slate-900 outline-none text-xs">
-              <!-- Populated by JS -->
-            </select>
+          <div class="flex flex-col md:items-end gap-2 text-xs w-full md:w-auto">
+            <div class="flex items-center gap-2 w-full md:w-auto">
+              <span class="font-bold text-slate-700 whitespace-nowrap">Load Page to Edit:</span>
+              <select id="load-existing-page-picker" onchange="loadPageIntoWordEditor(this.value)" class="flex-1 min-w-0 px-3 py-1.5 border border-amber-400 bg-amber-50/70 rounded-lg font-bold text-slate-900 outline-none text-xs">
+                <!-- Populated by JS -->
+              </select>
+            </div>
+            <!-- DAILY PAGE TEMPLATES: a reusable title-pattern + content starting point (e.g. "UPSC
+                 Daily Current Affairs — {date}") so a recurring post doesn't start from a blank page
+                 every time. See fetchCloudPageTemplates()/applyPageTemplate() in
+                 js/08_word_page_creator.js. -->
+            <div class="flex items-center gap-2 w-full md:w-auto">
+              <span class="font-bold text-slate-700 whitespace-nowrap">Start from template:</span>
+              <select id="page-template-picker" onchange="applyPageTemplate(this.value)" class="flex-1 min-w-0 px-3 py-1.5 border border-indigo-300 bg-indigo-50/70 rounded-lg font-bold text-slate-900 outline-none text-xs">
+                <option value="">— Start blank —</option>
+              </select>
+              <button type="button" onclick="deletePageTemplate()" title="Delete the selected template" class="px-2 py-1.5 border rounded-lg font-bold text-rose-600 hover:bg-rose-50">🗑️</button>
+            </div>
           </div>
         </div>
 
@@ -350,6 +363,22 @@
               <input type="checkbox" id="page-home-check" class="rounded" />
               <span class="text-slate-700">Show as a tile in "Study Rooms" on the home page</span>
             </label>
+            <!-- Published date & time: shown on the public page itself (e.g. a daily current-affairs
+                 post), not just an internal timestamp. null/blank published_at means "don't show a
+                 date" -- see sql/add_custom_pages_published_date.sql. -->
+            <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Published date &amp; time <span class="font-normal text-slate-400">(shown on the page; clear it to hide)</span></label>
+                <input type="datetime-local" id="page-published-at-input" class="w-full px-2.5 py-1.5 border rounded-lg outline-none" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Show the date</label>
+                <select id="page-date-position-input" class="w-full px-2.5 py-1.5 border rounded-lg bg-white outline-none">
+                  <option value="above">Above the heading</option>
+                  <option value="below">Below the heading</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           <div class="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-slate-50 border rounded-lg">
@@ -545,9 +574,14 @@
           </div>
 
           <div class="flex justify-between items-center pt-2">
-            <button type="button" onclick="resetWordEditorToNew()" class="px-4 py-2 border border-slate-300 hover:bg-slate-50 font-bold rounded-lg text-slate-700">
-              Clear / Start New Blank Page
-            </button>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="resetWordEditorToNew()" class="px-4 py-2 border border-slate-300 hover:bg-slate-50 font-bold rounded-lg text-slate-700">
+                Clear / Start New Blank Page
+              </button>
+              <button type="button" onclick="savePageAsTemplate()" title="Save this page's current content + icon/summary/layout as a reusable template for daily posts" class="px-4 py-2 border border-indigo-300 bg-indigo-50 hover:bg-indigo-100 font-bold rounded-lg text-indigo-700">
+                💾 Save as Template
+              </button>
+            </div>
             <div class="flex items-center gap-2">
               <button type="button" onclick="downloadWordEditorPagePdf()" title="Export whatever is in the canvas right now (including unsaved changes) as a PDF -- for your own review, not shown to students" class="px-4 py-2 border border-slate-300 hover:bg-slate-50 font-bold rounded-lg text-slate-700">
                 ⬇️ Download as PDF

@@ -55,6 +55,18 @@
 
     function populateAllCategoryDropdowns() {
       populateCategoryDropdown('tests-list-filter', { includeAll: true });
+      // tests-list-filter starts every admin-console load empty (its DOM is freshly injected each
+      // time -- see ensureAdminConsoleLoaded), so populateCategoryDropdown's own "keep the current
+      // value" logic has nothing to keep yet and it silently falls back to the first option ("All
+      // categories"). Restoring the admin's last choice here is what actually lets a category like
+      // "Daily PIB Current Affairs" work as a standing, separate view of the Test Paper Studio list
+      // instead of resetting to the full pile on every visit -- renderTestsCatalogAdmin() is what
+      // writes kas_tests_list_filter, on every filter change.
+      const savedFilter = localStorage.getItem('kas_tests_list_filter');
+      const filterSel = document.getElementById('tests-list-filter');
+      if (savedFilter && filterSel && [...filterSel.options].some(o => o.value === savedFilter)) {
+        filterSel.value = savedFilter;
+      }
       populateCategoryDropdown('studio-category');
     }
 
@@ -318,6 +330,10 @@
       const root = document.getElementById('tests-catalog-list');
       if (!root) return;
       const filter = (document.getElementById('tests-list-filter') || {}).value || 'all';
+      // Remembered across admin-console loads (see populateAllCategoryDropdowns) so a category
+      // like "Daily PIB Current Affairs" stays the standing filter instead of resetting to the
+      // full list every time the panel reopens.
+      localStorage.setItem('kas_tests_list_filter', filter);
       const q = ((document.getElementById('tests-list-search') || {}).value || '').trim().toLowerCase();
       const rows = (testsCatalog || []).filter(p =>
         (filter === 'all' || p.category === filter) &&

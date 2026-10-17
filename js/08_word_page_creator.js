@@ -1207,6 +1207,28 @@
           `<option value="${page.id}" ${page.id === selected ? 'selected' : ''}>${'\u00a0\u00a0\u00a0'.repeat(depth)}${depth ? '↳ ' : ''}${escapeHtml(page.title)}</option>`).join('');
     }
 
+    // Converts a Date (or an ISO/parseable string) to the "YYYY-MM-DDTHH:mm" shape a
+    // <input type="datetime-local"> needs, in the browser's LOCAL time (not UTC) -- which is also
+    // how that input itself hands values back, so this round-trips cleanly through
+    // handleSaveCustomPage()'s `new Date(inputValue).toISOString()` without manual offset math.
+    function dateToLocalInputValue(d) {
+      if (!d) return '';
+      const date = (d instanceof Date) ? d : new Date(d);
+      if (isNaN(date.getTime())) return '';
+      const pad = n => String(n).padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    // Public-facing rendering of a saved published_at (an ISO string) -- distinct from
+    // dateToLocalInputValue (admin form round-trip) and formatTemplateDate (date-only, for
+    // template titles): this one includes the time, since the admin picked a time too.
+    function formatPublishedAt(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+    }
+
     function fillPageMetaFields(page) {
       fillParentPicker(page ? page.id : null, page ? page.parentId : null);
       document.getElementById('page-icon-input').value = page ? (page.icon || '📄') : '📄';
@@ -1215,6 +1237,11 @@
       document.getElementById('page-order-input').value = page ? (page.order ?? 0) : childPagesOf(null).length;
       document.getElementById('page-home-check').checked = !!(page && page.showOnHome);
       document.getElementById('page-bundleonly-check').checked = !!(page && page.bundleOnly);
+      // Published date & time: an existing page keeps whatever it has saved, including blank
+      // (meaning "don't show one"); a brand-new page defaults to "now", since that's what a fresh
+      // daily post almost always wants -- the admin can still clear it before saving.
+      document.getElementById('page-published-at-input').value = dateToLocalInputValue(page ? page.publishedAt : new Date());
+      document.getElementById('page-date-position-input').value = (page && page.datePosition) || 'above';
       setPageImage(page ? (page.image || '') : '');
       document.getElementById('page-icon-picks').innerHTML = PAGE_ICON_PICKS.map(ic =>
         `<button type="button" onclick="document.getElementById('page-icon-input').value='${ic}'" class="hover:scale-125 transition" aria-label="Use ${ic}">${ic}</button>`).join('');
@@ -1289,6 +1316,8 @@
       editingPageId = null;
       slugManuallyEdited = false;
       document.getElementById('load-existing-page-picker').value = '';
+      const templatePicker = document.getElementById('page-template-picker');
+      if (templatePicker) templatePicker.value = '';
       document.getElementById('page-title-input').value = '';
       document.getElementById('page-slug-input').value = '';
       document.getElementById('page-gated-check').checked = false;
@@ -1351,6 +1380,107 @@
       } else {
         hint.innerText = 'Filled in from the title. Click Edit to change it.';
       }
+    }
+
+    // ---- Page templates (admin-only convenience for recurring posts, e.g. a daily current-affairs
+    // article) -- a saved template carries the canvas content + icon/summary/sub-page style, plus a
+    // title pattern that can include a {date} token. Stored as one JSON blob under the generic
+    // app_settings table (same pattern as pricingMaster/authSettings/homeConfig -- see
+    // fetchCloudAppSetting/saveCloudAppSetting in js/03_pricing_checkout.js), not a new table:
+    // there will only ever be a handful of these, and they're never read by anyone but the admin.
+    let pageTemplates = [];
+
+    async function fetchCloudPageTemplates() {
+      const cloud = await fetchCloudAppSetting('page_templates');
+      pageTemplates = Array.isArray(cloud) ? cloud : [];
+      renderPageTemplatePicker();
+    }
+
+    async function savePageTemplatesToCloud() {
+      const ok = await saveCloudAppSetting('page_templates', pageTemplates);
+      if (!ok) alert("Saved for this session, but couldn't sync templates to the cloud -- will retry on the next change. (Reloading before then would lose it.)");
+    }
+
+    function renderPageTemplatePicker() {
+      const sel = document.getElementById('page-template-picker');
+      if (!sel) return; // admin console not loaded
+      const prevValue = sel.value;
+      sel.innerHTML = '<option value="">— Start blank —</option>' +
+        pageTemplates.map(t => `<option value="${t.id}">${escapeHtml(t.titlePattern)}</option>`).join('');
+      if (prevValue && [...sel.options].some(o => o.value === prevValue)) sel.value = prevValue;
+    }
+
+    function formatTemplateDate(d = new Date()) {
+      return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+    // Case-insensitive and repeatable, so "{date}" can appear more than once in a pattern (e.g. a
+    // title that also wants the date folded into the summary isn't supported here, but a pattern
+    // like "{date} — Daily Current Affairs ({date})" would still resolve both correctly).
+    function applyDateToken(pattern) {
+      return (pattern || '').replace(/\{date\}/gi, formatTemplateDate());
+    }
+
+    // Captures the editor's CURRENT content + meta as a reusable starting point. Deliberately does
+    // not capture slug/parent/order/price/gated state -- those are specific to one page instance,
+    // not something a template should carry over and silently reapply.
+    function savePageAsTemplate() {
+      const canvas = document.getElementById('word-editor-canvas');
+      if (!canvas.textContent.trim() && !canvas.querySelector('img, table, .kb-pagelink, .kb-resource-card, .kb-video-wrap')) {
+        return alert('Nothing to save yet — write some content first.');
+      }
+      const currentTitle = document.getElementById('page-title-input').value.trim();
+      const pattern = prompt(
+        'Name this template. For a recurring post, include {date} and it\'ll be swapped for the day\'s date every time you use it (e.g. "UPSC Daily Current Affairs — {date}").',
+        currentTitle || 'New template'
+      );
+      if (!pattern || !pattern.trim()) return;
+      const tpl = {
+        id: 'tpl_' + Date.now(),
+        titlePattern: pattern.trim(),
+        content: canvas.innerHTML,
+        icon: document.getElementById('page-icon-input').value.trim() || '📄',
+        summary: document.getElementById('page-summary-input').value.trim(),
+        childStyle: document.getElementById('page-childstyle-input').value,
+        createdAt: new Date().toISOString()
+      };
+      pageTemplates.push(tpl);
+      renderPageTemplatePicker();
+      document.getElementById('page-template-picker').value = tpl.id;
+      savePageTemplatesToCloud();
+      alert(`Saved as a template: "${tpl.titlePattern}"\n\nUse it from the "Start from template" dropdown above whenever you post the next one.`);
+    }
+
+    // Pre-fills a brand-new page from a saved template: resets the editor first (a template is
+    // always a fresh start, never merged into whatever was already in the canvas), then applies the
+    // template's content/meta and computes today's title from its pattern -- which, since this is a
+    // new page, flows straight into the slug the same way typing a title normally does
+    // (syncSlugFromTitle respects slugManuallyEdited, already reset to false by resetWordEditorToNew).
+    function applyPageTemplate(id) {
+      if (!id) return;
+      const tpl = pageTemplates.find(t => t.id === id);
+      if (!tpl) return;
+      resetWordEditorToNew();
+      document.getElementById('word-editor-canvas').innerHTML = tpl.content || '<p><br></p>';
+      document.getElementById('page-icon-input').value = tpl.icon || '📄';
+      document.getElementById('page-summary-input').value = tpl.summary || '';
+      document.getElementById('page-childstyle-input').value = tpl.childStyle || 'tiles';
+      document.getElementById('page-title-input').value = applyDateToken(tpl.titlePattern);
+      syncSlugFromTitle();
+      document.getElementById('page-template-picker').value = id; // resetWordEditorToNew() above clears this too -- re-set it so the picker still shows what was applied
+      if (typeof updateWordCount === 'function') updateWordCount();
+      document.getElementById('page-title-input').focus();
+    }
+
+    function deletePageTemplate() {
+      const sel = document.getElementById('page-template-picker');
+      const id = sel && sel.value;
+      if (!id) return alert('Pick a template from the dropdown first.');
+      const tpl = pageTemplates.find(t => t.id === id);
+      if (!tpl) return;
+      if (!confirm(`Delete the template "${tpl.titlePattern}"?\n\nThis only removes the template itself -- any pages already created from it are unaffected.`)) return;
+      pageTemplates = pageTemplates.filter(t => t.id !== id);
+      renderPageTemplatePicker();
+      savePageTemplatesToCloud();
     }
 
     function openLinkPdfModal() {
@@ -1627,6 +1757,12 @@
   document.querySelectorAll('#word-editor-canvas img.kb-selected').forEach(i => i.classList.remove('kb-selected'));
   document.querySelectorAll('#word-editor-canvas .kb-video-wrap.kb-selected').forEach(v => v.classList.remove('kb-selected'));
   const htmlContent = document.getElementById('word-editor-canvas').innerHTML;
+  // datetime-local gives a value with no timezone (e.g. "2026-10-17T09:30"), which the browser
+  // means as local time -- `new Date(...)` parses that exact string as local time too, so this
+  // round-trips correctly through dateToLocalInputValue() without any manual offset math. A blank
+  // field (admin cleared it to hide the date) saves as null, same as a page that never had one.
+  const publishedAtInput = document.getElementById('page-published-at-input').value;
+  const publishedAt = publishedAtInput ? new Date(publishedAtInput).toISOString() : null;
   const meta = {
     parentId: document.getElementById('page-parent-input').value || null,
     icon: document.getElementById('page-icon-input').value.trim() || '📄',
@@ -1635,7 +1771,9 @@
     childStyle: document.getElementById('page-childstyle-input').value,
     order: parseInt(document.getElementById('page-order-input').value, 10) || 0,
     showOnHome: document.getElementById('page-home-check').checked,
-    bundleOnly
+    bundleOnly,
+    publishedAt,
+    datePosition: document.getElementById('page-date-position-input').value || 'above'
   };
 
   const id = editingPageId || ('p_' + Date.now());
@@ -1671,7 +1809,9 @@
     order_num: meta.order,
     show_on_home: meta.showOnHome,
     bundle_only: bundleOnly,
-    old_slugs: oldSlugs
+    old_slugs: oldSlugs,
+    published_at: meta.publishedAt,
+    date_position: meta.datePosition
   };
 
   // --- SYNC TO SUPABASE CLOUD ---
@@ -1919,6 +2059,18 @@
 
       document.getElementById('page-render-title').innerText = `${page.icon && page.icon !== '📄' ? page.icon + ' ' : ''}${page.title}`;
 
+      // Published date & time -- at most one of the above/below elements is shown, matching
+      // whichever position the admin picked; publishedAt null/blank means "don't show one".
+      const dateAboveEl = document.getElementById('page-render-date-above');
+      const dateBelowEl = document.getElementById('page-render-date-below');
+      dateAboveEl.classList.add('hidden');
+      dateBelowEl.classList.add('hidden');
+      if (page.publishedAt) {
+        const target = page.datePosition === 'below' ? dateBelowEl : dateAboveEl;
+        target.innerText = `🗓️ Posted ${formatPublishedAt(page.publishedAt)}`;
+        target.classList.remove('hidden');
+      }
+
       // Breadcrumbs: Home › Section › Chapter › this page
       const chain = pageAncestry(page);
       document.getElementById('page-breadcrumbs').innerHTML =
@@ -1934,6 +2086,10 @@
       document.getElementById('page-render-badge').innerText = lockNode
         ? (inherited ? `Part of "${lockNode.title}"` : 'Paid study material')
         : (chain.some(isGatedPage) ? 'Unlocked for you' : 'Free resource');
+
+      // Public "download as PDF" only makes sense once there's real content to export -- hidden
+      // whenever the locked banner is showing instead of the actual page.
+      document.getElementById('page-download-row').classList.toggle('hidden', !!lockNode);
 
       if (lockNode) {
         lockedBanner.classList.remove('hidden');
@@ -2280,6 +2436,79 @@
 
       const printDoc = w => {
         const go = () => { try { w.focus(); w.print(); } catch (err) { /* admin can still print manually */ } };
+        if (w.document.fonts && w.document.fonts.ready) w.document.fonts.ready.then(() => setTimeout(go, 250));
+        else setTimeout(go, 600);
+      };
+      const win = window.open('', '_blank');
+      if (win) {
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
+        printDoc(win);
+        return;
+      }
+      // pop-ups blocked: print from a hidden frame instead
+      const frame = document.createElement('iframe');
+      frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+      document.body.appendChild(frame);
+      frame.contentDocument.open();
+      frame.contentDocument.write(html);
+      frame.contentDocument.close();
+      printDoc(frame.contentWindow);
+      setTimeout(() => frame.remove(), 60000);
+    }
+
+    // Public counterpart to downloadWordEditorPagePdf() above -- same print-to-PDF approach
+    // (window.print(), no PDF library involved), but reads the already-rendered live page
+    // (#page-render-content, via currentPageId) instead of the editor canvas, so it only ever
+    // exports what a visitor can actually see -- renderDynamicCustomPage() already stripped the
+    // editor-only .kb-block-delete/.kb-block-move overlays and ran hydratePageCards() on this
+    // content, so neither needs doing again here. The button that calls this is itself hidden
+    // whenever the page is locked (see renderDynamicCustomPage), so this never runs against a
+    // locked page's summary-only placeholder.
+    function downloadPublicPagePdf() {
+      const page = findPage(currentPageId);
+      const contentBox = document.getElementById('page-render-content');
+      if (!page || !contentBox) return alert('This page could not be found.');
+      const title = page.title || 'Untitled page';
+      const icon = page.icon || '';
+
+      const temp = document.createElement('div');
+      temp.innerHTML = contentBox.innerHTML;
+      // Same reasoning as the admin export: a print window can't render a cross-origin YouTube
+      // iframe, so swap each video block for a plain clickable link instead of a blank rectangle.
+      temp.querySelectorAll('.kb-video-wrap').forEach(wrap => {
+        const src = wrap.querySelector('iframe')?.src || '';
+        const watchUrl = src.replace('https://www.youtube-nocookie.com/embed/', 'https://youtu.be/');
+        wrap.outerHTML = `<p>🎬 <a href="${escapeHtml(watchUrl)}">Watch the video</a> (${escapeHtml(watchUrl)})</p>`;
+      });
+
+      const dateLine = page.publishedAt
+        ? `<p style="color:#64748b;font-size:12px;margin:-4px 0 14px;">🗓️ Posted ${escapeHtml(formatPublishedAt(page.publishedAt))}</p>`
+        : '';
+
+      const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${escapeHtml(title)}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;700&display=swap" rel="stylesheet">
+        <style>
+          @page { size: A4; margin: 16mm; }
+          body { font-family: system-ui, "Noto Sans Kannada", sans-serif; color: #0f172a; font-size: 13px; line-height: 1.6; margin: 0; }
+          h1 { font-size: 20px; margin: 0 0 6px; }
+          .noprint { background: #eff6ff; border: 1px solid #bfdbfe; padding: 8px 10px; border-radius: 6px; margin-bottom: 14px; font-size: 12px; }
+          @media print { .noprint { display: none; } }
+          img { max-width: 100%; }
+          table { border-collapse: collapse; }
+          td, th { border: 1px solid #cbd5e1; padding: 4px 8px; }
+          .foot { color: #94a3b8; font-size: 10px; margin-top: 20px; }
+        </style></head><body>
+        <div class="noprint">In the print window, choose <b>Save as PDF</b> as the printer (on phones: Share → Print → Save as PDF).</div>
+        <h1>${icon && icon !== '📄' ? escapeHtml(icon) + ' ' : ''}${escapeHtml(title)}</h1>
+        ${dateLine}
+        ${temp.innerHTML}
+        <p class="foot">${escapeHtml(pricingMaster.payeeName || 'Evolve+')} · Downloaded ${new Date().toLocaleString('en-IN')} · evolveplus.in</p>
+        </body></html>`;
+
+      const printDoc = w => {
+        const go = () => { try { w.focus(); w.print(); } catch (err) { /* visitor can still print manually */ } };
         if (w.document.fonts && w.document.fonts.ready) w.document.fonts.ready.then(() => setTimeout(go, 250));
         else setTimeout(go, 600);
       };
