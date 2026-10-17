@@ -30,7 +30,7 @@
         const shell = document.getElementById('view-admin');
         if (!shell) return false; // shouldn't happen -- the empty shell ships in every index.html
         try {
-          const res = await fetch('admin-console.html?v=68');
+          const res = await fetch('admin-console.html?v=69');
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           shell.innerHTML = await res.text();
           adminConsoleLoaded = true;
@@ -109,6 +109,7 @@
       if (id === 'payments') renderPaymentOrders();
       if (id === 'coupons') renderCouponsAdmin();
       if (id === 'mains') { renderMainsQuestionsAdmin(); mainsAiSettingsInit(); mainsHumanEvalQueueInit(); mainsAccessPriceInit(); }
+      if (id === 'mains_tests') { renderMainsTestPapersAdmin(); mtpPopulateCategorySelect(MAINS_CATEGORY_IDS[0]); }
       if (id === 'students') renderStudentDirectoryTable();
       if (id === 'home') renderHomeConfigAdmin();
       if (id === 'email') { renderEmailTemplatesAdmin(); setEmailTab('templates'); }

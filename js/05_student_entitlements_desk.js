@@ -92,6 +92,19 @@
           </label>
         `).join('');
       }
+
+      // Individual Mains Test Paper grants -- narrower than the whole-category grant above, for
+      // handing one specific "N-question test" to one specific login (e.g. a tester) without
+      // touching that category's broader Mains access.
+      const mainsTestsBox = document.getElementById('entitle-mains-tests-list');
+      if (mainsTestsBox) {
+        mainsTestsBox.innerHTML = mainsTestPapers.map(p => `
+          <label class="flex items-start space-x-2 cursor-pointer" data-entitle-row="mains_test" data-item-id="${p.id}">
+            <input type="checkbox" value="${p.id}" class="entitle-mains-test-cb mt-0.5 rounded text-amber-500" />
+            <span class="truncate">${escapeHtml(p.title)} <b class="text-slate-400 font-mono">(₹${p.price})</b> <span class="via-bundle-badge hidden text-[10px] font-bold text-emerald-600">✓ via bundle</span></span>
+          </label>
+        `).join('') || '<span class="text-slate-400">No Mains test papers yet.</span>';
+      }
     }
 
     function grantQuickBundle(bundleType) {
@@ -118,6 +131,7 @@
           allowedPdfs: [],
           allowedPlanners: [],
           allowedMains: [],
+          allowedMainsTests: [],
           passes: []
         };
         studentDirectory.push(student);
@@ -162,6 +176,9 @@
       });
       document.querySelectorAll('.entitle-mains-cb').forEach(cb => {
         cb.checked = (student.allowedMains || []).includes(cb.value);
+      });
+      document.querySelectorAll('.entitle-mains-test-cb').forEach(cb => {
+        cb.checked = (student.allowedMainsTests || []).includes(cb.value);
       });
       updateBundleCoverageHighlights();
     }
@@ -213,6 +230,7 @@
       });
       applyTo('[data-entitle-row="planner"]', (b, id) => bundleCoversPlanner(b, id));
       applyTo('[data-entitle-row="mains"]', (b, catId) => b.allAccess || categoryAndAncestors(catId).some(c => b.categories.includes(c)));
+      applyTo('[data-entitle-row="mains_test"]', (b, id) => bundleCoversMainsTest(b, getMainsTestPaper(id)));
     }
 
     function renderSelectedStudentLoginInfo() {
@@ -241,7 +259,7 @@
     }
 
     function selectAllEntitlements(checkAll) {
-      document.querySelectorAll('.entitle-pass-cb, .entitle-paper-cb, .entitle-page-cb, .entitle-pdf-cb, .entitle-planner-cb, .entitle-mains-cb').forEach(cb => {
+      document.querySelectorAll('.entitle-pass-cb, .entitle-paper-cb, .entitle-page-cb, .entitle-pdf-cb, .entitle-planner-cb, .entitle-mains-cb, .entitle-mains-test-cb').forEach(cb => {
         cb.checked = checkAll;
       });
     }
@@ -258,6 +276,7 @@
   const pdfs = Array.from(document.querySelectorAll('.entitle-pdf-cb:checked')).filter(cb => cb.dataset.viaBundle !== 'true').map(cb => cb.value);
   const plannerGrants = Array.from(document.querySelectorAll('.entitle-planner-cb:checked')).filter(cb => cb.dataset.viaBundle !== 'true').map(cb => cb.value);
   const mainsGrants = Array.from(document.querySelectorAll('.entitle-mains-cb:checked')).filter(cb => cb.dataset.viaBundle !== 'true').map(cb => cb.value);
+  const mainsTestGrants = Array.from(document.querySelectorAll('.entitle-mains-test-cb:checked')).filter(cb => cb.dataset.viaBundle !== 'true').map(cb => cb.value);
   const passes = Array.from(document.querySelectorAll('.entitle-pass-cb:checked')).map(cb => cb.value);
 
   // Round 2: snapshot what the student had BEFORE this save, so we can email them
@@ -268,7 +287,8 @@
     pages:  [...(activeSelectedStudent.allowedPages || [])],
     pdfs:   [...(activeSelectedStudent.allowedPdfs  || [])],
     planners: [...(activeSelectedStudent.allowedPlanners || [])],
-    mains: [...(activeSelectedStudent.allowedMains || [])]
+    mains: [...(activeSelectedStudent.allowedMains || [])],
+    mainsTests: [...(activeSelectedStudent.allowedMainsTests || [])]
   };
 
   [...activeSelectedStudent.passes].forEach(id => { if (!passes.includes(id)) revokePass(activeSelectedStudent, id); });
@@ -279,6 +299,7 @@
   activeSelectedStudent.allowedPdfs = pdfs;
   activeSelectedStudent.allowedPlanners = plannerGrants;
   activeSelectedStudent.allowedMains = mainsGrants;
+  activeSelectedStudent.allowedMainsTests = mainsTestGrants;
   activeSelectedStudent.utr = document.getElementById('entitle-student-utr').value.trim();
 
   // Save to Supabase Cloud
@@ -294,6 +315,7 @@
       allowed_pdfs: activeSelectedStudent.allowedPdfs,
       allowed_planners: activeSelectedStudent.allowedPlanners,
       allowed_mains: activeSelectedStudent.allowedMains,
+      allowed_mains_tests: activeSelectedStudent.allowedMainsTests,
       passes: activeSelectedStudent.passes,
       pass_expiry: activeSelectedStudent.passExpiry || {}
     });
@@ -310,9 +332,10 @@
     pages:  pages.filter(x  => !before.pages.includes(x)),
     pdfs:   pdfs.filter(x   => !before.pdfs.includes(x)),
     planners: plannerGrants.filter(x => !before.planners.includes(x)),
-    mains: mainsGrants.filter(x => !before.mains.includes(x))
+    mains: mainsGrants.filter(x => !before.mains.includes(x)),
+    mainsTests: mainsTestGrants.filter(x => !before.mainsTests.includes(x))
   };
-  const addedAnything = added.passes.length || added.exams.length || added.pages.length || added.pdfs.length || added.planners.length || added.mains.length;
+  const addedAnything = added.passes.length || added.exams.length || added.pages.length || added.pdfs.length || added.planners.length || added.mains.length || added.mainsTests.length;
   let emailNote = '';
   if (addedAnything) {
     const bits = [];
@@ -322,6 +345,7 @@
     if (added.pdfs.length)   bits.push(`${added.pdfs.length} PDF${added.pdfs.length > 1 ? 's' : ''}`);
     if (added.planners.length) bits.push(`${added.planners.length} planner${added.planners.length > 1 ? 's' : ''}`);
     if (added.mains.length) bits.push(`Mains access: ${added.mains.map(categoryDisplayName).join(', ')}`);
+    if (added.mainsTests.length) bits.push(`${added.mainsTests.length} Mains test paper${added.mainsTests.length > 1 ? 's' : ''}`);
     const summary = bits.join(', ');
     sendAutoEmail('access_granted', activeSelectedStudent.email, {
       name: displayNameFor(activeSelectedStudent.email),

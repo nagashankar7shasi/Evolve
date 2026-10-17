@@ -69,6 +69,7 @@
       const parts = [];
       if (b.categories.length) parts.push(b.categories.map(c => EXAM_CATEGORIES[c]?.defaultScheme.examBadge || c).join(', ') + ' papers');
       if (b.papers.length) parts.push(`${b.papers.length} paper${b.papers.length > 1 ? 's' : ''}`);
+      if ((b.mainsPapers || []).length) parts.push(`${b.mainsPapers.length} Mains test${b.mainsPapers.length > 1 ? 's' : ''}`);
       if (b.pages.length) parts.push(`${b.pages.length} page section${b.pages.length > 1 ? 's' : ''}`);
       if (b.pdfs.length) parts.push(`${b.pdfs.length} PDF${b.pdfs.length > 1 ? 's' : ''}`);
       if ((b.planners || []).length) parts.push(`advanced planner${b.planners.length > 1 ? 's' : ''}`);
@@ -129,7 +130,8 @@
           show_on_home: b.showOnHome, featured: b.featured, style: b.style || 'light',
           order_num: b.order || 0, all_access: b.allAccess, categories: b.categories || [],
           papers: b.papers || [], pages: b.pages || [], pdfs: b.pdfs || [],
-          planners: b.planners || [], features: b.features || []
+          planners: b.planners || [], features: b.features || [],
+          mains_papers: b.mainsPapers || []
         });
         if (error) throw error;
       } catch (err) {
@@ -170,6 +172,7 @@
 
       checkboxList('bdl-categories', Object.values(EXAM_CATEGORIES).map(c => ({ value: c.id, label: escapeHtml(c.name) })), b.categories, 'bdl-cat-cb');
       checkboxList('bdl-papers', testsCatalog.map(p => ({ value: p.id, label: `${escapeHtml(p.title)} <span class="text-slate-400">₹${p.price}</span>` })), b.papers, 'bdl-paper-cb');
+      checkboxList('bdl-mains-papers', mainsTestPapers.map(p => ({ value: p.id, label: `${escapeHtml(p.title)} <span class="text-slate-400">₹${p.price}</span>` })), b.mainsPapers || [], 'bdl-mains-paper-cb');
       checkboxList('bdl-pages', pageTreeList().map(({ page, depth }) => ({ value: page.id, depth, label: `${escapeHtml(page.icon || '📄')} ${escapeHtml(page.title)}${page.isGated ? ' <span class="text-amber-700">(paid)</span>' : ''}` })), b.pages, 'bdl-page-cb');
       checkboxList('bdl-pdfs', pdfVault.map(d => ({ value: d.id, label: escapeHtml(d.title) })), b.pdfs, 'bdl-pdf-cb');
       checkboxList('bdl-planners', plannerList().map(pl => ({ value: pl.id, label: escapeHtml(pl.label) })), b.planners || [], 'bdl-planner-cb');
@@ -208,7 +211,8 @@ async function saveBundle(e) {
     pages: vals('bdl-page-cb'),
     pdfs: vals('bdl-pdf-cb'),
     planners: vals('bdl-planner-cb'),
-    features: vals('bdl-feature-cb')
+    features: vals('bdl-feature-cb'),
+    mains_papers: vals('bdl-mains-paper-cb')
   };
 
   if (!data.name) return alert('Give the bundle a name.');
@@ -237,8 +241,9 @@ async function saveBundle(e) {
     papers: data.papers, 
     pages: data.pages, 
     pdfs: data.pdfs, 
-    planners: data.planners, 
-    features: data.features
+    planners: data.planners,
+    features: data.features,
+    mainsPapers: data.mains_papers
   };
 
   if (editingBundleId) {
@@ -276,7 +281,8 @@ async function duplicateBundle(id) {
     pages: b.pages || [],
     pdfs: b.pdfs || [],
     planners: b.planners || [],
-    features: b.features || []
+    features: b.features || [],
+    mains_papers: b.mainsPapers || []
   };
 
   // --- SYNC TO SUPABASE CLOUD ---
@@ -304,7 +310,8 @@ async function duplicateBundle(id) {
     pages: duplicatedData.pages,
     pdfs: duplicatedData.pdfs,
     planners: duplicatedData.planners,
-    features: duplicatedData.features
+    features: duplicatedData.features,
+    mainsPapers: duplicatedData.mains_papers
   };
 
   bundles.push(runtimeBundle);

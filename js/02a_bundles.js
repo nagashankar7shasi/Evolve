@@ -126,6 +126,15 @@
     function bundleCoversFeature(b, featureId) {
       return b.allAccess || (b.features || []).includes(featureId);
     }
+    // A bundle covers a Mains test paper either by explicitly listing it (b.mainsPapers, the
+    // per-paper equivalent of `papers` for Prelims) or by covering its whole category already
+    // (b.allAccess / b.categories) -- same two routes isMainsTestUnlockedForUser checks.
+    function bundleCoversMainsTest(b, paper) {
+      if (!paper) return false;
+      if (b.allAccess || (b.mainsPapers || []).includes(paper.id)) return true;
+      const coveredCats = categoryAndAncestors(paper.categoryId);
+      return coveredCats.some(c => (b.categories || []).includes(c));
+    }
     // Bundles on sale that would unlock something, cheapest first (narrow bundles before all-access at equal price)
     function bundlesForSale(test) {
       return bundles.filter(b => b.active && test(b)).sort((a, b) => a.price - b.price || (a.allAccess ? 1 : 0) - (b.allAccess ? 1 : 0));
@@ -389,6 +398,7 @@ window.onload = async function() {
         fetchCloudCoupons(),
         fetchCloudCouponRedemptions(), // admin-only (RLS); no-op data for everyone else
         fetchCloudMainsQuestions(),
+        fetchCloudMainsTestPapers(),
       ]);
       if (typeof renderStudentDirectoryTable === 'function') renderStudentDirectoryTable();
       if (typeof renderAnnouncements === 'function') renderAnnouncements();
@@ -467,6 +477,7 @@ window.onload = async function() {
         allowedPdfs: Array.isArray(s.allowed_pdfs) ? s.allowed_pdfs : [],
         allowedPlanners: Array.isArray(s.allowed_planners) ? s.allowed_planners : [],
         allowedMains: Array.isArray(s.allowed_mains) ? s.allowed_mains : [],
+        allowedMainsTests: Array.isArray(s.allowed_mains_tests) ? s.allowed_mains_tests : [],
         passes: Array.isArray(s.passes) ? s.passes : [],
         passExpiry: s.pass_expiry || {},
         passwordHash: s.password_hash || undefined,
@@ -667,7 +678,8 @@ async function fetchCloudVisitStats() {
       id: b.id, name: b.name, price: b.price, validityDays: b.validity_days, allAccess: b.all_access,
       tagline: b.tagline, categories: b.categories, papers: b.papers, pages: b.pages, pdfs: b.pdfs,
       planners: b.planners, features: b.features, highlights: b.highlights, active: b.active,
-      featured: b.featured, showOnHome: b.show_on_home, style: b.style, order: b.order_num
+      featured: b.featured, showOnHome: b.show_on_home, style: b.style, order: b.order_num,
+      mainsPapers: Array.isArray(b.mains_papers) ? b.mains_papers : []
     }));
   }
 
