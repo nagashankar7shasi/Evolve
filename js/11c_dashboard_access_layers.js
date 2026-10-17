@@ -6,7 +6,15 @@
       { id: 'analysis', name: 'Performance analysis', desc: 'Subject-wise accuracy and score trend across your tests.', def: 'free' },
       { id: 'mistakes', name: 'Practise my mistakes', desc: 'Re-practise every question you got wrong until you get it right.', def: 'paid' },
       { id: 'topic_builder', name: 'Topic test builder', desc: 'Build practice sessions or timed tests by exam and subject.', def: 'paid' },
-      { id: 'material', name: 'My study material', desc: 'Quick links to the paid pages and PDFs you have unlocked.', def: 'free' }
+      { id: 'material', name: 'My study material', desc: 'Quick links to the paid pages and PDFs you have unlocked.', def: 'free' },
+      // Defaults to 'off' (Hidden) -- the whole Mains Answer Writing dashboard card and entry point,
+      // switched on here once the end-to-end flow (question bank, AI feedback, self-assessment) is
+      // actually ready for every student. While it's off, renderMainsDashboardCard() still shows the
+      // card to any student the admin has already granted explicit Mains access to (Entitlements
+      // Desk -> individual grant, or a covering bundle/pass) -- see isMainsUnlockedForUser() in
+      // 04_access_permission_checkers.js -- so a handful of test logins can try the real flow while
+      // it stays hidden from everyone else.
+      { id: 'mains', name: 'Mains Answer Writing', desc: 'The Mains dashboard card and entry point into answer writing, AI feedback and self-assessment.', def: 'off' }
     ];
     const FEATURE_LEVELS = { free: 'Everyone logged in', paid: 'Paying students', bundle: 'Chosen bundles only', off: 'Hidden' };
     let featureAccess = Object.assign(

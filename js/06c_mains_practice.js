@@ -47,14 +47,21 @@
       mainsPracticeShowBrowse();
     }
 
-    // Dashboard entry point card (#dash-mains-section) -- visible to any logged-in, non-blocked
-    // student, same show/hide rule as the other dashboard cards (renderPracticeCenter). Whether a
-    // given category is actually unlocked is decided inside Mains Practice itself, per category tab
+    // Dashboard entry point card (#dash-mains-section). Gated by the 'mains' dashboard feature
+    // level (featureAccess, see DASHBOARD_FEATURES in 11c_dashboard_access_layers.js) -- defaults to
+    // 'off' (Hidden) until the admin switches it on for everyone, once the end-to-end flow has
+    // actually been tested. Even while it's off, a student the admin has already granted explicit
+    // Mains access to for any category (Entitlements Desk -> individual grant, or a covering bundle/
+    // pass) always sees the card, so a few test logins can be let in without exposing the
+    // still-unfinished flow to every other student. Whether a given category is actually unlocked
+    // for *this* student is decided inside Mains Practice itself, per category tab
     // (renderMainsLockedBox) -- this card is just the door in.
     function renderMainsDashboardCard() {
       const section = document.getElementById('dash-mains-section');
       if (!section) return;
-      section.classList.toggle('hidden', !getCurrentStudent());
+      const student = getCurrentStudent();
+      const visible = !!student && (canUseFeature('mains') || MAINS_CATEGORY_IDS.some(catId => isMainsUnlockedForUser(catId)));
+      section.classList.toggle('hidden', !visible);
     }
 
     function closeMainsPractice() {
@@ -92,6 +99,7 @@
       document.getElementById('mp-filter-subject').classList.toggle('hidden', !unlocked);
       document.getElementById('mp-question-list').classList.toggle('hidden', !unlocked);
       document.getElementById('mp-locked-box').classList.toggle('hidden', unlocked);
+      renderMainsAdminPreviewNote();
       if (unlocked) {
         mainsPracticeRefreshSubjectFilter();
         renderMainsPracticeQuestionList();
@@ -100,18 +108,36 @@
       }
     }
 
+    // isMainsUnlockedForUser() always returns true for isAdmin() -- without this note, testing
+    // Mains from the admin's own login would never show the locked/paywall box, or any pricing or
+    // bundle info, even with an empty question bank (just "No questions here yet"). Points at the
+    // one toggle that actually previews the real, locked-out view.
+    function renderMainsAdminPreviewNote() {
+      const note = document.getElementById('mp-admin-preview-note');
+      if (!note) return;
+      note.classList.toggle('hidden', !isAdmin());
+      if (isAdmin()) {
+        note.innerHTML = `👁️ You're viewing this as admin, so every category shows unlocked, even with no access and no questions yet. Use <b>"View as student"</b> (top of the Dev Console) to see the real locked view -- pricing, bundles, the lot.`;
+      }
+    }
+
     // Locked-state CTA for a category the student doesn't have Mains access to -- mirrors
-    // bundleOnlyUnlockCta's spirit (02a_bundles.js) but offers TWO unlock paths, since the product
-    // decision ("gated like test papers") explicitly allows either: the category Pass bundle (which
-    // already covers every mock paper in that category too), or a cheaper standalone Mains-only
-    // purchase. Bundle id === category id for both kpsc_kas and upsc_cse (see seedBundles), so
-    // openBundleCheckout(categoryId) is reused directly.
+    // bundleOnlyUnlockCta's spirit (02a_bundles.js) but offers TWO kinds of unlock path, since the
+    // product decision ("gated like test papers") explicitly allows either: a covering category
+    // Pass/bundle (which already covers every mock paper in that category too), or a cheaper
+    // standalone Mains-only purchase. The covering bundle(s) are looked up the same way
+    // isMainsUnlockedForUser() decides entitlement -- categoryAndAncestors() + b.categories, or
+    // all-access -- NOT by assuming a bundle id equals the category id. That assumption used to hold
+    // for the seeded category-pass bundles, but bundles are freely editable from the admin console,
+    // so once those are renamed, replaced or re-scoped this must keep showing whatever actually
+    // covers the category today, including none.
     async function renderMainsLockedBox(categoryId) {
       const box = document.getElementById('mp-locked-box');
       box.innerHTML = `<div class="bg-white border rounded-xl p-6 text-center text-sm text-slate-500">Loading…</div>`;
       if (!mainsAccessPriceCache) mainsAccessPriceCache = (await fetchCloudAppSetting('mains_access_price')) || {};
       const price = mainsAccessPriceCache[categoryId] != null ? mainsAccessPriceCache[categoryId] : (MAINS_ACCESS_DEFAULT_PRICE[categoryId] || 0);
-      const bundle = getBundle(categoryId);
+      const coveredCats = categoryAndAncestors(categoryId);
+      const coveringBundles = bundlesForSale(b => b.allAccess || coveredCats.some(c => b.categories.includes(c)));
       const catName = categoryDisplayName(categoryId);
       box.innerHTML = `
         <div class="bg-white border rounded-xl p-6 text-center">
@@ -119,15 +145,15 @@
           <p class="font-bold text-slate-900 mb-1">Mains access needed for ${escapeHtml(catName)}</p>
           <p class="text-slate-500 text-xs mb-5">Unlock answer writing, AI feedback and self-assessment for this category.</p>
           <div class="flex flex-wrap justify-center gap-3">
-            ${bundle ? `
-              <button onclick="openBundleCheckout('${bundle.id}')" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg shadow">
-                🎓 ${escapeHtml(bundle.name)} — ₹${bundle.price}
-              </button>` : ''}
+            ${coveringBundles.map(b => `
+              <button onclick="openBundleCheckout('${b.id}')" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg shadow">
+                🎓 ${escapeHtml(b.name)} — ₹${b.price}
+              </button>`).join('')}
             <button onclick="openCheckout('mains', '${categoryId}', 'Mains Access — ${escapeHtml(catName)}', ${price})" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg shadow">
               ✍️ Mains access only — ₹${price}
             </button>
           </div>
-          <p class="text-slate-400 text-[11px] mt-4">The category Pass also covers every mock test in ${escapeHtml(catName)} — the standalone option is Mains-only.</p>
+          ${coveringBundles.length ? `<p class="text-slate-400 text-[11px] mt-4">A Pass/bundle above also covers every mock test in ${escapeHtml(catName)} — the standalone option is Mains-only.</p>` : ''}
         </div>`;
     }
 
