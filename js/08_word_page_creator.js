@@ -2033,7 +2033,20 @@
         const page = findPage(ref);
         if (page && page.id === currentPageId && pageViewOpen) return; // already showing it
         renderDynamicCustomPage(ref, { fromRoute: true });
-      } else if (pageViewOpen) {
+        return;
+      }
+      // Per-bundle landing page (#/bundle/{slug}), same pattern as #/page/ above -- see
+      // renderBundleLandingPage/findBundleByRef/bundleLinkHash in js/02a_bundles.js.
+      const bundleMatch = location.hash.match(/^#\/bundle\/([^?#]+)/);
+      const bundleViewOpen = !document.getElementById('view-bundle-landing').classList.contains('hidden');
+      if (bundleMatch) {
+        const ref = decodeURIComponent(bundleMatch[1]);
+        const b = findBundleByRef(ref);
+        if (b && b.id === currentBundleLandingId && bundleViewOpen) return; // already showing it
+        renderBundleLandingPage(ref, { fromRoute: true });
+        return;
+      }
+      if (pageViewOpen || bundleViewOpen) {
         navigate('home');
       }
     }
@@ -2051,13 +2064,14 @@
       if (!(await guardLeavingExam())) return;
 
       currentPageId = page.id;
+      currentBundleLandingId = null; // leaving any bundle landing page that might have been open
       const hash = pageLinkHash(page);
       if (location.hash !== hash) {
         // Opened from an old link: quietly switch to the current one without adding history.
         setPageHash(hash, !!opts.fromRoute);
       }
 
-      ['home', 'tests', 'dashboard', 'admin', 'engine'].forEach(v => {
+      ['home', 'tests', 'dashboard', 'admin', 'bundle-landing', 'engine'].forEach(v => {
         document.getElementById(`view-${v}`).classList.add('hidden');
       });
       document.getElementById('view-custom-page').classList.remove('hidden');

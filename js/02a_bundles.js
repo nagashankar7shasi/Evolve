@@ -52,6 +52,17 @@
     function bundleLinkHash(b) {
       return '#/bundle/' + encodeURIComponent((b && b.slug) || (b && b.id) || '');
     }
+    // Shared by bundleCardHtml (js/03c_bundles_admin_editor.js) and the bundle landing page below --
+    // one place that decides whether a no-code auto-coupon currently discounts this bundle, so both
+    // surfaces always agree on the price shown. Guarded for load order: js/03f_coupons.js (which
+    // defines bestAutoCoupon/computeCouponDiscount) loads after this file, but by the time anything
+    // actually CALLS this (a render, well after boot), both are already defined globals.
+    function bundlePricingInfo(b) {
+      const autoCoupon = (typeof bestAutoCoupon === 'function') ? bestAutoCoupon({ type: 'pass', id: b.id }, b.price) : null;
+      const discount = autoCoupon ? computeCouponDiscount(autoCoupon, b.price) : 0;
+      const finalPrice = autoCoupon ? Math.max(0, b.price - discount) : b.price;
+      return { autoCoupon, discount, finalPrice };
+    }
     function bundleLabel(id) {
       const b = getBundle(id);
       return b ? b.name : id;
@@ -173,6 +184,7 @@
     let savedEditorRange = null;
     let activeSelectedStudent = null;
     let activeReviewAttempt = null; // Currently inspected attempt
+    let currentBundleLandingId = null; // bundle currently shown at #/bundle/{slug}, mirroring currentPageId
 
     // Runtime state
     let activeTest = null;
