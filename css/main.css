@@ -490,13 +490,19 @@
 
     .home-banner-carousel { position: relative; overflow: hidden; border-radius: 16px; background: #0f172a; }
     .home-banner-track { display: flex; transition: transform .45s ease; }
-    .home-banner-slide { flex: 0 0 100%; position: relative; display: block; }
-    /* aspect-ratio keeps the box a consistent, responsive "banner" shape across screen sizes;
-       object-fit: contain (not cover) means the admin's whole uploaded image always shows --
-       nothing gets cropped off the top/bottom/sides. A banner whose own aspect ratio doesn't
-       exactly match letterboxes against the dark background instead of losing content. */
-    .home-banner-slide img { width: 100%; aspect-ratio: 2.4 / 1; object-fit: contain; display: block; background: #0f172a; }
-    .home-banner-caption { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 18px; font-size: 13px; font-weight: 700; color: #fff; background: linear-gradient(to top, rgba(15,23,42,.85), rgba(15,23,42,0)); }
+    .home-banner-slide { flex: 0 0 100%; position: relative; display: block; overflow: hidden; }
+    /* Blurred-backdrop fill (same trick Spotify/YouTube use for mismatched aspect ratios): a
+       blurred, scaled-up copy of the SAME banner image sits behind, filling the whole box with
+       no visible seams, while the sharp, uncropped original sits on top via object-fit: contain.
+       aspect-ratio keeps the box a consistent, responsive "banner" shape across screen sizes.
+       `inset: -5%` + `scale(1.1)` on the backdrop overshoots the box so the blur's own soft edge
+       (which would otherwise show a band of the carousel's background color) never shows, and
+       `overflow: hidden` on the slide itself keeps that overshoot from bleeding into neighboring
+       slides. Nothing is ever cropped off the SHARP foreground image -- only its blurred backdrop
+       copy is intentionally over-scaled. */
+    .home-banner-slide-bg { position: absolute; inset: -5%; background-size: cover; background-position: center; background-repeat: no-repeat; filter: blur(28px) brightness(0.55); transform: scale(1.1); }
+    .home-banner-slide-img { position: relative; z-index: 1; width: 100%; aspect-ratio: 2.4 / 1; object-fit: contain; display: block; }
+    .home-banner-caption { position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; padding: 14px 18px; font-size: 13px; font-weight: 700; color: #fff; background: linear-gradient(to top, rgba(15,23,42,.85), rgba(15,23,42,0)); }
     .home-banner-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border-radius: 999px; background: rgba(15,23,42,.55); color: #fff; border: none; font-size: 20px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
     .home-banner-arrow:hover { background: rgba(15,23,42,.8); }
     .home-banner-arrow-prev { left: 10px; }
