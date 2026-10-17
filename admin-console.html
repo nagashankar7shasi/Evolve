@@ -737,7 +737,7 @@
           <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div class="md:col-span-2">
               <label class="block font-bold text-slate-700 mb-1">Bundle name</label>
-              <input type="text" id="bdl-name" required maxlength="80" placeholder="KAS Prelims + Notes Combo" class="w-full px-2.5 py-1.5 border rounded-lg outline-none" />
+              <input type="text" id="bdl-name" required maxlength="80" oninput="syncBdlSlugFromTitle()" placeholder="KAS Prelims + Notes Combo" class="w-full px-2.5 py-1.5 border rounded-lg outline-none" />
             </div>
             <div>
               <label class="block font-bold text-slate-700 mb-1">Price (₹)</label>
@@ -750,6 +750,15 @@
             <div class="md:col-span-4">
               <label class="block font-bold text-slate-700 mb-1">One-line description</label>
               <input type="text" id="bdl-tagline" maxlength="160" placeholder="Every KAS mock, the Karnataka notes section and the advanced planner." class="w-full px-2.5 py-1.5 border rounded-lg outline-none" />
+            </div>
+            <div class="md:col-span-4">
+              <label class="block font-bold text-slate-700 mb-1">Landing page link</label>
+              <div class="flex items-center gap-1.5">
+                <span class="text-slate-400 font-mono whitespace-nowrap">#/bundle/</span>
+                <input type="text" id="bdl-slug-input" readonly oninput="updateBdlSlugHint()" placeholder="filled in from the name" class="flex-1 min-w-0 px-2.5 py-1.5 border rounded-lg outline-none font-mono bg-slate-50 text-slate-500" />
+                <button type="button" id="bdl-slug-edit-btn" onclick="toggleBdlSlugEditing()" class="px-2.5 py-1.5 border rounded-lg font-bold text-slate-600 hover:bg-slate-50">Edit</button>
+              </div>
+              <p id="bdl-slug-hint" class="text-[10px] text-slate-400 mt-1">Filled in from the bundle name. Click Edit to change it.</p>
             </div>
             <div class="md:col-span-2">
               <label class="block font-bold text-slate-700 mb-1">Highlights <span class="font-normal text-slate-400">(one per line, shown as bullets)</span></label>

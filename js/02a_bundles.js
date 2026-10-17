@@ -7,7 +7,8 @@
         id, name, price, validityDays: 365, allAccess: false,
         tagline: `Every ${name.replace(' Pass', '')} mock, including papers added later.`,
         categories: [id], papers: [], pages: [], pdfs: [], planners, features: ['mistakes', 'topic_builder'],
-        highlights, active: true, featured: false, showOnHome: false, style: 'light', order: 10, ...extra
+        highlights, active: true, featured: false, showOnHome: false, style: 'light', order: 10,
+        slug: slugify(name), oldSlugs: [], ...extra
       });
       return [
         cat('kpsc_kas', 'KPSC KAS Complete Pass', cp.kpsc_kas || 699, ['kpsc'],
@@ -21,7 +22,8 @@
           tagline: 'Unlimited access to every exam, paper, page, PDF and dashboard feature.',
           categories: [], papers: [], pages: [], pdfs: [], planners: [], features: [],
           highlights: ['KAS, PSI, FDA/SDA and UPSC mocks', 'All gated PDFs and study pages', 'Every advanced planner and dashboard feature'],
-          active: true, featured: false, showOnHome: true, style: 'dark', order: 2
+          active: true, featured: false, showOnHome: true, style: 'dark', order: 2,
+          slug: 'all-access-master-pass', oldSlugs: []
         }
       ];
     }
@@ -33,6 +35,22 @@
 
     function getBundle(id) {
       return bundles.find(b => b.id === id) || null;
+    }
+    // Ref-resolving lookup mirroring findPage() (js/02_pricing_master_storage.js) -- matches by id,
+    // current slug, or any old slug (so a renamed bundle's previously-shared landing-page links keep
+    // working). getBundle() above stays a strict id-only lookup since that's what every entitlement
+    // call site (student.passes, bundleCoversPaper, etc.) always passes; this one is for resolving a
+    // URL/user-typed reference, same split as findPage() vs. direct customPages.find(p => p.id === ...).
+    function findBundleByRef(ref) {
+      if (!ref) return null;
+      return bundles.find(b => b.id === ref) || bundles.find(b => b.slug === ref) || bundles.find(b => (b.oldSlugs || []).includes(ref)) || null;
+    }
+    // '#/bundle/{slug}' URL for a bundle's landing page, mirroring pageLinkHash(page). Falls back to
+    // the bundle id for any bundle that hasn't been saved since the slug field was introduced (slug
+    // is backfilled in the DB -- see sql/add_bundle_slug.sql -- but a bundle still on local seed data,
+    // before the cloud fetch lands, won't have one yet).
+    function bundleLinkHash(b) {
+      return '#/bundle/' + encodeURIComponent((b && b.slug) || (b && b.id) || '');
     }
     function bundleLabel(id) {
       const b = getBundle(id);
@@ -679,7 +697,11 @@ async function fetchCloudVisitStats() {
       tagline: b.tagline, categories: b.categories, papers: b.papers, pages: b.pages, pdfs: b.pdfs,
       planners: b.planners, features: b.features, highlights: b.highlights, active: b.active,
       featured: b.featured, showOnHome: b.show_on_home, style: b.style, order: b.order_num,
-      mainsPapers: Array.isArray(b.mains_papers) ? b.mains_papers : []
+      mainsPapers: Array.isArray(b.mains_papers) ? b.mains_papers : [],
+      // slug/old_slugs: added for #/bundle/{slug} landing pages (sql/add_bundle_slug.sql). Older
+      // rows saved before this column existed in a stale cache default to no slug -- bundleLinkHash()
+      // falls back to the id in that case, same defensive pattern as customPages' slug handling.
+      slug: b.slug || null, oldSlugs: Array.isArray(b.old_slugs) ? b.old_slugs : []
     }));
   }
 
