@@ -411,8 +411,12 @@
       homeBannersIndex = 0;
       const track = document.getElementById('home-banners-track');
       track.innerHTML = items.map((it, i) => {
-        const inner = `<img src="${escapeHtml(it.image)}" alt="${escapeHtml(it.caption || '')}" />` +
-          (it.caption ? `<span class="home-banner-caption">${escapeHtml(it.caption)}</span>` : '');
+        // Blurred backdrop + sharp foreground, both the SAME image -- see the .home-banner-slide-bg
+        // CSS comment for why. The foreground <img> is still what gets object-fit: contain'd, so
+        // the actual banner content is never cropped, only its decorative backdrop copy.
+        const bg = `<div class="home-banner-slide-bg" style="background-image:url('${escapeHtml(it.image)}')"></div>`;
+        const fg = `<img class="home-banner-slide-img" src="${escapeHtml(it.image)}" alt="${escapeHtml(it.caption || '')}" />`;
+        const inner = bg + fg + (it.caption ? `<span class="home-banner-caption">${escapeHtml(it.caption)}</span>` : '');
         return it.action
           ? `<a href="javascript:void(0)" class="home-banner-slide" onclick="homeBannerSlideClick(${i})">${inner}</a>`
           : `<div class="home-banner-slide">${inner}</div>`;
