@@ -897,7 +897,68 @@
         }).join('') : 'No bundles yet'}</div>
         <div>${student.passwordHash ? 'Password login enabled' : 'No password set yet'}</div>
         <button onclick="openLoginModal(); startOtpFlow('reset', '${student.email}')" class="text-amber-600 font-bold hover:underline pt-1">${student.passwordHash ? 'Change password' : 'Set a password'}</button>
+        <div class="border-t pt-2 mt-2">
+          ${student.telegramChatId
+            ? `<div class="text-emerald-700 font-bold">✓ Telegram connected</div>
+               <div class="text-[11px] text-slate-500 mt-0.5">You'll get alerts here (e.g. when a payment is approved).</div>
+               <button onclick="disconnectTelegram()" class="text-rose-600 font-bold hover:underline pt-1">Disconnect</button>`
+            : `<div class="text-slate-600">Connect Telegram to get instant alerts.</div>
+               <button onclick="connectTelegram()" class="text-sky-700 font-bold hover:underline pt-1">Connect Telegram</button>
+               <button onclick="refreshTelegramConnectionStatus()" class="text-slate-400 hover:underline pt-1 ml-2 text-[11px]">Already tapped Start? Refresh</button>`
+          }
+        </div>
       `;
+    }
+
+    // ---- Per-student Telegram connect flow (task #198) ----
+    // Full round trip: this generates a one-time token and saves it on the student's own row (via a
+    // SECURITY DEFINER RPC -- students_update is admin-only), then opens the bot's deep link with
+    // that token as the /start payload. Telegram POSTs the /start to the telegram-webhook Edge
+    // Function, which matches the token back to this row and writes telegram_chat_id -- entirely
+    // outside this browser tab, which is why there's no way to auto-detect completion; the student
+    // either reloads later or taps "Already tapped Start? Refresh".
+    async function connectTelegram() {
+      const student = getCurrentStudent();
+      if (!student) return;
+      const settings = await fetchCloudAppSetting('telegram_settings');
+      const botUsername = settings && settings.botUsername;
+      if (!botUsername) return alert("Telegram connect isn't set up yet on this site. Please check back soon.");
+      const token = randomHex(16);
+      try {
+        const { error } = await supabaseClient.rpc('student_set_telegram_connect_token', { p_token: token });
+        if (error) throw error;
+      } catch (err) {
+        return alert("Couldn't start the connection: " + (err.message || err));
+      }
+      window.open(`https://t.me/${botUsername}?start=${token}`, '_blank', 'noopener');
+    }
+
+    async function refreshTelegramConnectionStatus() {
+      const student = getCurrentStudent();
+      if (!student) return;
+      try {
+        const { data, error } = await supabaseClient.from('students').select('telegram_chat_id').eq('email', student.email).maybeSingle();
+        if (error) throw error;
+        student.telegramChatId = (data && data.telegram_chat_id) || null;
+        renderMyAccess();
+        if (!student.telegramChatId) alert("Not connected yet — make sure you tapped \"Start\" in the Telegram chat, then try Refresh again.");
+      } catch (err) {
+        alert("Couldn't check connection status: " + (err.message || err));
+      }
+    }
+
+    async function disconnectTelegram() {
+      if (!confirm('Disconnect Telegram? You will stop getting alerts there.')) return;
+      const student = getCurrentStudent();
+      if (!student) return;
+      try {
+        const { error } = await supabaseClient.rpc('student_clear_telegram_connection');
+        if (error) throw error;
+        student.telegramChatId = null;
+        renderMyAccess();
+      } catch (err) {
+        alert("Couldn't disconnect: " + (err.message || err));
+      }
     }
 
     let lastSubmittedAttemptId = null;

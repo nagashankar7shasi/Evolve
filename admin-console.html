@@ -223,6 +223,12 @@
           <p id="telegram-broadcast-status" class="text-[11px] font-bold text-slate-500"></p>
         </div>
         <div class="border-t pt-4 space-y-2">
+          <label class="block font-bold text-slate-700 mb-1">🔗 Telegram connect setup (one-time)</label>
+          <p class="text-slate-400 text-[11px]">Lets students connect their own Telegram so they get personal alerts (e.g. payment approved) as a DM from the bot. Run this once — looks up the bot's username and registers where Telegram should send <code class="font-mono">/start</code> taps. Safe to re-run any time (e.g. if you rotate the bot token).</p>
+          <button type="button" onclick="setupTelegramWebhook()" class="px-3 py-1.5 border rounded-lg bg-white font-bold text-[11px] hover:bg-slate-50">Set up / re-check Telegram connect</button>
+          <p id="telegram-webhook-setup-status" class="text-[11px] font-bold text-slate-500"></p>
+        </div>
+        <div class="border-t pt-4 space-y-2">
           <label class="block font-bold text-slate-700 mb-1">🧹 Storage maintenance (one-time)</label>
           <p class="text-slate-400 text-[11px]">Images uploaded here (logo, watermark, home banners, page thumbnails/content) now go straight to Supabase Storage instead of being embedded in the database — keeps every page load small. Run this once to move any images uploaded before that change out of the database too; safe to run again later, it skips anything already migrated.</p>
           <button type="button" onclick="migrateLegacyImagesToStorage()" class="px-3 py-1.5 border rounded-lg bg-white font-bold text-[11px] hover:bg-slate-50">Migrate legacy images to Storage</button>

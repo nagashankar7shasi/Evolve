@@ -514,7 +514,10 @@ window.onload = async function() {
         passwordSalt: s.password_salt || undefined,
         supabaseAuthMigrated: !!s.supabase_auth_migrated,
         createdAt: s.created_at,
-        lastLoginAt: s.last_login_at
+        lastLoginAt: s.last_login_at,
+        // Per-student Telegram alerts (task #198) — set once the student completes the
+        // /start <token> deep link via telegram-webhook; see sql/add_telegram_per_student_alerts.sql.
+        telegramChatId: s.telegram_chat_id || null
       };
     }
 
