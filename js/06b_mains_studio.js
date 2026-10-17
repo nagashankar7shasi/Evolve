@@ -33,11 +33,13 @@
       if (error) { console.error('fetchCloudMainsQuestions:', fmtErr(error)); return; }
       if (data) {
         mainsQuestions = data.map(q => ({
-          id: q.id, categoryId: q.category_id, subject: q.subject || '', question: q.question || '',
-          modelAnswer: q.model_answer || '', rubric: Array.isArray(q.rubric) ? q.rubric : [],
+          id: q.id, categoryId: q.category_id, subject: q.subject || '', subTopic: q.sub_topic || '',
+          question: q.question || '', questionKn: q.question_kn || '',
+          modelAnswer: q.model_answer || '', modelAnswerKn: q.model_answer_kn || '',
+          rubric: Array.isArray(q.rubric) ? q.rubric : [],
           marks: +q.marks || 0, wordLimit: q.word_limit != null ? +q.word_limit : null,
           previousYear: q.previous_year != null ? +q.previous_year : null, sourceNote: q.source_note || '',
-          active: q.active !== false, createdAt: q.created_at
+          expImageUrl: q.exp_image_url || '', active: q.active !== false, createdAt: q.created_at
         }));
         if (typeof renderMainsQuestionsAdmin === 'function') renderMainsQuestionsAdmin();
       }
@@ -155,8 +157,10 @@
           <div class="flex justify-between gap-2">
             <span class="flex flex-wrap gap-1 text-[10px] font-bold">
               <span class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800">${escapeHtml(catName)}</span>
-              ${q.subject ? `<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">${escapeHtml(q.subject)}</span>` : ''}
+              ${q.subject ? `<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">${escapeHtml(q.subject)}${q.subTopic ? ` · ${escapeHtml(q.subTopic)}` : ''}</span>` : ''}
               ${q.previousYear ? `<span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800">PYQ ${q.previousYear}</span>` : ''}
+              ${q.questionKn ? `<span class="px-1.5 py-0.5 rounded bg-sky-50 text-sky-700" title="Has a Kannada version">🌐 KN</span>` : ''}
+              ${q.expImageUrl ? `<span class="px-1.5 py-0.5 rounded bg-violet-50 text-violet-700" title="Has an explanation image">🖼️</span>` : ''}
               ${!q.active ? `<span class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-600">Off</span>` : ''}
             </span>
             <span class="font-mono font-bold text-emerald-700 whitespace-nowrap">${q.marks} marks</span>
@@ -176,19 +180,27 @@
 
     function editMainsQuestion(id) {
       const q = id ? getMainsQuestion(id) : {
-        categoryId: 'kpsc_kas', subject: '', question: '', modelAnswer: '', rubric: [],
-        marks: 10, wordLimit: null, previousYear: null, sourceNote: '', active: true
+        categoryId: 'kpsc_kas', subject: '', subTopic: '', question: '', questionKn: '',
+        modelAnswer: '', modelAnswerKn: '', rubric: [],
+        marks: 10, wordLimit: null, previousYear: null, sourceNote: '', expImageUrl: '', active: true
       };
       editingMainsQuestionId = id;
       document.getElementById('mains-question-editor-title').innerText = id ? 'Edit question' : 'New question';
       populateMainsCategorySelect(q.categoryId);
       populateMainsSubjectSelect(q.subject);
+      document.getElementById('mq-subtopic').value = q.subTopic || '';
       document.getElementById('mq-question').value = q.question;
+      document.getElementById('mq-question-kn').value = q.questionKn || '';
       document.getElementById('mq-model-answer').value = q.modelAnswer;
+      document.getElementById('mq-model-answer-kn').value = q.modelAnswerKn || '';
       document.getElementById('mq-marks').value = q.marks;
       document.getElementById('mq-word-limit').value = q.wordLimit != null ? q.wordLimit : '';
       document.getElementById('mq-previous-year').value = q.previousYear != null ? q.previousYear : '';
       document.getElementById('mq-source-note').value = q.sourceNote || '';
+      document.getElementById('mq-exp-image-url').value = q.expImageUrl || '';
+      const expPreview = document.getElementById('mq-exp-image-preview');
+      expPreview.src = q.expImageUrl || '';
+      expPreview.classList.toggle('hidden', !q.expImageUrl);
       document.getElementById('mq-active').checked = !!q.active;
       renderMainsRubricRowsFrom(q.rubric);
 
@@ -200,6 +212,32 @@
     function closeMainsQuestionEditor() {
       editingMainsQuestionId = null;
       document.getElementById('mains-question-editor').classList.add('hidden');
+    }
+
+    // One explanation image per question (e.g. a mind-map or labeled diagram shown alongside the
+    // model answer) -- mirrors the Test Paper Studio's editUploadImage (same study_materials bucket,
+    // same 5MB cap, same file->storage->public-URL->preview flow) but deliberately simpler: just one
+    // field, no English/Kannada split, since a mind-map/diagram is visual rather than language text.
+    async function mainsUploadExpImage(input) {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        input.value = '';
+        return alert('Image is bigger than 5 MB. Compress it or paste a URL instead.');
+      }
+      const path = `mains_explanation_images/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      try {
+        const { error } = await supabaseClient.storage.from('study_materials').upload(path, file, { cacheControl: '3600', upsert: false });
+        if (error) throw error;
+        const { data } = supabaseClient.storage.from('study_materials').getPublicUrl(path);
+        document.getElementById('mq-exp-image-url').value = data.publicUrl;
+        const preview = document.getElementById('mq-exp-image-preview');
+        preview.src = data.publicUrl;
+        preview.classList.remove('hidden');
+      } catch (err) {
+        alert('Upload failed: ' + err.message);
+      }
+      input.value = '';
     }
 
     async function saveMainsQuestion(e) {
@@ -218,13 +256,17 @@
         id: questionId,
         category_id: document.getElementById('mq-category').value,
         subject: document.getElementById('mq-subject').value === '__add_new__' ? '' : document.getElementById('mq-subject').value,
+        sub_topic: document.getElementById('mq-subtopic').value.trim(),
         question,
+        question_kn: document.getElementById('mq-question-kn').value.trim(),
         model_answer: document.getElementById('mq-model-answer').value.trim(),
+        model_answer_kn: document.getElementById('mq-model-answer-kn').value.trim(),
         rubric,
         marks: Math.max(0, parseFloat(document.getElementById('mq-marks').value) || 0),
         word_limit: wordLimitRaw ? Math.max(1, parseInt(wordLimitRaw, 10)) : null,
         previous_year: previousYearRaw ? parseInt(previousYearRaw, 10) : null,
         source_note: document.getElementById('mq-source-note').value.trim(),
+        exp_image_url: document.getElementById('mq-exp-image-url').value.trim() || null,
         active: document.getElementById('mq-active').checked
       };
 
@@ -232,9 +274,12 @@
       if (error) return alert('Failed to save question to cloud: ' + error.message);
 
       const runtime = {
-        id: data.id, categoryId: data.category_id, subject: data.subject, question: data.question,
-        modelAnswer: data.model_answer, rubric: data.rubric, marks: data.marks, wordLimit: data.word_limit,
-        previousYear: data.previous_year, sourceNote: data.source_note, active: data.active,
+        id: data.id, categoryId: data.category_id, subject: data.subject, subTopic: data.sub_topic,
+        question: data.question, questionKn: data.question_kn,
+        modelAnswer: data.model_answer, modelAnswerKn: data.model_answer_kn,
+        rubric: data.rubric, marks: data.marks, wordLimit: data.word_limit,
+        previousYear: data.previous_year, sourceNote: data.source_note, expImageUrl: data.exp_image_url || '',
+        active: data.active,
         createdAt: editingMainsQuestionId ? (getMainsQuestion(editingMainsQuestionId)?.createdAt || new Date().toISOString()) : new Date().toISOString()
       };
       const idx = mainsQuestions.findIndex(q => q.id === questionId);
@@ -249,16 +294,21 @@
       if (!q) return;
       const newId = 'mq_' + Date.now();
       const data = {
-        id: newId, category_id: q.categoryId, subject: q.subject, question: q.question + ' (copy)',
-        model_answer: q.modelAnswer, rubric: q.rubric, marks: q.marks, word_limit: q.wordLimit,
-        previous_year: q.previousYear, source_note: q.sourceNote, active: false
+        id: newId, category_id: q.categoryId, subject: q.subject, sub_topic: q.subTopic || '',
+        question: q.question + ' (copy)', question_kn: q.questionKn || '',
+        model_answer: q.modelAnswer, model_answer_kn: q.modelAnswerKn || '',
+        rubric: q.rubric, marks: q.marks, word_limit: q.wordLimit,
+        previous_year: q.previousYear, source_note: q.sourceNote, exp_image_url: q.expImageUrl || null, active: false
       };
       const { error } = await supabaseClient.from('mains_questions').upsert(data);
       if (error) return alert('Failed to duplicate question to cloud: ' + error.message);
       mainsQuestions.unshift({
-        id: data.id, categoryId: data.category_id, subject: data.subject, question: data.question,
-        modelAnswer: data.model_answer, rubric: data.rubric, marks: data.marks, wordLimit: data.word_limit,
-        previousYear: data.previous_year, sourceNote: data.source_note, active: false, createdAt: new Date().toISOString()
+        id: data.id, categoryId: data.category_id, subject: data.subject, subTopic: data.sub_topic,
+        question: data.question, questionKn: data.question_kn,
+        modelAnswer: data.model_answer, modelAnswerKn: data.model_answer_kn,
+        rubric: data.rubric, marks: data.marks, wordLimit: data.word_limit,
+        previousYear: data.previous_year, sourceNote: data.source_note, expImageUrl: data.exp_image_url || '',
+        active: false, createdAt: new Date().toISOString()
       });
       renderMainsQuestionsAdmin();
     }
@@ -324,23 +374,44 @@
     const MAINS_HEADER_ALIASES = {
       'category': 'categoryId', 'exam': 'categoryId', 'categoryid': 'categoryId', 'examcategory': 'categoryId', 'examname': 'categoryId',
       'subject': 'subject', 'topic': 'subject', 'tag': 'subject',
+      // Sub-topic -- optional, finer-grained tag nested under Subject, same vocabulary as the Test
+      // Paper Studio's own subTopic column (06a_test_paper_studio.js). Deliberately NOT folded into
+      // 'topic'->subject above, for the same reason that file gives: 'topic' has always meant Subject.
+      'subtopic': 'subTopic', 'microtopic': 'subTopic',
       'question': 'question', 'questiontext': 'question', 'q': 'question', 'descriptivequestion': 'question', 'qntext': 'question', 'qn': 'question',
+      'questionen': 'question', 'questionenglish': 'question',
+      // Question (Kannada) -- optional bilingual column, parallel to the English question text.
+      'questionkn': 'questionKn', 'questionkannada': 'questionKn', 'qkn': 'questionKn',
       'modelanswer': 'modelAnswer', 'answer': 'modelAnswer', 'modelans': 'modelAnswer', 'sampleanswer': 'modelAnswer', 'idealanswer': 'modelAnswer',
+      'modelansweren': 'modelAnswer', 'answeren': 'modelAnswer',
+      // Model answer (Kannada) -- optional bilingual column, parallel to the English model answer.
+      'modelanswerkn': 'modelAnswerKn', 'answerkn': 'modelAnswerKn', 'modelanskn': 'modelAnswerKn', 'idealanswerkn': 'modelAnswerKn',
       'marks': 'marks', 'mark': 'marks', 'totalmarks': 'marks',
       'wordlimit': 'wordLimit', 'limit': 'wordLimit', 'words': 'wordLimit',
       'previousyear': 'previousYear', 'pyq': 'previousYear', 'year': 'previousYear', 'askedinyear': 'previousYear',
       'sourcenote': 'sourceNote', 'source': 'sourceNote', 'note': 'sourceNote', 'notes': 'sourceNote',
+      // Explanation image -- a mind-map/diagram shown alongside the model answer. One field, no
+      // English/Kannada split (see sql/add_mains_bilingual_subtopic_image.sql) -- a visual aid isn't
+      // language-specific text, unlike the question/model-answer columns above.
+      'expimageurl': 'expImageUrl', 'explanationimage': 'expImageUrl', 'expimage': 'expImageUrl',
+      'mindmap': 'expImageUrl', 'mindmapurl': 'expImageUrl', 'diagram': 'expImageUrl', 'diagramurl': 'expImageUrl',
+      'answerimage': 'expImageUrl', 'solutionimage': 'expImageUrl', 'image': 'expImageUrl', 'imageurl': 'expImageUrl',
       'rubric': 'rubric', 'rubriccriteria': 'rubric', 'criteria': 'rubric', 'gradingrubric': 'rubric',
       'active': 'active', 'status': 'active', 'isactive': 'active'
     };
     const MAINS_FIELD_LABELS = {
-      categoryId: 'Exam (KPSC KAS / UPSC CSE)', subject: 'Subject', question: 'Question',
-      modelAnswer: 'Model Answer', marks: 'Marks', wordLimit: 'Word Limit',
+      categoryId: 'Exam (KPSC KAS / UPSC CSE)', subject: 'Subject', subTopic: 'Sub-topic (optional, under Subject)',
+      question: 'Question', questionKn: 'Question (Kannada, optional)',
+      modelAnswer: 'Model Answer', modelAnswerKn: 'Model Answer (Kannada, optional)',
+      marks: 'Marks', wordLimit: 'Word Limit',
       previousYear: 'Previous Year (PYQ)', sourceNote: 'Source Note',
+      expImageUrl: 'Explanation Image URL (optional — mind-map/diagram)',
       rubric: 'Rubric ("Criterion:Weight; Criterion:Weight")', active: 'Active (Yes/No)',
       _ignore: '— Ignore this column —'
     };
-    const MAINS_CSV_HEADERS = ['Category', 'Subject', 'Question', 'Model_Answer', 'Marks', 'Word_Limit', 'Previous_Year', 'Source_Note', 'Rubric', 'Active'];
+    // Any number of question rows is accepted per upload -- mainsApplyMappingAndAdd below loops over
+    // every row in the file/paste and upserts them all in one batch; there is no one-row limit.
+    const MAINS_CSV_HEADERS = ['Category', 'Subject', 'Sub_Topic', 'Question', 'Question_KN', 'Model_Answer', 'Model_Answer_KN', 'Marks', 'Word_Limit', 'Previous_Year', 'Source_Note', 'Exp_Image_URL', 'Rubric', 'Active'];
 
     let mainsPendingMapping = null;
 
@@ -418,7 +489,9 @@
       let skipped = 0;
 
       rows.forEach((row, i) => {
-        const raw = { categoryId: '', subject: '', question: '', modelAnswer: '', marks: '', wordLimit: '', previousYear: '', sourceNote: '', rubric: '', active: '' };
+        const raw = { categoryId: '', subject: '', subTopic: '', question: '', questionKn: '',
+          modelAnswer: '', modelAnswerKn: '', marks: '', wordLimit: '', previousYear: '', sourceNote: '',
+          expImageUrl: '', rubric: '', active: '' };
         let sawActive = false;
         for (const [colName, field] of Object.entries(mapping)) {
           const val = row[colName];
@@ -454,9 +527,12 @@
 
         toUpsert.push({
           id: 'mq_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 6),
-          category_id: categoryId, subject, question, model_answer: String(raw.modelAnswer || '').trim(),
+          category_id: categoryId, subject, sub_topic: String(raw.subTopic || '').trim(),
+          question, question_kn: String(raw.questionKn || '').trim(),
+          model_answer: String(raw.modelAnswer || '').trim(), model_answer_kn: String(raw.modelAnswerKn || '').trim(),
           rubric, marks, word_limit: wordLimit, previous_year: previousYear,
-          source_note: String(raw.sourceNote || '').trim(), active
+          source_note: String(raw.sourceNote || '').trim(), exp_image_url: String(raw.expImageUrl || '').trim() || null,
+          active
         });
       });
 
@@ -472,9 +548,12 @@
       const now = new Date().toISOString();
       toUpsert.forEach(data => {
         mainsQuestions.unshift({
-          id: data.id, categoryId: data.category_id, subject: data.subject, question: data.question,
-          modelAnswer: data.model_answer, rubric: data.rubric, marks: data.marks, wordLimit: data.word_limit,
-          previousYear: data.previous_year, sourceNote: data.source_note, active: data.active, createdAt: now
+          id: data.id, categoryId: data.category_id, subject: data.subject, subTopic: data.sub_topic,
+          question: data.question, questionKn: data.question_kn,
+          modelAnswer: data.model_answer, modelAnswerKn: data.model_answer_kn,
+          rubric: data.rubric, marks: data.marks, wordLimit: data.word_limit,
+          previousYear: data.previous_year, sourceNote: data.source_note, expImageUrl: data.exp_image_url || '',
+          active: data.active, createdAt: now
         });
       });
       renderMainsQuestionsAdmin();
@@ -500,11 +579,16 @@
       link.click();
       URL.revokeObjectURL(link.href);
     }
+    // Two sample rows AND a reminder row that's just a header repeat-free blank-row placeholder --
+    // the point being to show, by example, that this file can hold as many question rows as you like
+    // (there is no one-question-per-upload limit here; mainsApplyMappingAndAdd upserts every row in
+    // the file in one batch). Sub_Topic/Question_KN/Model_Answer_KN/Exp_Image_URL are all optional --
+    // the second sample row leaves them blank to show that's fine.
     function mainsDownloadTemplate() {
       const sample = [
         MAINS_CSV_HEADERS,
-        ['KPSC KAS', 'Polity', 'Discuss the significance of the 73rd Constitutional Amendment in strengthening local self-government in India.', 'The 73rd Amendment (1992) institutionalized Panchayati Raj as a three-tier system...', '15', '250', '2023', 'KAS Mains 2023 GS2', 'Historical context:20; Constitutional provisions:30; Impact & critique:50', 'Yes'],
-        ['UPSC CSE', 'International Relations', 'Examine the evolving dynamics of India-China relations in the context of regional security.', 'India-China relations are shaped by historical border disputes, economic interdependence...', '12', '200', '', '', 'Facts & background:40; Analysis:60', 'Yes']
+        ['KPSC KAS', 'Polity', 'Fundamental Rights', 'Discuss the significance of the 73rd Constitutional Amendment in strengthening local self-government in India.', '', 'The 73rd Amendment (1992) institutionalized Panchayati Raj as a three-tier system...', '', '15', '250', '2023', 'KAS Mains 2023 GS2', 'https://example.com/panchayati-raj-mindmap.png', 'Historical context:20; Constitutional provisions:30; Impact & critique:50', 'Yes'],
+        ['UPSC CSE', 'International Relations', '', 'Examine the evolving dynamics of India-China relations in the context of regional security.', '', 'India-China relations are shaped by historical border disputes, economic interdependence...', '', '12', '200', '', '', '', 'Facts & background:40; Analysis:60', 'Yes']
       ];
       mainsTriggerCsvDownload(mainsRowsToCsv(sample), 'mains_question_template.csv');
     }
@@ -515,9 +599,10 @@
       if (!rows.length) return alert('No questions to export with the current filter.');
       const catName = (id) => EXAM_CATEGORIES[id] ? EXAM_CATEGORIES[id].name : id;
       const data = rows.map(q => [
-        catName(q.categoryId), q.subject || '', q.question, q.modelAnswer || '',
+        catName(q.categoryId), q.subject || '', q.subTopic || '', q.question, q.questionKn || '',
+        q.modelAnswer || '', q.modelAnswerKn || '',
         q.marks, q.wordLimit != null ? q.wordLimit : '', q.previousYear != null ? q.previousYear : '', q.sourceNote || '',
-        mainsRubricToString(q.rubric), q.active ? 'Yes' : 'No'
+        q.expImageUrl || '', mainsRubricToString(q.rubric), q.active ? 'Yes' : 'No'
       ]);
       mainsTriggerCsvDownload(mainsRowsToCsv([MAINS_CSV_HEADERS, ...data]), 'mains_questions_export.csv');
     }
@@ -688,11 +773,11 @@
         <div class="p-3 border rounded-xl bg-white space-y-2">
           <div class="flex flex-wrap gap-1.5 text-[10px] font-bold">
             <span class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800">${escapeHtml(catName)}</span>
-            ${q.subject ? `<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">${escapeHtml(q.subject)}</span>` : ''}
+            ${q.subject ? `<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">${escapeHtml(q.subject)}${q.sub_topic ? ` · ${escapeHtml(q.sub_topic)}` : ''}</span>` : ''}
             <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800">${escapeHtml(sub.student_email || '')}</span>
           </div>
           <p class="text-slate-800 font-semibold">${escapeHtml(q.question || '')}</p>
-          ${q.model_answer ? `<details class="text-slate-600"><summary class="cursor-pointer font-bold text-slate-500">Model answer</summary><p class="whitespace-pre-wrap mt-1">${escapeHtml(q.model_answer)}</p></details>` : ''}
+          ${q.model_answer ? `<details class="text-slate-600"><summary class="cursor-pointer font-bold text-slate-500">Model answer</summary><p class="whitespace-pre-wrap mt-1">${escapeHtml(q.model_answer)}</p>${q.exp_image_url ? `<img src="${escapeHtml(q.exp_image_url)}" class="max-h-40 rounded-lg border mt-1.5" />` : ''}</details>` : ''}
           <div class="bg-slate-50 border rounded-lg p-2">
             <p class="font-bold text-slate-700 mb-1">Student's answer</p>
             ${sub.answer_text ? `<p class="whitespace-pre-wrap">${escapeHtml(sub.answer_text)}</p>` : '<p class="text-slate-400 italic">No typed answer.</p>'}

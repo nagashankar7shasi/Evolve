@@ -308,7 +308,7 @@
       return `<div class="bg-white border rounded-xl p-4">
         <div class="flex justify-between gap-2 text-[10px] font-bold mb-1.5">
           <span class="flex gap-1 flex-wrap">
-            ${q.subject ? `<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">${escapeHtml(q.subject)}</span>` : ''}
+            ${q.subject ? `<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">${escapeHtml(q.subject)}${q.subTopic ? ` · ${escapeHtml(q.subTopic)}` : ''}</span>` : ''}
             ${q.previousYear ? `<span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800">PYQ ${q.previousYear}</span>` : ''}
           </span>
           <span class="font-mono text-emerald-700 whitespace-nowrap">${q.marks} marks${q.wordLimit ? ` · ${q.wordLimit}w` : ''}</span>
@@ -355,6 +355,9 @@
       document.getElementById('mp-write-subject').innerText = q.subject || q.categoryId;
       document.getElementById('mp-write-marks').innerText = `${q.marks} marks${q.wordLimit ? ` · ${q.wordLimit}-word limit` : ''}`;
       document.getElementById('mp-write-question').innerText = q.question;
+      const writeQuestionKnEl = document.getElementById('mp-write-question-kn');
+      writeQuestionKnEl.innerText = q.questionKn || '';
+      writeQuestionKnEl.classList.toggle('hidden', !q.questionKn);
       document.getElementById('mp-write-rubric-hint').innerText = q.rubric.length
         ? `Covers: ${q.rubric.map(r => r.criterion).join(' · ')}` : '';
       document.getElementById('mp-answer-text').value = '';
@@ -461,7 +464,16 @@
       if (!q) return;
 
       document.getElementById('mp-assess-question').innerText = q.question;
+      const questionKnEl = document.getElementById('mp-assess-question-kn');
+      questionKnEl.innerText = q.questionKn || '';
+      questionKnEl.classList.toggle('hidden', !q.questionKn);
       document.getElementById('mp-assess-model-answer').innerText = q.modelAnswer || 'No model answer added yet for this question.';
+      const modelAnswerKnEl = document.getElementById('mp-assess-model-answer-kn');
+      modelAnswerKnEl.innerText = q.modelAnswerKn || '';
+      modelAnswerKnEl.classList.toggle('hidden', !q.modelAnswerKn);
+      const expImageEl = document.getElementById('mp-assess-model-answer-image');
+      if (q.expImageUrl) { expImageEl.src = q.expImageUrl; expImageEl.classList.remove('hidden'); }
+      else expImageEl.classList.add('hidden');
 
       const myAnswerEl = document.getElementById('mp-assess-my-answer');
       const myPhotoEl = document.getElementById('mp-assess-my-photo');
