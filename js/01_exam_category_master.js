@@ -84,6 +84,180 @@
       try { return JSON.stringify(err); } catch (e) { return String(err); }
     }
 
+    // ---- Shared image-upload helpers (Storage, not base64-in-row) ----
+    // A handful of admin upload flows (site logo/watermark, home page hero/banners, custom-page
+    // thumbnails and inline page content images) used to call canvas.toDataURL() and save the
+    // resulting base64 string straight into a jsonb/text column. That's harmless for storage, but
+    // every one of those columns gets pulled down in FULL on every single visitor's page load
+    // (fetchCloudContent/fetchCloudHomeConfig/fetchCloudSiteBranding all do `select('*')` on boot) --
+    // which is what actually drove Supabase egress past 190MB in one day (see the investigation
+    // behind this change). These helpers upload the actual image bytes to Storage instead and hand
+    // back a short public URL to save in its place -- same bucket/pattern already used for question
+    // and explanation images (see js/06a_test_paper_studio.js's editUploadImage), just a different
+    // folder. Requires an authenticated admin session (the study_materials bucket's insert policy
+    // is `is_admin()`), same as every other admin-only write in this app.
+    function canvasToBlob(canvas, type, quality) {
+      return new Promise(resolve => canvas.toBlob(resolve, type, quality));
+    }
+    async function uploadImageBlobToStorage(blob, folder) {
+      const ext = (blob.type && blob.type.split('/')[1]) || 'jpg';
+      const path = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error } = await supabaseClient.storage.from('study_materials')
+        .upload(path, blob, { cacheControl: '3600', upsert: false, contentType: blob.type || 'image/jpeg' });
+      if (error) throw error;
+      const { data } = supabaseClient.storage.from('study_materials').getPublicUrl(path);
+      return data.publicUrl;
+    }
+    // Canvas -> resized/encoded Blob -> uploaded Storage URL in one call. `type`/`quality` match
+    // the same arguments every existing call site already passed to canvas.toDataURL().
+    async function canvasToStorageUrl(canvas, folder, type, quality) {
+      const blob = await canvasToBlob(canvas, type, quality);
+      return uploadImageBlobToStorage(blob, folder);
+    }
+    // Decodes a "data:<mime>;base64,<data>" string back into a Blob -- used only by the one-time
+    // legacy-image migration tool (js/03b_dev_console.js) to re-upload images that were already
+    // saved as inline dataURLs before this fix, so they can be moved out of the database too.
+    function imageDataUrlToBlob(dataUrl) {
+      const [head, body] = dataUrl.split(',');
+      const mime = (head.match(/data:([^;]+)/) || [])[1] || 'image/jpeg';
+      const bin = atob(body);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new Blob([bytes], { type: mime });
+    }
+
+    // Finds every `src="data:...">` occurrence inside a chunk of saved page-content HTML, uploads
+    // each one to Storage, and returns the same HTML with each replaced by its new public URL.
+    // Each matched substring includes that image's whole (unique) base64 payload, so replacing by
+    // the literal matched text is safe even with several different embedded images in one page.
+    async function migrateDataUrlsInHtml(html, folder) {
+      let result = html;
+      let count = 0;
+      let savedBytes = 0;
+      const matches = [...html.matchAll(/src="(data:[^"]+)"/g)];
+      for (const m of matches) {
+        try {
+          const blob = imageDataUrlToBlob(m[1]);
+          const url = await uploadImageBlobToStorage(blob, folder);
+          result = result.replace(m[0], `src="${url}"`);
+          count++;
+          savedBytes += m[1].length;
+        } catch (err) {
+          console.error('Image migration failed for one embedded image:', fmtErr(err));
+        }
+      }
+      return { html: result, count, savedBytes };
+    }
+
+    // ---- One-time admin tool: move every legacy inline (base64) image already saved in the
+    // database into Storage, now that the upload flows above save a Storage URL instead of a
+    // dataURL for anything NEW. Run once from Dev Console -> Site branding after this deploys;
+    // safe to run again later (anything already migrated no longer starts with "data:" and is
+    // simply skipped). Needs an authenticated admin session, same as any other admin write here.
+    async function migrateLegacyImagesToStorage() {
+      if (!isAdmin()) return alert('Admin only.');
+      if (!confirm('This moves every inline (base64) image already stored in custom pages, the home page banners/hero, and site branding into Supabase Storage, replacing each with a short link. It can take a minute for a lot of content. Continue?')) return;
+      const statusEl = document.getElementById('storage-migration-status');
+      const report = msg => { if (statusEl) statusEl.innerText = msg; };
+      let totalImages = 0, totalBytes = 0;
+      try {
+        report('Migrating custom pages…');
+        const { data: pages, error: pagesErr } = await supabaseClient.from('custom_pages').select('id, image, content');
+        if (pagesErr) throw pagesErr;
+        for (const p of (pages || [])) {
+          let changed = false;
+          let newImage = p.image, newContent = p.content;
+          if (newImage && newImage.startsWith('data:')) {
+            try {
+              const bytes = newImage.length;
+              newImage = await uploadImageBlobToStorage(imageDataUrlToBlob(newImage), 'site_images/page_thumbs');
+              totalImages++; totalBytes += bytes; changed = true;
+            } catch (err) { console.error(`Thumbnail migration failed for page ${p.id}:`, fmtErr(err)); }
+          }
+          if (newContent && newContent.includes('data:')) {
+            const r = await migrateDataUrlsInHtml(newContent, 'site_images/page_content');
+            if (r.count) { newContent = r.html; totalImages += r.count; totalBytes += r.savedBytes; changed = true; }
+          }
+          if (changed) {
+            const { error } = await supabaseClient.from('custom_pages').update({ image: newImage, content: newContent }).eq('id', p.id);
+            if (error) console.error(`Failed saving migrated page ${p.id}:`, fmtErr(error));
+            else {
+              const local = customPages.find(x => x.id === p.id);
+              if (local) { local.image = newImage; local.content = newContent; }
+            }
+          }
+        }
+
+        report('Migrating home page images…');
+        const { data: hc, error: hcErr } = await supabaseClient.from('home_config').select('section_key, data');
+        if (hcErr) throw hcErr;
+        for (const row of (hc || [])) {
+          let changed = false;
+          const d = row.data || {};
+          if (d.heroImageDataUrl && d.heroImageDataUrl.startsWith('data:')) {
+            try {
+              const bytes = d.heroImageDataUrl.length;
+              d.heroImageDataUrl = await uploadImageBlobToStorage(imageDataUrlToBlob(d.heroImageDataUrl), 'site_images/home');
+              totalImages++; totalBytes += bytes; changed = true;
+            } catch (err) { console.error(`Hero image migration failed for ${row.section_key}:`, fmtErr(err)); }
+          }
+          if (Array.isArray(d.items)) {
+            for (const item of d.items) {
+              if (item && item.image && item.image.startsWith('data:')) {
+                try {
+                  const bytes = item.image.length;
+                  item.image = await uploadImageBlobToStorage(imageDataUrlToBlob(item.image), 'site_images/home');
+                  totalImages++; totalBytes += bytes; changed = true;
+                } catch (err) { console.error(`Banner image migration failed for ${row.section_key}:`, fmtErr(err)); }
+              }
+            }
+          }
+          if (changed) {
+            const { error } = await supabaseClient.from('home_config').update({ data: d }).eq('section_key', row.section_key);
+            if (error) console.error(`Failed saving migrated home_config.${row.section_key}:`, fmtErr(error));
+            else if (homeConfig[row.section_key]) homeConfig[row.section_key] = { ...homeConfig[row.section_key], ...d };
+          }
+        }
+
+        report('Migrating site branding images…');
+        const { data: sbRow, error: sbErr } = await supabaseClient.from('app_settings').select('value').eq('key', 'site_branding').maybeSingle();
+        if (sbErr) throw sbErr;
+        if (sbRow && sbRow.value) {
+          const v = sbRow.value;
+          let changed = false;
+          if (v.logoImageDataUrl && v.logoImageDataUrl.startsWith('data:')) {
+            try {
+              const bytes = v.logoImageDataUrl.length;
+              v.logoImageDataUrl = await uploadImageBlobToStorage(imageDataUrlToBlob(v.logoImageDataUrl), 'site_images/branding');
+              totalImages++; totalBytes += bytes; changed = true;
+            } catch (err) { console.error('Logo migration failed:', fmtErr(err)); }
+          }
+          if (v.pdfWatermarkImageDataUrl && v.pdfWatermarkImageDataUrl.startsWith('data:')) {
+            try {
+              const bytes = v.pdfWatermarkImageDataUrl.length;
+              v.pdfWatermarkImageDataUrl = await uploadImageBlobToStorage(imageDataUrlToBlob(v.pdfWatermarkImageDataUrl), 'site_images/branding');
+              totalImages++; totalBytes += bytes; changed = true;
+            } catch (err) { console.error('Watermark migration failed:', fmtErr(err)); }
+          }
+          if (changed) {
+            const { error } = await supabaseClient.from('app_settings').upsert({ key: 'site_branding', value: v, updated_at: new Date().toISOString() });
+            if (error) console.error('Failed saving migrated site_branding:', fmtErr(error));
+            else { siteBranding = { ...siteBranding, ...v }; applySiteBranding(); renderLogoPreview(); renderPdfWatermarkPreview(); }
+          }
+        }
+
+        renderHomePage();
+        renderPagesList();
+        const mb = (totalBytes / 1024 / 1024).toFixed(1);
+        report(`Done — moved ${totalImages} image${totalImages === 1 ? '' : 's'} out of the database (≈${mb} MB).`);
+        alert(`Migration complete.\n\n${totalImages} image(s) moved to Supabase Storage, freeing roughly ${mb} MB from rows that get fetched on every page load.`);
+      } catch (err) {
+        console.error('Image migration failed:', fmtErr(err));
+        report('Migration failed — see console.');
+        alert(`Migration failed: ${fmtErr(err)}`);
+      }
+    }
+
     // ---- Cloud sync for the exam category master ----
     async function fetchCloudExamCategories() {
       try {

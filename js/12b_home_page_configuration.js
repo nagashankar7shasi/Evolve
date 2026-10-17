@@ -961,7 +961,7 @@
       const reader = new FileReader();
       reader.onload = () => {
         const img = new Image();
-        img.onload = () => {
+        img.onload = async () => {
           // Wide banner photo -- same cap/encode choice as the hero background photo (hcImageFieldChange).
           const maxDim = 1600;
           const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
@@ -969,12 +969,20 @@
           canvas.width = Math.round(img.width * scale) || img.width;
           canvas.height = Math.round(img.height * scale) || img.height;
           canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-          if (!homeConfig.banners) homeConfig.banners = { items: [] };
-          if (!Array.isArray(homeConfig.banners.items)) homeConfig.banners.items = [];
-          if (!homeConfig.banners.items[idx]) homeConfig.banners.items[idx] = {};
-          homeConfig.banners.items[idx].image = canvas.toDataURL('image/jpeg', 0.82);
-          renderHomeConfigAdmin();
-          renderHomePage();
+          try {
+            // Uploaded to Supabase Storage rather than saved as a base64 dataURL on homeConfig --
+            // see canvasToStorageUrl in js/01_exam_category_master.js. Keeps this field's egress
+            // footprint to a short URL string instead of the full image on every home-page load.
+            const url = await canvasToStorageUrl(canvas, 'site_images/home', 'image/jpeg', 0.82);
+            if (!homeConfig.banners) homeConfig.banners = { items: [] };
+            if (!Array.isArray(homeConfig.banners.items)) homeConfig.banners.items = [];
+            if (!homeConfig.banners.items[idx]) homeConfig.banners.items[idx] = {};
+            homeConfig.banners.items[idx].image = url;
+            renderHomeConfigAdmin();
+            renderHomePage();
+          } catch (err) {
+            alert(`Couldn't upload the banner photo: ${fmtErr(err)}`);
+          }
         };
         img.onerror = () => alert("That file couldn't be read as an image.");
         img.src = reader.result;
@@ -1166,7 +1174,7 @@
       const reader = new FileReader();
       reader.onload = () => {
         const img = new Image();
-        img.onload = () => {
+        img.onload = async () => {
           // Wide banner photo — cap at 1600px on the long edge and encode as JPEG (photos compress
           // far better as JPEG than PNG, unlike the QR upload which needed lossless PNG for scannability).
           const maxDim = 1600;
@@ -1175,10 +1183,16 @@
           canvas.width = Math.round(img.width * scale) || img.width;
           canvas.height = Math.round(img.height * scale) || img.height;
           canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-          if (!homeConfig[sec]) homeConfig[sec] = {};
-          homeConfig[sec][field] = canvas.toDataURL('image/jpeg', 0.82);
-          hcRenderImagePreview(sec, field);
-          renderHomePage();
+          try {
+            // Uploaded to Supabase Storage rather than saved as a base64 dataURL on homeConfig --
+            // see canvasToStorageUrl in js/01_exam_category_master.js.
+            homeConfig[sec] = homeConfig[sec] || {};
+            homeConfig[sec][field] = await canvasToStorageUrl(canvas, 'site_images/home', 'image/jpeg', 0.82);
+            hcRenderImagePreview(sec, field);
+            renderHomePage();
+          } catch (err) {
+            alert(`Couldn't upload the photo: ${fmtErr(err)}`);
+          }
         };
         img.onerror = () => alert("That file couldn't be read as an image.");
         img.src = reader.result;
