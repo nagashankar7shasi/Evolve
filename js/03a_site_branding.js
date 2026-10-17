@@ -74,6 +74,24 @@
         textEl.classList.remove('hidden');
       }
 
+      // BUG FIX: the live OMR test engine's own header (#view-engine) has always had a second,
+      // separate logo corner -- it was never wired to siteBranding at all, so it just showed its
+      // static "ಕ" placeholder forever, even once an admin uploaded a real logo everywhere else.
+      // Same image/text swap as the main header above, just a second pair of elements.
+      const engineTextEl = document.getElementById('engine-logo-text');
+      const engineImgEl = document.getElementById('engine-logo-img');
+      if (engineTextEl && engineImgEl) {
+        if (siteBranding.logoImageDataUrl) {
+          engineImgEl.src = siteBranding.logoImageDataUrl;
+          engineImgEl.classList.remove('hidden');
+          engineTextEl.classList.add('hidden');
+        } else {
+          engineImgEl.classList.add('hidden');
+          engineImgEl.src = '';
+          engineTextEl.classList.remove('hidden');
+        }
+      }
+
       renderSocialLinks();
     }
 
