@@ -701,7 +701,10 @@ async function fetchCloudVisitStats() {
       // slug/old_slugs: added for #/bundle/{slug} landing pages (sql/add_bundle_slug.sql). Older
       // rows saved before this column existed in a stale cache default to no slug -- bundleLinkHash()
       // falls back to the id in that case, same defensive pattern as customPages' slug handling.
-      slug: b.slug || null, oldSlugs: Array.isArray(b.old_slugs) ? b.old_slugs : []
+      slug: b.slug || null, oldSlugs: Array.isArray(b.old_slugs) ? b.old_slugs : [],
+      // schedulePdfId: optional PDF-vault reference shown as a "View schedule/syllabus" link on the
+      // public bundle card (sql/add_bundle_schedule_pdf.sql) -- NOT an entitlement, see `pdfs` above.
+      schedulePdfId: b.schedule_pdf_id || null
     }));
   }
 

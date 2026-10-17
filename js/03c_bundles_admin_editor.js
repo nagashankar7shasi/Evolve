@@ -27,6 +27,18 @@
              <span class="text-xs font-normal ${theme.sub}">${b.validityDays > 0 ? `for ${b.validityDays >= 360 && b.validityDays % 365 === 0 ? (b.validityDays / 365) + ' year' + (b.validityDays > 365 ? 's' : '') : b.validityDays + ' days'}` : 'one-time'}</span>
            </div>`
         : `<div class="my-4 text-3xl font-black ${theme.price}">₹${b.price} <span class="text-xs font-normal ${theme.sub}">${b.validityDays > 0 ? `for ${b.validityDays >= 360 && b.validityDays % 365 === 0 ? (b.validityDays / 365) + ' year' + (b.validityDays > 365 ? 's' : '') : b.validityDays + ' days'}` : 'one-time'}</span></div>`;
+      // Schedule/syllabus PDF link: a single optional PDF-vault reference shown as a plain info link
+      // on the card -- deliberately NOT an entitlement (that's what `pdfs`/bundleCoversPdf is for).
+      // Resolved defensively: if the referenced doc was since deleted from the vault, nothing renders
+      // rather than a dead button. Reuses downloadOrOpenPdf() as-is (same gating it already applies
+      // everywhere else a PDF is linked) -- an admin who points this at a paid PDF by mistake sends
+      // the visitor to checkout for it, same as linking a gated PDF anywhere else in the app.
+      const schedulePdf = b.schedulePdfId && typeof pdfVault !== 'undefined' ? pdfVault.find(d => d.id === b.schedulePdfId) : null;
+      const schedulePdfHtml = schedulePdf
+        ? `<button onclick="downloadOrOpenPdf('${schedulePdf.id}')" class="mt-2 w-full py-2 border ${b.style === 'dark' ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : 'border-slate-300 text-slate-700 hover:bg-slate-50'} font-bold text-xs rounded-lg transition flex items-center justify-center gap-1.5">
+             📄 View schedule / syllabus
+           </button>`
+        : '';
       return `
         <div class="${theme.card} p-6 rounded-2xl flex flex-col justify-between relative overflow-hidden">
           ${b.featured ? '<div class="absolute -right-12 top-6 bg-amber-500 text-slate-950 text-[10px] font-bold px-12 py-0.5 rotate-45 uppercase">Popular</div>' : ''}
@@ -37,9 +49,12 @@
             ${priceHtml}
             <ul class="text-xs ${theme.li} space-y-1.5">${(b.highlights || []).map(h => `<li>• ${escapeHtml(h)}</li>`).join('')}</ul>
           </div>
-          <button onclick="openBundleCheckout('${b.id}')" class="mt-6 w-full py-2.5 ${theme.btn} font-bold text-xs rounded-lg transition shadow">
-            ${owned ? 'You have this. Extend' : `Get ${escapeHtml(b.name)}`}
-          </button>
+          <div class="mt-6">
+            <button onclick="openBundleCheckout('${b.id}')" class="w-full py-2.5 ${theme.btn} font-bold text-xs rounded-lg transition shadow">
+              ${owned ? 'You have this. Extend' : `Get ${escapeHtml(b.name)}`}
+            </button>
+            ${schedulePdfHtml}
+          </div>
         </div>`;
     }
 
@@ -176,7 +191,7 @@
       const b = id ? getBundle(id) : {
         name: '', tagline: '', price: 499, validityDays: 365, allAccess: false, categories: [], papers: [], pages: [], pdfs: [],
         planners: [], features: [], highlights: [], active: true, featured: false, showOnHome: true, style: 'light', order: bundles.length + 1,
-        slug: '', oldSlugs: []
+        slug: '', oldSlugs: [], schedulePdfId: null
       };
       editingBundleId = id;
       bdlSlugManuallyEdited = !!id; // existing bundles keep their link when the name changes, same as pages
@@ -196,6 +211,13 @@
       document.getElementById('bdl-order').value = b.order || 0;
       document.getElementById('bdl-all').checked = !!b.allAccess;
       document.getElementById('bdl-includes').classList.toggle('opacity-40', !!b.allAccess);
+
+      // Schedule/syllabus PDF picker: a single optional dropdown, separate from the `bdl-pdfs`
+      // entitlement checkbox list above -- this one's purely informational (see bundleCardHtml).
+      const schedSel = document.getElementById('bdl-schedule-pdf');
+      schedSel.innerHTML = '<option value="">— None —</option>' +
+        pdfVault.map(d => `<option value="${escapeHtml(d.id)}">${escapeHtml(d.title)}</option>`).join('');
+      schedSel.value = b.schedulePdfId || '';
 
       checkboxList('bdl-categories', Object.values(EXAM_CATEGORIES).map(c => ({ value: c.id, label: escapeHtml(c.name) })), b.categories, 'bdl-cat-cb');
       checkboxList('bdl-papers', testsCatalog.map(p => ({ value: p.id, label: `${escapeHtml(p.title)} <span class="text-slate-400">₹${p.price}</span>` })), b.papers, 'bdl-paper-cb');
@@ -315,7 +337,8 @@ async function saveBundle(e) {
     pdfs: vals('bdl-pdf-cb'),
     planners: vals('bdl-planner-cb'),
     features: vals('bdl-feature-cb'),
-    mains_papers: vals('bdl-mains-paper-cb')
+    mains_papers: vals('bdl-mains-paper-cb'),
+    schedule_pdf_id: document.getElementById('bdl-schedule-pdf').value || null
   };
 
   if (!data.name) return alert('Give the bundle a name.');
@@ -348,7 +371,8 @@ async function saveBundle(e) {
     pdfs: data.pdfs,
     planners: data.planners,
     features: data.features,
-    mainsPapers: data.mains_papers
+    mainsPapers: data.mains_papers,
+    schedulePdfId: data.schedule_pdf_id
   };
 
   if (editingBundleId) {
@@ -399,7 +423,8 @@ async function duplicateBundle(id) {
     pdfs: b.pdfs || [],
     planners: b.planners || [],
     features: b.features || [],
-    mains_papers: b.mainsPapers || []
+    mains_papers: b.mainsPapers || [],
+    schedule_pdf_id: b.schedulePdfId || null
   };
 
   // --- SYNC TO SUPABASE CLOUD ---
@@ -430,7 +455,8 @@ async function duplicateBundle(id) {
     pdfs: duplicatedData.pdfs,
     planners: duplicatedData.planners,
     features: duplicatedData.features,
-    mainsPapers: duplicatedData.mains_papers
+    mainsPapers: duplicatedData.mains_papers,
+    schedulePdfId: duplicatedData.schedule_pdf_id
   };
 
   bundles.push(runtimeBundle);
