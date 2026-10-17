@@ -30,7 +30,7 @@
         const shell = document.getElementById('view-admin');
         if (!shell) return false; // shouldn't happen -- the empty shell ships in every index.html
         try {
-          const res = await fetch('admin-console.html?v=64');
+          const res = await fetch('admin-console.html?v=65');
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           shell.innerHTML = await res.text();
           adminConsoleLoaded = true;
@@ -62,6 +62,15 @@
     // covers the other path, a mid-session admin login via the modal, where boot already ran and
     // skipped all of them (the console wasn't there yet for them to render into).
     function paintAdminConsoleOnce() {
+      // BUG (found 2026-10-17, same root cause as the window.onload boot-order fix in PR #65):
+      // tests-list-filter and studio-category (js/06_exam_pages_test_ingestion.js) are filled in
+      // by populateAllCategoryDropdowns(), called unconditionally in window.onload's boot
+      // sequence -- which already ran, and no-opped, for a mid-session admin login (the console
+      // wasn't in the DOM yet for it to populate). Without this call here, those two selects would
+      // stay permanently empty for that login path, same dead-feature pattern as the Word Editor
+      // canvas listeners fixed in #66.
+      if (typeof populateAllCategoryDropdowns === 'function') populateAllCategoryDropdowns();
+      if (typeof fetchCloudPageTemplates === 'function') fetchCloudPageTemplates();
       renderGranularNavTree();
       renderPagesList();
       renderPdfVault();

@@ -354,6 +354,12 @@ window.onload = async function() {
       // fetchCloudAuthSettings, fetchCloudFeatureAccess, fetchCloudPlanners, fetchCloudCoupons,
       // fetchCloudMainsQuestions, fetchCloudSiteBranding, fetchCloudVisitStats).
       if (isAdmin()) await ensureAdminConsoleLoaded();
+      // Page templates (js/08_word_page_creator.js) are admin-only and, like the admin-console
+      // fetches above, need wiring into BOTH load paths: this one (already-logged-in-at-boot) and
+      // paintAdminConsoleOnce() (js/03b_dev_console.js, mid-session login via navigate('admin')) --
+      // same lesson as the dead-listener bug fixed in PR #66. Fire-and-forget, same as the renders
+      // below; it paints the template picker whenever it resolves.
+      if (isAdmin() && typeof fetchCloudPageTemplates === 'function') fetchCloudPageTemplates();
 
       // Everything below reads Supabase into its OWN distinct global (testsCatalog, studentDirectory,
       // pricingMaster, etc.) and none of them need another one to have finished first — except two
@@ -642,7 +648,10 @@ async function fetchCloudVisitStats() {
     customPages = pages.map(p => ({
       id: p.id, slug: p.slug, title: p.title, isGated: p.is_gated, price: p.price, content: p.content,
       parentId: p.parent_id, icon: p.icon, image: p.image, summary: p.summary, childStyle: p.child_style,
-      order: p.order_num, showOnHome: p.show_on_home, bundleOnly: p.bundle_only, oldSlugs: p.old_slugs || []
+      order: p.order_num, showOnHome: p.show_on_home, bundleOnly: p.bundle_only, oldSlugs: p.old_slugs || [],
+      // published_at/date_position: optional "posted on <date>" display for daily content (current
+      // affairs, etc.) -- see sql/add_custom_pages_published_date.sql. null means "don't show one".
+      publishedAt: p.published_at || null, datePosition: p.date_position || 'above'
     }));
   }
 
