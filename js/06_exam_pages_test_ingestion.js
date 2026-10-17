@@ -270,6 +270,68 @@
         </div>`;
     }
 
+    // ---- Dashboard "Daily Practice" boxes (students only) ----
+    // One box per exam category the admin flagged with dailyPracticeBox (Exam Categories admin
+    // panel) -- a quick, direct way to practice a daily series (e.g. "Daily PIB Current Affairs")
+    // without going through the Test Papers grid at all.
+    //
+    // A paper only becomes a candidate once it has scheduled_for set, is within the last 30 days,
+    // and is actually live yet (same "goes live on <date>" rule as everywhere else) -- a paper with
+    // no scheduled_for never appears here (there'd be no date to show or sort by) but stays fully
+    // reachable from the normal Test Papers grid, same as always.
+    function dailyPracticeCandidates(catId) {
+      const now = Date.now();
+      const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+      return testsCatalog
+        .filter(p => p.category === catId && p.active !== false && !p.delisted && p.scheduled_for)
+        .map(p => ({ p, t: new Date(p.scheduled_for).getTime() }))
+        .filter(({ t }) => !isNaN(t) && t <= now && t >= now - THIRTY_DAYS_MS)
+        .sort((a, b) => b.t - a.t)
+        .map(({ p }) => p);
+    }
+
+    function renderDailyPracticeBoxes() {
+      const section = document.getElementById('dash-daily-practice-section');
+      if (!section) return;
+      const student = getCurrentStudent();
+      const cats = Object.values(EXAM_CATEGORIES).filter(c => c.dailyPracticeBox);
+      if (!student || !cats.length) { section.classList.add('hidden'); return; }
+      section.classList.remove('hidden');
+      section.innerHTML = cats.map(c => {
+        const papers = dailyPracticeCandidates(c.id);
+        if (!papers.length) {
+          return `
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+              <h3 class="font-bold text-sm text-slate-900 mb-1">📰 ${escapeHtml(c.name)}</h3>
+              <p class="text-xs text-slate-400 italic">Nothing posted in the last 30 days yet. Check back soon.</p>
+            </div>`;
+        }
+        const selId = `daily-pick-${c.id}`;
+        return `
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+            <h3 class="font-bold text-sm text-slate-900 mb-1">📰 ${escapeHtml(c.name)}</h3>
+            <p class="text-[11px] text-slate-500 mb-3">Untimed, one question at a time, answer shown immediately.</p>
+            <select id="${selId}" class="w-full px-2.5 py-1.5 border rounded-lg bg-white outline-none text-xs mb-3">
+              ${papers.map((p, i) => {
+                const dateStr = new Date(p.scheduled_for).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+                const lock = isTestUnlockedForUser(p.id) ? '' : ' 🔒';
+                return `<option value="${p.id}">${dateStr}${i === 0 ? ' (Latest)' : ''} — ${escapeHtml(p.title)}${lock}</option>`;
+              }).join('')}
+            </select>
+            <button onclick="startDailyPracticeFromSelect('${selId}')" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg text-xs mt-auto">
+              🎯 Start Practice
+            </button>
+            <button onclick="filterExamCategory('${c.id}'); navigate('tests');" class="w-full mt-2 text-[11px] text-slate-400 hover:text-slate-700 hover:underline">Browse all / older days →</button>
+          </div>`;
+      }).join('');
+    }
+
+    function startDailyPracticeFromSelect(selId) {
+      const sel = document.getElementById(selId);
+      if (!sel || !sel.value) return;
+      launchExamPaperPractice(sel.value);
+    }
+
     // A collapsible "folder" tile for a bundle's (or the leftover "Individual Papers" group's) locked
     // papers -- spans both grid columns as one row, with its own 2-column sub-grid of paper cards
     // inside. Collapsed by default (see toggleTestGroup); goToSearchResult expands one on demand when
