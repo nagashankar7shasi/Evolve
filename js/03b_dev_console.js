@@ -30,7 +30,7 @@
         const shell = document.getElementById('view-admin');
         if (!shell) return false; // shouldn't happen -- the empty shell ships in every index.html
         try {
-          const res = await fetch('admin-console.html?v=66');
+          const res = await fetch('admin-console.html?v=67');
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           shell.innerHTML = await res.text();
           adminConsoleLoaded = true;

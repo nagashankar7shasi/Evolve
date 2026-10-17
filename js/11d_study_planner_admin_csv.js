@@ -277,8 +277,9 @@
               </select>
             </div>
           </div>
-          <div class="mt-2">
+          <div class="mt-2 space-y-1.5">
             <label class="flex items-center gap-1.5 cursor-pointer text-xs"><input type="checkbox" id="ec-showscoring-${c.id}" ${c.showScoringPattern !== false ? 'checked' : ''} class="rounded" /> Show scoring pattern (marks per correct/wrong, max marks) on paper cards in this Exam Hub</label>
+            <label class="flex items-center gap-1.5 cursor-pointer text-xs"><input type="checkbox" id="ec-dailybox-${c.id}" ${c.dailyPracticeBox ? 'checked' : ''} class="rounded" /> Show as a "Daily Practice" box on the student Dashboard (pick the latest or any day from the last 30 days, jumps straight into Practice Mode) -- for a category you publish on a daily basis, e.g. "Daily PIB Current Affairs"</label>
           </div>
           <details class="mt-3 border-t pt-3">
             <summary class="cursor-pointer text-xs font-bold text-slate-700">📚 Subjects (${(examSubjects[c.id] || []).length}) — used by Studio's Subject field and the student Topic Builder filter</summary>
@@ -841,6 +842,7 @@
         order: parseInt(v('order').value, 10) || 0,
         active: v('active').checked,
         showScoringPattern: v('showscoring').checked,
+        dailyPracticeBox: v('dailybox').checked,
         parentId: (v('parent').value || '') || null,
         defaultScheme: {
           examBadge: v('badge').value.trim() || id,
@@ -1068,6 +1070,7 @@
       document.getElementById('dash-student-col').classList.toggle('hidden', !admin);
       renderMyAccess();
       renderPerformanceAnalysis(admin ? [] : attempts);
+      renderDailyPracticeBoxes();
       renderPracticeCenter();
       renderMainsDashboardCard();
       renderMyPayments();
