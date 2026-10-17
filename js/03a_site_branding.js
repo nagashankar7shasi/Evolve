@@ -123,15 +123,19 @@
       }
     }
 
-    // Same read-resize-to-dataURL pattern as the hero photo / QR uploads: small so it rides along
-    // with the rest of siteBranding in one app_settings row, no separate storage bucket needed.
+    // Uploaded to Supabase Storage (see canvasToStorageUrl in js/01_exam_category_master.js)
+    // rather than saved as a base64 dataURL in this app_settings row -- that row is fetched in
+    // full on every single page load (fetchCloudSiteBranding runs on boot, for every visitor), so
+    // embedding the logo there directly used to add its full size to every page's egress. The
+    // field is still named logoImageDataUrl for compatibility with every existing reader (it's
+    // only ever used as an <img src>, which works identically with a plain https URL).
     function handleLogoUpload(input) {
       const file = input.files && input.files[0];
       if (!file) return;
       const reader = new FileReader();
       reader.onload = e => {
         const img = new Image();
-        img.onload = () => {
+        img.onload = async () => {
           const maxDim = 256;  // only ever rendered at 40px — generous headroom for retina screens
           let { width, height } = img;
           if (width > maxDim || height > maxDim) {
@@ -142,9 +146,13 @@
           const canvas = document.createElement('canvas');
           canvas.width = width; canvas.height = height;
           canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-          siteBranding.logoImageDataUrl = canvas.toDataURL('image/png');
-          renderLogoPreview();
-          applySiteBranding();
+          try {
+            siteBranding.logoImageDataUrl = await canvasToStorageUrl(canvas, 'site_images/branding', 'image/png');
+            renderLogoPreview();
+            applySiteBranding();
+          } catch (err) {
+            alert(`Couldn't upload the logo: ${fmtErr(err)}`);
+          }
         };
         img.src = e.target.result;
       };
@@ -176,17 +184,19 @@
       }
     }
 
-    // Same read-resize-to-dataURL pattern as the header logo, but bigger (this is shown at ~340px
-    // wide on the printed page, not 40px) and with the white/light background stripped to
-    // transparent automatically, so any admin-uploaded image — logo, seal, whatever — reads as a
-    // faint watermark rather than a pale rectangle, without needing to be pre-edited in Photoshop.
+    // Same read-resize pattern as the header logo, but bigger (this is shown at ~340px wide on the
+    // printed page, not 40px) and with the white/light background stripped to transparent
+    // automatically, so any admin-uploaded image — logo, seal, whatever — reads as a faint
+    // watermark rather than a pale rectangle, without needing to be pre-edited in Photoshop. Also
+    // uploaded to Storage rather than embedded as a dataURL -- same reasoning as handleLogoUpload
+    // above. Stays PNG (needed for the alpha transparency the loop below bakes in).
     function handlePdfWatermarkUpload(input) {
       const file = input.files && input.files[0];
       if (!file) return;
       const reader = new FileReader();
       reader.onload = e => {
         const img = new Image();
-        img.onload = () => {
+        img.onload = async () => {
           const maxDim = 640;
           let { width, height } = img;
           if (width > maxDim || height > maxDim) {
@@ -208,8 +218,12 @@
             }
             ctx.putImageData(imgData, 0, 0);
           } catch (err) { /* canvas tainted (rare, local file read) — fall back to the plain image */ }
-          siteBranding.pdfWatermarkImageDataUrl = canvas.toDataURL('image/png');
-          renderPdfWatermarkPreview();
+          try {
+            siteBranding.pdfWatermarkImageDataUrl = await canvasToStorageUrl(canvas, 'site_images/branding', 'image/png');
+            renderPdfWatermarkPreview();
+          } catch (err) {
+            alert(`Couldn't upload the watermark: ${fmtErr(err)}`);
+          }
         };
         img.src = e.target.result;
       };

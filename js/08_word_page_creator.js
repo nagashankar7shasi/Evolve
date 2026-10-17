@@ -683,14 +683,24 @@
     }
 
     // ---- Images inside page content ----
-    // Pictures are shrunk before saving because everything is stored in the browser (about 5 MB in total)
+    // Pictures are shrunk, then uploaded to Supabase Storage and the resulting public URL is what
+    // gets inserted into the page content -- NOT a base64 dataURL. custom_pages.content used to
+    // carry every embedded image's full bytes inline, and that column is fetched in full
+    // (select('*')) on every single visitor's page load (not just when that page is opened), which
+    // was the single largest driver of a 190MB/day Supabase egress spike (one page's content alone
+    // was over 1MB). See canvasToStorageUrl/uploadImageBlobToStorage in js/01_exam_category_master.js.
     function shrinkImageFile(file, maxW = 1000) {
       return new Promise((resolve, reject) => {
         if (!file || !file.type.startsWith('image/')) return reject(new Error('Not an image'));
         const reader = new FileReader();
         reader.onerror = () => reject(new Error('Could not read the file'));
         reader.onload = () => {
-          if (file.type === 'image/gif' || (file.type === 'image/png' && file.size < 120000)) return resolve(reader.result); // small PNGs keep transparency
+          if (file.type === 'image/gif' || (file.type === 'image/png' && file.size < 120000)) {
+            // Small PNGs/GIFs keep transparency/animation as-is -- upload the original file
+            // unchanged rather than re-encoding it through a canvas.
+            uploadImageBlobToStorage(file, 'site_images/page_content').then(resolve, reject);
+            return;
+          }
           const img = new Image();
           img.onerror = () => reject(new Error('Could not read the image'));
           img.onload = () => {
@@ -702,7 +712,7 @@
             ctx.fillStyle = '#fff';
             ctx.fillRect(0, 0, c.width, c.height);
             ctx.drawImage(img, 0, 0, c.width, c.height);
-            resolve(c.toDataURL('image/jpeg', 0.8));
+            canvasToStorageUrl(c, 'site_images/page_content', 'image/jpeg', 0.8).then(resolve, reject);
           };
           img.src = reader.result;
         };
@@ -1325,7 +1335,10 @@
       document.getElementById('page-image-remove').classList.toggle('hidden', !pendingPageImage);
     }
 
-    // Shrinks the picture to 640px wide so pages stay small enough to save in the browser
+    // Shrinks the picture to 640px wide, then uploads it to Supabase Storage (see
+    // canvasToStorageUrl in js/01_exam_category_master.js) instead of saving it as a base64
+    // dataURL on the page row -- custom_pages is fetched with select('*') on every visitor's page
+    // load, so an inline image here used to ship with every single page view, not just this page's.
     function handlePageImage(input) {
       const file = input.files && input.files[0];
       input.value = '';
@@ -1333,13 +1346,17 @@
       const reader = new FileReader();
       reader.onload = () => {
         const img = new Image();
-        img.onload = () => {
+        img.onload = async () => {
           const scale = Math.min(1, 640 / img.width);
           const canvas = document.createElement('canvas');
           canvas.width = Math.round(img.width * scale);
           canvas.height = Math.round(img.height * scale);
           canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-          setPageImage(canvas.toDataURL('image/jpeg', 0.82));
+          try {
+            setPageImage(await canvasToStorageUrl(canvas, 'site_images/page_thumbs', 'image/jpeg', 0.82));
+          } catch (err) {
+            alert(`Couldn't upload the page image: ${fmtErr(err)}`);
+          }
         };
         img.onerror = () => alert("That file couldn't be read as an image.");
         img.src = reader.result;
