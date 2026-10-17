@@ -1401,7 +1401,7 @@
           </div>
           <div class="flex items-center gap-3 flex-wrap">
             <input type="file" id="mq-csv-file" accept=".csv" onchange="mainsIngestCsvFile(this)" class="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-slate-900 file:text-white file:cursor-pointer" />
-            <span class="text-[11px] text-slate-500">Header row required. Common names accepted (Question, Model Answer, Marks, Subject, Exam, etc.). Rubric column format: <span class="font-mono">Criterion:Weight; Criterion:Weight</span>. A row with no recognized exam defaults to the exam filter above.</span>
+            <span class="text-[11px] text-slate-500">Header row required, any number of question rows. Common names accepted (Question, Model Answer, Subject, Sub_Topic, Marks, Exam, etc.) — Question_KN / Model_Answer_KN (Kannada) and Exp_Image_URL (a mind-map/diagram URL) are optional columns. Rubric column format: <span class="font-mono">Criterion:Weight; Criterion:Weight</span>. A row with no recognized exam defaults to the exam filter above.</span>
           </div>
           <div>
             <textarea id="mq-paste-box" rows="4" placeholder="…or paste rows directly from Excel or Google Sheets — the first row should be the column headers." class="w-full px-3 py-2 border rounded-lg font-mono text-[11px] outline-none focus:border-indigo-500"></textarea>
@@ -1501,6 +1501,10 @@
               <select id="mq-subject" onchange="mainsSubjectChanged()" class="w-full px-2.5 py-1.5 border rounded-lg bg-white outline-none"></select>
             </div>
             <div>
+              <label class="block font-bold text-slate-700 mb-1">Sub-topic <span class="font-normal text-slate-400">(optional, under Subject)</span></label>
+              <input type="text" id="mq-subtopic" placeholder="e.g. Fundamental Rights" class="w-full px-2.5 py-1.5 border rounded-lg outline-none" />
+            </div>
+            <div>
               <label class="block font-bold text-slate-700 mb-1">Marks</label>
               <input type="number" id="mq-marks" required min="0" step="1" class="w-full px-2.5 py-1.5 border rounded-lg outline-none font-mono font-bold" />
             </div>
@@ -1513,8 +1517,16 @@
               <textarea id="mq-question" required rows="3" class="w-full px-2.5 py-1.5 border rounded-lg outline-none"></textarea>
             </div>
             <div class="md:col-span-4">
+              <label class="block font-bold text-slate-700 mb-1">Question (Kannada) <span class="font-normal text-slate-400">— optional, for a future bilingual rollout; English-only is fine for now</span></label>
+              <textarea id="mq-question-kn" rows="3" class="w-full px-2.5 py-1.5 border rounded-lg outline-none"></textarea>
+            </div>
+            <div class="md:col-span-4">
               <label class="block font-bold text-slate-700 mb-1">Model answer</label>
               <textarea id="mq-model-answer" rows="6" class="w-full px-2.5 py-1.5 border rounded-lg outline-none"></textarea>
+            </div>
+            <div class="md:col-span-4">
+              <label class="block font-bold text-slate-700 mb-1">Model answer (Kannada) <span class="font-normal text-slate-400">— optional</span></label>
+              <textarea id="mq-model-answer-kn" rows="6" class="w-full px-2.5 py-1.5 border rounded-lg outline-none"></textarea>
             </div>
             <div>
               <label class="block font-bold text-slate-700 mb-1">Previous-year question? <span class="font-normal text-slate-400">(year, optional)</span></label>
@@ -1527,6 +1539,15 @@
             <div class="flex items-end">
               <label class="flex items-center gap-2 cursor-pointer mb-1.5"><input type="checkbox" id="mq-active" checked class="rounded" /> Active</label>
             </div>
+          </div>
+
+          <div class="p-3 bg-slate-50 border rounded-xl space-y-2">
+            <span class="font-bold text-slate-800">Explanation image <span class="font-normal text-slate-400">(optional — a mind-map or diagram shown alongside the model answer)</span></span>
+            <div class="flex items-center gap-3 flex-wrap">
+              <input type="file" id="mq-exp-image-file" accept="image/*" onchange="mainsUploadExpImage(this)" class="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-slate-900 file:text-white file:cursor-pointer" />
+              <input type="text" id="mq-exp-image-url" placeholder="…or paste an image URL directly" class="flex-1 min-w-[12rem] px-2.5 py-1.5 border rounded-lg outline-none" oninput="document.getElementById('mq-exp-image-preview').src=this.value; document.getElementById('mq-exp-image-preview').classList.toggle('hidden', !this.value)" />
+            </div>
+            <img id="mq-exp-image-preview" class="hidden max-h-40 rounded-lg border" />
           </div>
 
           <div class="p-3 bg-slate-50 border rounded-xl space-y-2">
