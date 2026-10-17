@@ -229,6 +229,11 @@
           <p id="telegram-webhook-setup-status" class="text-[11px] font-bold text-slate-500"></p>
         </div>
         <div class="border-t pt-4 space-y-2">
+          <label class="block font-bold text-slate-700 mb-1">🔔 Your Telegram (payment-claim alerts)</label>
+          <p class="text-slate-400 text-[11px]">Connect your own Telegram to get a DM the instant a student submits a payment claim — name, mobile, email, UTR, amount and time, before you've verified it. Run "Telegram connect setup" above at least once first.</p>
+          <div id="telegram-admin-connect-box" class="text-[11px]"></div>
+        </div>
+        <div class="border-t pt-4 space-y-2">
           <label class="block font-bold text-slate-700 mb-1">🧹 Storage maintenance (one-time)</label>
           <p class="text-slate-400 text-[11px]">Images uploaded here (logo, watermark, home banners, page thumbnails/content) now go straight to Supabase Storage instead of being embedded in the database — keeps every page load small. Run this once to move any images uploaded before that change out of the database too; safe to run again later, it skips anything already migrated.</p>
           <button type="button" onclick="migrateLegacyImagesToStorage()" class="px-3 py-1.5 border rounded-lg bg-white font-bold text-[11px] hover:bg-slate-50">Migrate legacy images to Storage</button>

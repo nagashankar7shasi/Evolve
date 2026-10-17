@@ -138,6 +138,56 @@
         const input = document.getElementById('branding-social-' + p.key);
         if (input) input.value = links[p.key] || '';
       });
+      renderTelegramAdminConnectStatus();
+    }
+
+    // ---- Admin's own Telegram connection (task: ping the admin on every new payment claim) ----
+    // Mirrors the student connect flow (js/11b_practice_mistakes_topic_builder.js), but the admin has
+    // no row in `students` at all, so this lives entirely in one small app_setting ('telegram_admin':
+    // { connectToken, chatId }) instead of a students column. telegram-webhook's "admin_"-prefixed
+    // branch is what actually writes chatId once the admin taps Start.
+    async function renderTelegramAdminConnectStatus() {
+      const box = document.getElementById('telegram-admin-connect-box');
+      if (!box) return;
+      const setting = await fetchCloudAppSetting('telegram_admin');
+      const chatId = setting && setting.chatId;
+      box.innerHTML = chatId
+        ? `<div class="text-emerald-700 font-bold">✓ Connected — you'll get payment-claim alerts here.</div>
+           <button onclick="disconnectAdminTelegram()" class="text-rose-600 font-bold hover:underline mt-1">Disconnect</button>`
+        : `<button type="button" onclick="connectAdminTelegram()" class="px-3 py-1.5 border rounded-lg bg-white font-bold text-[11px] hover:bg-slate-50">Connect your Telegram</button>
+           <button type="button" onclick="renderTelegramAdminConnectStatus()" class="text-slate-400 hover:underline ml-2 text-[11px]">Already tapped Start? Refresh</button>`;
+    }
+
+    async function connectAdminTelegram() {
+      const settings = await fetchCloudAppSetting('telegram_settings');
+      const botUsername = settings && settings.botUsername;
+      if (!botUsername) return alert('Run "Telegram connect setup" above first — it needs the bot\'s username.');
+      const token = randomHex(16);
+      // Read-modify-write so an in-progress reconnect never wipes an existing working chatId before
+      // the new /start actually completes.
+      const current = (await fetchCloudAppSetting('telegram_admin')) || {};
+      const ok = await saveCloudAppSetting('telegram_admin', { ...current, connectToken: token });
+      if (!ok) return alert("Couldn't start the connection. Please try again.");
+      window.open(`https://t.me/${botUsername}?start=admin_${token}`, '_blank', 'noopener');
+    }
+
+    async function disconnectAdminTelegram() {
+      if (!confirm('Disconnect your Telegram? You will stop getting payment-claim alerts there.')) return;
+      const ok = await saveCloudAppSetting('telegram_admin', { connectToken: null, chatId: null });
+      if (!ok) return alert("Couldn't disconnect. Please try again.");
+      await renderTelegramAdminConnectStatus();
+    }
+
+    // Non-blocking: pings the admin's Telegram the instant a payment claim is submitted, before
+    // it's been verified. Silently no-ops if the admin hasn't connected yet (the Edge Function
+    // itself also no-ops in that case) -- never blocks or surfaces errors to the submitting student.
+    async function notifyAdminOfPaymentClaim(details) {
+      try {
+        const { error } = await supabaseClient.functions.invoke('notify-admin-payment-claim', { body: details });
+        if (error) throw error;
+      } catch (err) {
+        console.warn('[telegram] admin claim notification failed:', fmtErr(err));
+      }
     }
 
     function renderLogoPreview() {

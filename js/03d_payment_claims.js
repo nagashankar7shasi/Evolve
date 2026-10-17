@@ -103,6 +103,19 @@ async function submitPaymentClaim() {
   showCheckoutStatus(order);
   renderPaymentOrders();
   renderDashboard();
+
+  // Ping the admin's own Telegram right away, before this claim has been verified -- non-blocking,
+  // never surfaces an error to the student either way (see notifyAdminOfPaymentClaim).
+  const submittingStudent = getCurrentStudent();
+  notifyAdminOfPaymentClaim({
+    name: order.name,
+    email: order.email,
+    phone: (submittingStudent && submittingStudent.phone) || '',
+    utr: order.utr,
+    amount: order.amount,
+    title: order.title,
+    time: fmtDateTime(order.created_at)
+  });
 }
     async function fetchCloudPayments() {
   const { data, error } = await supabaseClient
