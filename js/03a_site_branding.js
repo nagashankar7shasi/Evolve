@@ -104,6 +104,23 @@
       const active = SOCIAL_PLATFORMS.filter(p => links[p.key]);
       box.innerHTML = active.map(p => `<a href="${escapeHtml(links[p.key])}" target="_blank" rel="noopener" aria-label="${escapeHtml(p.label)}" title="${escapeHtml(p.label)}" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition">${p.icon}</a>`).join('');
       box.classList.toggle('hidden', !active.length);
+
+      // Same Telegram link, promoted to a floating "Chat with us" button (see index.html) --
+      // a much more visible support channel than the small footer icon above, for anyone who'd
+      // rather message you directly than email. Hidden whenever no Telegram link is configured.
+      const fab = document.getElementById('telegram-chat-fab');
+      if (fab) {
+        const tgLink = links.telegram;
+        if (tgLink) {
+          fab.href = tgLink;
+          fab.innerHTML = `${SOCIAL_ICON_SVGS.telegram}<span class="hidden sm:inline">Chat on Telegram</span>`;
+          fab.classList.remove('hidden');
+          fab.classList.add('flex');
+        } else {
+          fab.classList.add('hidden');
+          fab.classList.remove('flex');
+        }
+      }
     }
 
     // Fills the admin form fields from the current siteBranding state (called when the panel is
