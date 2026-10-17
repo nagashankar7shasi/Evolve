@@ -9,6 +9,24 @@
       }[b.style] || {};
       const student = getCurrentStudent();
       const owned = student && activeBundlesFor(student).some(x => x.id === b.id);
+      // On-card discount: reuses the SAME auto-coupon engine the checkout modal already applies
+      // (bestAutoCoupon/computeCouponDiscount, js/03f_coupons.js) rather than a separate "card
+      // discount" concept -- so a no-code early-bird coupon shows its struck-through MRP right on
+      // the card, before the student ever opens checkout, instead of only revealing the saving once
+      // they click through. A code-required coupon never shows here (nothing to type on a card).
+      const autoCoupon = (typeof bestAutoCoupon === 'function') ? bestAutoCoupon({ type: 'pass', id: b.id }, b.price) : null;
+      const discount = autoCoupon ? computeCouponDiscount(autoCoupon, b.price) : 0;
+      const finalPrice = autoCoupon ? Math.max(0, b.price - discount) : b.price;
+      const priceHtml = autoCoupon
+        ? `<div class="my-4">
+             <div class="flex items-baseline gap-2">
+               <span class="text-3xl font-black ${theme.price}">₹${finalPrice}</span>
+               <span class="text-sm font-bold line-through ${theme.sub}">₹${b.price}</span>
+               <span class="text-[10px] font-bold uppercase text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">${autoCoupon.type === 'flat' ? `₹${autoCoupon.value} off` : `${autoCoupon.value}% off`}</span>
+             </div>
+             <span class="text-xs font-normal ${theme.sub}">${b.validityDays > 0 ? `for ${b.validityDays >= 360 && b.validityDays % 365 === 0 ? (b.validityDays / 365) + ' year' + (b.validityDays > 365 ? 's' : '') : b.validityDays + ' days'}` : 'one-time'}</span>
+           </div>`
+        : `<div class="my-4 text-3xl font-black ${theme.price}">₹${b.price} <span class="text-xs font-normal ${theme.sub}">${b.validityDays > 0 ? `for ${b.validityDays >= 360 && b.validityDays % 365 === 0 ? (b.validityDays / 365) + ' year' + (b.validityDays > 365 ? 's' : '') : b.validityDays + ' days'}` : 'one-time'}</span></div>`;
       return `
         <div class="${theme.card} p-6 rounded-2xl flex flex-col justify-between relative overflow-hidden">
           ${b.featured ? '<div class="absolute -right-12 top-6 bg-amber-500 text-slate-950 text-[10px] font-bold px-12 py-0.5 rotate-45 uppercase">Popular</div>' : ''}
@@ -16,7 +34,7 @@
             <span class="text-[10px] font-bold uppercase tracking-wider ${theme.tag} px-2.5 py-0.5 rounded-full">${b.allAccess ? 'Everything included' : 'Bundle'}</span>
             <h4 class="text-lg font-bold mt-2">${escapeHtml(b.name)}</h4>
             <p class="text-xs ${theme.sub} mt-1">${escapeHtml(b.tagline || '')}</p>
-            <div class="my-4 text-3xl font-black ${theme.price}">₹${b.price} <span class="text-xs font-normal ${theme.sub}">${b.validityDays > 0 ? `for ${b.validityDays >= 360 && b.validityDays % 365 === 0 ? (b.validityDays / 365) + ' year' + (b.validityDays > 365 ? 's' : '') : b.validityDays + ' days'}` : 'one-time'}</span></div>
+            ${priceHtml}
             <ul class="text-xs ${theme.li} space-y-1.5">${(b.highlights || []).map(h => `<li>• ${escapeHtml(h)}</li>`).join('')}</ul>
           </div>
           <button onclick="openBundleCheckout('${b.id}')" class="mt-6 w-full py-2.5 ${theme.btn} font-bold text-xs rounded-lg transition shadow">
@@ -63,6 +81,10 @@
 
     // ---- Admin ----
     let editingBundleId = null;
+    // Separate from the Word Page Creator's own `slugManuallyEdited` global (js/08_word_page_creator.js)
+    // -- same Edit/Done-toggle-on-a-readonly-field pattern, but a bundle and a page can be open for
+    // editing independently, so this needs its own flag rather than sharing that one.
+    let bdlSlugManuallyEdited = false;
 
     function bundleSummary(b) {
       if (b.allAccess) return 'Everything on the site';
@@ -153,9 +175,14 @@
     function editBundle(id) {
       const b = id ? getBundle(id) : {
         name: '', tagline: '', price: 499, validityDays: 365, allAccess: false, categories: [], papers: [], pages: [], pdfs: [],
-        planners: [], features: [], highlights: [], active: true, featured: false, showOnHome: true, style: 'light', order: bundles.length + 1
+        planners: [], features: [], highlights: [], active: true, featured: false, showOnHome: true, style: 'light', order: bundles.length + 1,
+        slug: '', oldSlugs: []
       };
       editingBundleId = id;
+      bdlSlugManuallyEdited = !!id; // existing bundles keep their link when the name changes, same as pages
+      document.getElementById('bdl-slug-input').value = b.slug || '';
+      setBdlSlugFieldEditable(false);
+      updateBdlSlugHint();
       document.getElementById('bundle-editor-title').innerText = id ? `Edit: ${b.name}` : 'New bundle';
       document.getElementById('bdl-name').value = b.name;
       document.getElementById('bdl-tagline').value = b.tagline || '';
@@ -188,14 +215,90 @@
       document.getElementById('bundle-editor').classList.add('hidden');
     }
 
+    // ---- Bundle link/slug field (mirrors page-slug-input's Edit/Done pattern in
+    // js/08_word_page_creator.js: syncSlugFromTitle/setSlugFieldEditable/toggleSlugEditing/updateSlugHint) ----
+    function syncBdlSlugFromTitle() {
+      if (bdlSlugManuallyEdited) return;
+      document.getElementById('bdl-slug-input').value = slugify(document.getElementById('bdl-name').value);
+      updateBdlSlugHint();
+    }
+
+    function setBdlSlugFieldEditable(editable) {
+      const input = document.getElementById('bdl-slug-input');
+      input.readOnly = !editable;
+      input.classList.toggle('bg-slate-50', !editable);
+      input.classList.toggle('text-slate-500', !editable);
+      input.classList.toggle('bg-white', editable);
+      input.classList.toggle('text-slate-900', editable);
+      document.getElementById('bdl-slug-edit-btn').innerText = editable ? 'Done' : 'Edit';
+    }
+
+    function toggleBdlSlugEditing() {
+      const input = document.getElementById('bdl-slug-input');
+      if (input.readOnly) {
+        bdlSlugManuallyEdited = true;
+        setBdlSlugFieldEditable(true);
+        input.focus();
+        input.select();
+      } else {
+        input.value = slugify(input.value);
+        if (!input.value && !editingBundleId) {
+          bdlSlugManuallyEdited = false; // cleared on a new bundle: go back to following the name
+          syncBdlSlugFromTitle();
+        }
+        setBdlSlugFieldEditable(false);
+      }
+      updateBdlSlugHint();
+    }
+
+    function updateBdlSlugHint() {
+      const hint = document.getElementById('bdl-slug-hint');
+      if (!hint) return;
+      const slugVal = document.getElementById('bdl-slug-input').value.trim();
+      const nameVal = document.getElementById('bdl-name').value.trim();
+      if (editingBundleId) {
+        const b = getBundle(editingBundleId);
+        hint.innerText = (b && b.slug && slugify(slugVal) !== b.slug)
+          ? `The old link (#/bundle/${b.slug}) will keep working and open this bundle.`
+          : 'Changing the name keeps this link, so shared links stay valid.';
+      } else if (nameVal && !slugVal) {
+        hint.innerText = 'This name has no English letters, so the link will use the bundle ID. Click Edit to set a readable one.';
+      } else if (bdlSlugManuallyEdited) {
+        hint.innerText = 'Custom link. Lowercase letters, numbers and dashes only.';
+      } else {
+        hint.innerText = 'Filled in from the bundle name. Click Edit to change it.';
+      }
+    }
+
 async function saveBundle(e) {
   e.preventDefault();
   const vals = cls => [...document.querySelectorAll(`.${cls}:checked`)].map(cb => cb.value);
   const bundleId = editingBundleId || ('b_' + Date.now());
-  
+  const name = document.getElementById('bdl-name').value.trim();
+
+  // Slug uniqueness + old-slug-redirect-on-rename, mirroring js/08_word_page_creator.js's `taken`
+  // closure and oldSlugs.push(existing.slug) logic (lines ~1786-1798) exactly.
+  const slugInput = document.getElementById('bdl-slug-input');
+  let slug = slugify(slugInput.value) || slugify(name) || bundleId;
+  const bdlSlugTaken = s => bundles.some(x => x.id !== bundleId && (x.slug === s || x.id === s || (x.oldSlugs || []).includes(s)));
+  if (bdlSlugTaken(slug)) {
+    let n = 2;
+    while (bdlSlugTaken(`${slug}-${n}`)) n++;
+    const suggestion = `${slug}-${n}`;
+    if (bdlSlugManuallyEdited && !confirm(`The link "${slug}" is already used by another bundle.\n\nUse "${suggestion}" instead?`)) return;
+    slug = suggestion;
+  }
+  const existingBundle = editingBundleId ? getBundle(editingBundleId) : null;
+  let oldSlugs = existingBundle ? (existingBundle.oldSlugs || []) : [];
+  if (existingBundle && existingBundle.slug && existingBundle.slug !== slug && !oldSlugs.includes(existingBundle.slug)) {
+    oldSlugs.push(existingBundle.slug);
+  }
+
   const data = {
     id: bundleId,
-    name: document.getElementById('bdl-name').value.trim(),
+    name,
+    slug,
+    old_slugs: oldSlugs,
     tagline: document.getElementById('bdl-tagline').value.trim(),
     price: Math.max(0, parseInt(document.getElementById('bdl-price').value, 10) || 0),
     validity_days: Math.max(0, parseInt(document.getElementById('bdl-validity').value, 10) || 0),
@@ -225,22 +328,24 @@ async function saveBundle(e) {
 
   // Remap back for local runtime state
   const runtimeBundle = {
-    id: data.id, 
-    name: data.name, 
-    tagline: data.tagline, 
+    id: data.id,
+    name: data.name,
+    slug: data.slug,
+    oldSlugs: data.old_slugs,
+    tagline: data.tagline,
     price: data.price,
-    validityDays: data.validity_days, 
-    highlights: data.highlights, 
+    validityDays: data.validity_days,
+    highlights: data.highlights,
     active: data.active,
-    showOnHome: data.show_on_home, 
-    featured: data.featured, 
+    showOnHome: data.show_on_home,
+    featured: data.featured,
     style: data.style,
-    order: data.order_num, 
-    allAccess: data.all_access, 
+    order: data.order_num,
+    allAccess: data.all_access,
     categories: data.categories,
-    papers: data.papers, 
-    pages: data.pages, 
-    pdfs: data.pdfs, 
+    papers: data.papers,
+    pages: data.pages,
+    pdfs: data.pdfs,
     planners: data.planners,
     features: data.features,
     mainsPapers: data.mains_papers
@@ -263,9 +368,21 @@ async function duplicateBundle(id) {
   if (!b) return;
 
   const newId = 'b_' + Date.now();
+  // Fresh, non-colliding slug for the copy -- never reuses the original's slug (that would make
+  // #/bundle/{slug} ambiguous between the two until the admin edits one), same uniqueness check
+  // saveBundle uses, just without a confirm prompt since there's no user-typed input to respect here.
+  let copySlug = slugify(`${b.name} copy`) || newId;
+  const copySlugTaken = s => bundles.some(x => x.slug === s || x.id === s || (x.oldSlugs || []).includes(s));
+  if (copySlugTaken(copySlug)) {
+    let n = 2;
+    while (copySlugTaken(`${copySlug}-${n}`)) n++;
+    copySlug = `${copySlug}-${n}`;
+  }
   const duplicatedData = {
     id: newId,
     name: `${b.name} (copy)`,
+    slug: copySlug,
+    old_slugs: [],
     tagline: b.tagline || '',
     price: b.price,
     validity_days: b.validityDays,
@@ -295,6 +412,8 @@ async function duplicateBundle(id) {
   const runtimeBundle = {
     id: duplicatedData.id,
     name: duplicatedData.name,
+    slug: duplicatedData.slug,
+    oldSlugs: duplicatedData.old_slugs,
     tagline: duplicatedData.tagline,
     price: duplicatedData.price,
     validityDays: duplicatedData.validity_days,
