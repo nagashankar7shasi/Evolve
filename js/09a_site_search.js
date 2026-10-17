@@ -147,8 +147,15 @@
         currentPageId = null;
         if (location.hash.startsWith('#/page/')) clearPageHash();
       }
+      // Same drop-the-hash-on-leave handling as custom pages above, for the bundle landing page
+      // (#/bundle/{slug}, see renderBundleLandingPage in js/02a_bundles.js). clearPageHash() is a
+      // generic history helper despite its name -- no bundle-specific version needed.
+      if (view !== 'bundle-landing') {
+        currentBundleLandingId = null;
+        if (location.hash.startsWith('#/bundle/')) clearPageHash();
+      }
       if (view !== 'engine' && !(await guardLeavingExam())) return;
-      ['home', 'tests', 'dashboard', 'admin', 'custom-page', 'engine'].forEach(v => {
+      ['home', 'tests', 'dashboard', 'admin', 'custom-page', 'bundle-landing', 'engine'].forEach(v => {
         document.getElementById(`view-${v}`).classList.add('hidden');
       });
       // Mains Practice is a self-managed full-screen overlay (like the engine above), never a

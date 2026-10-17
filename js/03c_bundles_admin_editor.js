@@ -10,13 +10,12 @@
       const student = getCurrentStudent();
       const owned = student && activeBundlesFor(student).some(x => x.id === b.id);
       // On-card discount: reuses the SAME auto-coupon engine the checkout modal already applies
-      // (bestAutoCoupon/computeCouponDiscount, js/03f_coupons.js) rather than a separate "card
-      // discount" concept -- so a no-code early-bird coupon shows its struck-through MRP right on
-      // the card, before the student ever opens checkout, instead of only revealing the saving once
-      // they click through. A code-required coupon never shows here (nothing to type on a card).
-      const autoCoupon = (typeof bestAutoCoupon === 'function') ? bestAutoCoupon({ type: 'pass', id: b.id }, b.price) : null;
-      const discount = autoCoupon ? computeCouponDiscount(autoCoupon, b.price) : 0;
-      const finalPrice = autoCoupon ? Math.max(0, b.price - discount) : b.price;
+      // (bestAutoCoupon/computeCouponDiscount, js/03f_coupons.js), via the shared bundlePricingInfo()
+      // helper (js/02a_bundles.js) that the bundle landing page also uses -- so a no-code early-bird
+      // coupon shows its struck-through MRP right on the card, before the student ever opens
+      // checkout, instead of only revealing the saving once they click through. A code-required
+      // coupon never shows here (nothing to type on a card).
+      const { autoCoupon, finalPrice } = bundlePricingInfo(b);
       const priceHtml = autoCoupon
         ? `<div class="my-4">
              <div class="flex items-baseline gap-2">
@@ -73,6 +72,102 @@
       });
       extra.innerHTML = list.slice(2).map(bundleCardHtml).join('');
       extra.classList.toggle('hidden', list.length <= 2);
+    }
+
+    // Resolves a bundle's actual included-item NAMES (not just counts, unlike bundleSummary()'s
+    // compact admin-list line above) -- used by the landing page's "What's included" section, since
+    // the whole point of a dedicated landing page over the compact card is to show a prospective
+    // buyer exactly what they're getting, not just "3 pages, 2 PDFs".
+    function bundleIncludedSections(b) {
+      if (b.allAccess) {
+        return [{ heading: 'Everything on the site', items: ['Every exam category\'s mocks, including ones added later', 'All gated pages, PDFs, planners and dashboard features'] }];
+      }
+      const sections = [];
+      const cats = (b.categories || []).map(c => EXAM_CATEGORIES[c]?.name).filter(Boolean);
+      if (cats.length) sections.push({ heading: 'Exam categories (all papers, including future ones)', items: cats });
+      const papers = (b.papers || []).map(id => testsCatalog.find(p => p.id === id)?.title).filter(Boolean);
+      if (papers.length) sections.push({ heading: 'Individual test papers', items: papers });
+      const mains = (b.mainsPapers || []).map(id => (typeof mainsTestPapers !== 'undefined' ? mainsTestPapers.find(p => p.id === id)?.title : null)).filter(Boolean);
+      if (mains.length) sections.push({ heading: 'Mains test papers', items: mains });
+      const pages = (b.pages || []).map(id => findPage(id)?.title).filter(Boolean);
+      if (pages.length) sections.push({ heading: 'Pages', items: pages });
+      const pdfs = (b.pdfs || []).map(id => pdfVault.find(d => d.id === id)?.title).filter(Boolean);
+      if (pdfs.length) sections.push({ heading: 'PDFs', items: pdfs });
+      const planners = (b.planners || []).map(id => (typeof plannerList === 'function' ? plannerList().find(p => p.id === id)?.label : null)).filter(Boolean);
+      if (planners.length) sections.push({ heading: 'Advanced study planners', items: planners });
+      const features = (b.features || []).map(id => (typeof DASHBOARD_FEATURES !== 'undefined' ? DASHBOARD_FEATURES.find(f => f.id === id)?.name : null)).filter(Boolean);
+      if (features.length) sections.push({ heading: 'Dashboard features', items: features });
+      return sections;
+    }
+
+    // Auto-generated, shareable landing page for one bundle at #/bundle/{slug} -- mirrors
+    // renderDynamicCustomPage's routing pattern (js/08_word_page_creator.js) exactly: resolves the
+    // ref, pushes/replaces the canonical hash, hides every other top-level view, and (critically,
+    // same "editor-placeholder vs public-render-rebuild" pattern as page cards -- see CLAUDE.md)
+    // rebuilds every field from the CURRENT bundle/coupon/vault data on every call, so a shared link
+    // never shows a stale price or a since-removed schedule PDF.
+    async function renderBundleLandingPage(ref, opts = {}) {
+      const b = findBundleByRef(ref);
+      if (!b) {
+        alert('This bundle link is no longer valid. It may have been removed or renamed.');
+        return navigate('home');
+      }
+      // Same exam-in-progress guard navigate()/renderDynamicCustomPage() use -- this function hides
+      // view-engine itself just below and can be reached directly from routeFromHash (e.g. Back
+      // button), so it needs its own copy of the check.
+      if (!(await guardLeavingExam())) return;
+
+      currentBundleLandingId = b.id;
+      currentPageId = null; // leaving any custom page that might have been open
+      const hash = bundleLinkHash(b);
+      if (location.hash !== hash) {
+        // Opened from an old slug: quietly switch to the current one without adding history.
+        setPageHash(hash, !!opts.fromRoute);
+      }
+
+      ['home', 'tests', 'dashboard', 'admin', 'custom-page', 'engine'].forEach(v => {
+        document.getElementById(`view-${v}`).classList.add('hidden');
+      });
+      document.getElementById('view-bundle-landing').classList.remove('hidden');
+
+      document.getElementById('bundle-landing-badge').innerText = b.allAccess ? 'Everything included' : 'Bundle';
+      document.getElementById('bundle-landing-title').innerText = b.name;
+      document.getElementById('bundle-landing-tagline').innerText = b.tagline || '';
+
+      const { autoCoupon, finalPrice } = bundlePricingInfo(b);
+      const validityLabel = b.validityDays > 0
+        ? `for ${b.validityDays >= 360 && b.validityDays % 365 === 0 ? (b.validityDays / 365) + ' year' + (b.validityDays > 365 ? 's' : '') : b.validityDays + ' days'}`
+        : 'one-time';
+      document.getElementById('bundle-landing-price').innerHTML = autoCoupon
+        ? `<span class="text-4xl font-black text-slate-900">₹${finalPrice}</span>
+           <span class="text-lg font-bold line-through text-slate-400 ml-2">₹${b.price}</span>
+           <span class="text-[11px] font-bold uppercase text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full ml-2">${autoCoupon.type === 'flat' ? `₹${autoCoupon.value} off` : `${autoCoupon.value}% off`}</span>
+           <span class="block text-xs font-normal text-slate-500 mt-1">${validityLabel}</span>`
+        : `<span class="text-4xl font-black text-slate-900">₹${b.price}</span>
+           <span class="block text-xs font-normal text-slate-500 mt-1">${validityLabel}</span>`;
+
+      const highlightsWrap = document.getElementById('bundle-landing-highlights-wrap');
+      const highlights = b.highlights || [];
+      highlightsWrap.classList.toggle('hidden', !highlights.length);
+      document.getElementById('bundle-landing-highlights').innerHTML = highlights.map(h => `<li class="flex gap-2"><span>✅</span><span>${escapeHtml(h)}</span></li>`).join('');
+
+      const sections = bundleIncludedSections(b);
+      document.getElementById('bundle-landing-included').innerHTML = sections.map(s => `
+        <div>
+          <h4 class="font-bold text-slate-900 text-sm mb-1.5">${escapeHtml(s.heading)}</h4>
+          <ul class="text-sm text-slate-600 space-y-1">${s.items.map(i => `<li>• ${escapeHtml(i)}</li>`).join('')}</ul>
+        </div>`).join('') || '<p class="text-slate-400 text-sm">Nothing included yet.</p>';
+
+      const schedulePdf = b.schedulePdfId ? pdfVault.find(d => d.id === b.schedulePdfId) : null;
+      const scheduleBtn = document.getElementById('bundle-landing-schedule-btn');
+      scheduleBtn.classList.toggle('hidden', !schedulePdf);
+      if (schedulePdf) scheduleBtn.onclick = () => downloadOrOpenPdf(schedulePdf.id);
+
+      const student = getCurrentStudent();
+      const owned = student && activeBundlesFor(student).some(x => x.id === b.id);
+      const ctaBtn = document.getElementById('bundle-landing-cta');
+      ctaBtn.innerText = owned ? 'You have this. Extend' : `Enroll in ${b.name}`;
+      ctaBtn.onclick = () => openBundleCheckout(b.id);
     }
 
     function updateCategoryBundleButton() {
@@ -136,6 +231,7 @@
             <button onclick="editBundle('${b.id}')" class="text-blue-600 font-bold hover:underline">Edit</button>
             <button onclick="duplicateBundle('${b.id}')" class="text-slate-600 font-bold hover:underline">Duplicate</button>
             <button onclick="deleteBundle('${b.id}')" class="text-rose-600 font-bold hover:underline">Delete</button>
+            <button onclick="renderBundleLandingPage('${b.id}')" class="text-emerald-700 font-bold hover:underline" title="Preview the shareable landing page">View landing page</button>
             <span class="text-slate-300">|</span>
             <label class="flex items-center gap-1 cursor-pointer text-[11px]" title="Whether this bundle can be purchased right now">
               <input type="checkbox" ${b.active ? 'checked' : ''} onchange="toggleBundleFlag('${b.id}', 'active', this.checked)" class="rounded" />
