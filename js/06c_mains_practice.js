@@ -24,6 +24,16 @@
     let mainsPracticeAnswerPhotoFile = null; // staged File (image or PDF), not yet uploaded
     let mainsPracticeCurrentSubmissionId = null; // submission currently shown on the self-assess screen (AI-feedback button target)
     let mainsAccessPriceCache = null; // lazy-loaded app_settings('mains_access_price'), {kpsc_kas, upsc_cse}
+    // 'tests' (default): browse priced/bundle-coverable Mains test papers (mains_test_papers), each a
+    // fixed set of N bank questions attempted as one unit -- see js/06d_mains_test_studio.js for the
+    // admin side. 'bank': the original free-form "any active question in this category" browse,
+    // unchanged and still available as a second tab -- nothing about it was removed.
+    let mainsPracticeViewMode = 'tests';
+    // Set while attempting one specific test paper (its id); null means "at the grid/bank, not
+    // inside a paper". Snapshotted into mainsPracticeAnswerTestPaperId the moment "Write answer" is
+    // clicked, so submitMainsAnswer() tags the submission correctly even if this changes later.
+    let mainsPracticeActiveTestPaperId = null;
+    let mainsPracticeAnswerTestPaperId = null;
 
     async function fetchCloudMainsSubmissions() {
       if (!currentUser) { mainsSubmissions = []; return; }
@@ -34,6 +44,7 @@
         mainsSubmissions = data.map(s => ({
           id: s.id, questionId: s.question_id, studentEmail: s.student_email,
           answerText: s.answer_text || '', answerImagePath: s.answer_image_path || null,
+          testPaperId: s.test_paper_id || null,
           wantsHumanEval: !!s.wants_human_eval, humanEvalOrderId: s.human_eval_order_id || null,
           submittedAt: s.submitted_at
         }));
@@ -43,6 +54,7 @@
     async function openMainsPractice() {
       if (!currentUser) { openLoginModal('Log in to practice Mains answers.', () => openMainsPractice()); return; }
       document.getElementById('view-mains-practice').classList.remove('hidden');
+      mainsPracticeActiveTestPaperId = null; // always land back on the grid/bank, never resume mid-paper
       await fetchCloudMainsSubmissions();
       mainsPracticeShowBrowse();
     }
@@ -87,25 +99,140 @@
     }
 
     // ---- Browse screen ----
+    // Three things can be showing here: the Tests grid (mainsPracticeViewMode==='tests', the
+    // default), the original free-practice bank (==='bank'), or one specific test paper's fixed
+    // question set (mainsPracticeActiveTestPaperId set, which overrides whichever mode was active).
     function mainsPracticeShowBrowse() {
       mainsPracticeSwitchScreen('browse');
+      renderMainsAdminPreviewNote();
+
+      document.getElementById('mp-browse-controls').classList.toggle('hidden', !!mainsPracticeActiveTestPaperId);
+      document.querySelectorAll('.mp-mode-tab').forEach(b => {
+        const on = b.dataset.mode === mainsPracticeViewMode;
+        b.classList.toggle('bg-slate-900', on);
+        b.classList.toggle('text-white', on);
+        b.classList.toggle('text-slate-700', !on);
+      });
       document.querySelectorAll('.mp-cat-tab').forEach(b => {
         const on = b.dataset.cat === mainsPracticeFilterCategory;
         b.classList.toggle('bg-slate-900', on);
         b.classList.toggle('text-white', on);
         b.classList.toggle('text-slate-700', !on);
       });
+
+      if (mainsPracticeActiveTestPaperId) { renderMainsTestAttempt(mainsPracticeActiveTestPaperId); return; }
+
+      document.getElementById('mp-tests-grid').classList.toggle('hidden', mainsPracticeViewMode !== 'tests');
+      if (mainsPracticeViewMode === 'tests') {
+        document.getElementById('mp-filter-subject').classList.add('hidden');
+        document.getElementById('mp-question-list').classList.add('hidden');
+        document.getElementById('mp-locked-box').classList.add('hidden');
+        renderMainsTestPapersGrid();
+        return;
+      }
+
+      // 'bank' mode -- the original free-form practice browse, unchanged.
       const unlocked = isMainsUnlockedForUser(mainsPracticeFilterCategory);
       document.getElementById('mp-filter-subject').classList.toggle('hidden', !unlocked);
       document.getElementById('mp-question-list').classList.toggle('hidden', !unlocked);
       document.getElementById('mp-locked-box').classList.toggle('hidden', unlocked);
-      renderMainsAdminPreviewNote();
       if (unlocked) {
         mainsPracticeRefreshSubjectFilter();
         renderMainsPracticeQuestionList();
       } else {
         renderMainsLockedBox(mainsPracticeFilterCategory);
       }
+    }
+
+    function mainsPracticeSetViewMode(mode) {
+      mainsPracticeViewMode = mode;
+      mainsPracticeActiveTestPaperId = null;
+      mainsPracticeShowBrowse();
+    }
+
+    // ---- Mains Test Papers (priced/bundle-coverable "N-question tests") ----
+    function renderMainsTestPapersGrid() {
+      const grid = document.getElementById('mp-tests-grid');
+      if (!grid) return;
+      const papers = mainsTestPapers
+        .filter(p => p.categoryId === mainsPracticeFilterCategory && p.active !== false && !p.delisted)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+      grid.innerHTML = papers.map(mainsTestPaperCardHtml).join('')
+        || '<p class="text-slate-400 text-sm text-center py-8 col-span-full">No Mains tests posted for this category yet.</p>';
+    }
+
+    function mainsTestPaperCardHtml(p) {
+      const unlocked = isMainsTestUnlockedForUser(p.id);
+      const liveYet = isMainsTestLiveYet(p);
+      const marks = mainsTestPaperMarks(p);
+      const myAnswered = new Set(mainsSubmissions.filter(s => s.testPaperId === p.id).map(s => s.questionId)).size;
+      const liveDateStr = p.scheduled_for ? new Date(p.scheduled_for).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+      const priceLabel = p.bundleOnly ? 'BUNDLE' : `₹${p.price}`;
+      return `
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between gap-2">
+              ${p.subject ? `<span class="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full">${escapeHtml(p.subject)}</span>` : '<span></span>'}
+              <span class="text-xs font-mono font-bold ${p.bundleOnly ? 'text-violet-600' : 'text-slate-900'}">${priceLabel}</span>
+            </div>
+            <h3 class="text-base font-bold text-slate-900 mt-2">${escapeHtml(p.title)}</h3>
+            <p class="text-xs text-slate-500 mt-0.5 font-mono">${p.questionIds.length} Question${p.questionIds.length === 1 ? '' : 's'} • ${marks} Marks</p>
+            ${unlocked && myAnswered ? `<p class="text-[11px] text-emerald-700 font-bold mt-1.5">${myAnswered}/${p.questionIds.length} answered</p>` : ''}
+          </div>
+          ${unlocked && liveYet ? `
+            <button onclick="openMainsTestAttempt('${p.id}')" class="mt-5 w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg transition shadow">
+              ${myAnswered ? 'Continue test' : 'Start test'}
+            </button>
+          ` : (unlocked ? `
+            <div class="mt-5 w-full py-2.5 bg-amber-50 border border-amber-200 text-amber-800 font-bold text-xs rounded-lg text-center">🗓 Live on ${liveDateStr}</div>
+          ` : (p.bundleOnly ? mainsTestBundleOnlyCta(p) : `
+            <button onclick="openMainsTestCheckout('${p.id}')" class="mt-5 w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition shadow">
+              🔒 Unlock Test (₹${p.price})
+            </button>`))}
+        </div>`;
+    }
+
+    // Mirrors bundleOnlyUnlockCta's spirit (02a_bundles.js) for a bundle-only Mains test paper.
+    function mainsTestBundleOnlyCta(p) {
+      const covering = bundlesForSale(b => bundleCoversMainsTest(b, p));
+      if (!covering.length) return `<div class="mt-5 w-full py-2.5 bg-slate-100 text-slate-400 font-bold text-xs rounded-lg text-center">Not available yet</div>`;
+      return `<div class="mt-5 text-xs text-slate-500 text-center">Included in: ${covering.map(b => `<button onclick="openBundleCheckout('${b.id}')" class="font-bold text-amber-700 hover:underline">${escapeHtml(b.name)}</button>`).join(', ')}</div>`;
+    }
+
+    function openMainsTestAttempt(paperId) {
+      mainsPracticeActiveTestPaperId = paperId;
+      mainsPracticeShowBrowse();
+    }
+
+    function backToMainsTestsGrid() {
+      mainsPracticeActiveTestPaperId = null;
+      mainsPracticeShowBrowse();
+    }
+
+    // The attempt view is just the paper's fixed question_ids rendered with the same card/write/
+    // self-assess flow as free practice -- no separate timed "exam session", since Mains write-ups
+    // are deliberately untimed and resumable (see startMainsAnswer's test-paper tagging below).
+    function renderMainsTestAttempt(paperId) {
+      document.getElementById('mp-tests-grid').classList.add('hidden');
+      document.getElementById('mp-locked-box').classList.add('hidden');
+      document.getElementById('mp-filter-subject').classList.add('hidden');
+      const p = getMainsTestPaper(paperId);
+      if (!p || !isMainsTestUnlockedForUser(paperId)) {
+        mainsPracticeActiveTestPaperId = null;
+        mainsPracticeShowBrowse();
+        return;
+      }
+      const list = document.getElementById('mp-question-list');
+      list.classList.remove('hidden');
+      const answered = new Set(mainsSubmissions.filter(s => s.testPaperId === paperId).map(s => s.questionId));
+      const rows = p.questionIds.map(getMainsQuestion).filter(Boolean);
+      const header = `
+        <div class="flex items-center justify-between mb-3">
+          <button onclick="backToMainsTestsGrid()" class="text-slate-500 text-xs font-bold hover:underline">&larr; Back to tests</button>
+          <span class="text-xs font-bold text-emerald-700">${answered.size}/${rows.length} answered</span>
+        </div>
+        <h3 class="font-bold text-slate-900 mb-3">${escapeHtml(p.title)}</h3>`;
+      list.innerHTML = header + (rows.map(mainsQuestionCardHtml).join('') || '<p class="text-slate-400 text-sm text-center py-8">This test has no questions.</p>');
     }
 
     // isMainsUnlockedForUser() always returns true for isAdmin() -- without this note, testing
@@ -160,6 +287,7 @@
     function mainsPracticeCategoryTabClick(catId) {
       mainsPracticeFilterCategory = catId;
       mainsPracticeFilterSubject = '';
+      mainsPracticeActiveTestPaperId = null;
       mainsPracticeShowBrowse();
     }
 
@@ -204,15 +332,25 @@
     function startMainsAnswer(questionId) {
       const q = getMainsQuestion(questionId);
       if (!q) return;
-      // Defensive re-check -- the browse screen already hides question cards for a locked category
-      // (renderMainsLockedBox), but this guards against a stale question card still in the DOM (e.g.
-      // access was revoked mid-session) rather than trusting only what's rendered.
-      if (!isMainsUnlockedForUser(q.categoryId)) {
+      // Defensive re-check -- the browse screen already hides question cards for a locked
+      // category/test paper (renderMainsLockedBox / renderMainsTestAttempt), but this guards
+      // against a stale question card still in the DOM (e.g. access was revoked mid-session)
+      // rather than trusting only what's rendered. Inside a test attempt, the paper's OWN
+      // entitlement is what matters (isMainsTestUnlockedForUser already also accepts whole-category
+      // coverage), not just the question's category on its own.
+      const unlocked = mainsPracticeActiveTestPaperId
+        ? isMainsTestUnlockedForUser(mainsPracticeActiveTestPaperId)
+        : isMainsUnlockedForUser(q.categoryId);
+      if (!unlocked) {
         mainsPracticeFilterCategory = q.categoryId;
+        mainsPracticeActiveTestPaperId = null;
         mainsPracticeShowBrowse();
         return;
       }
       mainsPracticeCurrentQuestion = q;
+      // Snapshot now (not read fresh in submitMainsAnswer) so the submission is tagged correctly
+      // even if the student somehow navigates away from the attempt before submitting.
+      mainsPracticeAnswerTestPaperId = mainsPracticeActiveTestPaperId;
       mainsPracticeAnswerPhotoFile = null;
       document.getElementById('mp-write-subject').innerText = q.subject || q.categoryId;
       document.getElementById('mp-write-marks').innerText = `${q.marks} marks${q.wordLimit ? ` · ${q.wordLimit}-word limit` : ''}`;
@@ -291,6 +429,9 @@
           student_email: normalizeEmail(currentUser.email),
           answer_text: answerText || null,
           answer_image_path: answerImagePath,
+          // null for free-practice (unchanged); set when this answer was written as part of a
+          // specific Mains test paper attempt, so the paper's "X/N answered" progress can count it.
+          test_paper_id: mainsPracticeAnswerTestPaperId || null,
           submitted_at: new Date().toISOString()
         };
         const { error } = await supabaseClient.from('mains_submissions').insert([submission]);
@@ -299,6 +440,7 @@
         mainsSubmissions.unshift({
           id: submission.id, questionId: submission.question_id, studentEmail: submission.student_email,
           answerText: submission.answer_text || '', answerImagePath: submission.answer_image_path,
+          testPaperId: submission.test_paper_id,
           wantsHumanEval: false, humanEvalOrderId: null, submittedAt: submission.submitted_at
         });
         mainsPracticeAnswerPhotoFile = null;

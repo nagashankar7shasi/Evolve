@@ -45,7 +45,7 @@
     function getStudentRecord(email) {
       const e = normalizeEmail(email);
       const st = studentDirectory.find(x => x.email === e) || null;
-      if (st) ['allowedExams', 'allowedPages', 'allowedPdfs', 'allowedPlanners', 'allowedMains', 'passes'].forEach(k => { if (!Array.isArray(st[k])) st[k] = []; });
+      if (st) ['allowedExams', 'allowedPages', 'allowedPdfs', 'allowedPlanners', 'allowedMains', 'allowedMainsTests', 'passes'].forEach(k => { if (!Array.isArray(st[k])) st[k] = []; });
       return st;
     }
 
@@ -91,6 +91,35 @@
       const coveredCats = categoryAndAncestors(categoryId);
       if (activeBundlesFor(student).some(b => b.allAccess || coveredCats.some(c => b.categories.includes(c)))) return true;
       return (student.allowedMains || []).includes(categoryId);
+    }
+
+    // Per-paper Mains access, for a discrete "10-question test" / "20-question test" product
+    // (mains_test_papers) sold or bundle-covered on its own, mirroring isTestUnlockedForUser.
+    // Backward-compatible by design: the existing whole-category routes (a covering bundle/pass via
+    // `categories`, All-Access, or a standalone category-wide Mains purchase via student.allowedMains)
+    // keep unlocking every paper filed under that category, exactly as before this existed -- a
+    // category Pass was always meant to cover "every mock test in that category too" (see
+    // renderMainsLockedBox). This only ADDS a narrower path: a bundle that lists this exact paper in
+    // `mainsPapers`, or an individual per-paper grant/purchase (student.allowedMainsTests).
+    function isMainsTestUnlockedForUser(testPaperId) {
+      const paper = getMainsTestPaper(testPaperId);
+      if (!paper) return false;
+      // An inactive paper is a hard "no" for everyone except admin, same posture as
+      // isTestUnlockedForUser for Prelims papers.
+      if (paper.active === false && !isAdmin()) return false;
+      if (isAdmin()) return true;
+      const student = getCurrentStudent();
+      if (!student) return false;
+      if (isMainsUnlockedForUser(paper.categoryId)) return true;
+      if (activeBundlesFor(student).some(b => (b.mainsPapers || []).includes(testPaperId))) return true;
+      return (student.allowedMainsTests || []).includes(testPaperId);
+    }
+
+    // Timing gate for a Mains test paper, same split-from-entitlement rationale as isTestLiveYet.
+    function isMainsTestLiveYet(paper) {
+      if (!paper || !paper.scheduled_for) return true;
+      if (isAdmin()) return true;
+      return new Date(paper.scheduled_for).getTime() <= Date.now();
     }
 
     // Timing gate, deliberately kept separate from isTestUnlockedForUser above: "does this student

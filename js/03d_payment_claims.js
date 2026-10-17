@@ -161,19 +161,21 @@ async function submitPaymentClaim() {
       allowedPdfs: [],
       allowedPlanners: [],
       allowedMains: [],
+      allowedMainsTests: [],
       passes: [],
       passExpiry: {},
-      createdAt: new Date().toISOString() 
+      createdAt: new Date().toISOString()
     };
     studentDirectory.push(student);
   }
-  
+
   if (order.type === 'pass') grantPass(student, order.itemId);
   // 'mains' is a standalone, category-scoped Mains-access purchase (itemId is an exam category id
   // like 'kpsc_kas', not a question/paper id) -- see isMainsUnlockedForUser in
-  // 04_access_permission_checkers.js. 'mains_human_eval' is handled separately in approveOrder
-  // (activateMainsHumanEvalOrder) and deliberately has no entry here.
-  const listFor = { paper: 'allowedExams', page: 'allowedPages', pdf: 'allowedPdfs', planner: 'allowedPlanners', mains: 'allowedMains' }[order.type];
+  // 04_access_permission_checkers.js. 'mains_test' is the narrower, per-paper equivalent (itemId is
+  // a mains_test_papers id) -- see isMainsTestUnlockedForUser. 'mains_human_eval' is handled
+  // separately in approveOrder (activateMainsHumanEvalOrder) and deliberately has no entry here.
+  const listFor = { paper: 'allowedExams', page: 'allowedPages', pdf: 'allowedPdfs', planner: 'allowedPlanners', mains: 'allowedMains', mains_test: 'allowedMainsTests' }[order.type];
   if (listFor && !student[listFor].includes(order.itemId)) student[listFor].push(order.itemId);
   student.utr = order.utr;
 
@@ -190,6 +192,7 @@ async function submitPaymentClaim() {
       allowed_pdfs: student.allowedPdfs,
       allowed_planners: student.allowedPlanners || [],
       allowed_mains: student.allowedMains || [],
+      allowed_mains_tests: student.allowedMainsTests || [],
       passes: student.passes,
       pass_expiry: student.passExpiry
     });
@@ -321,13 +324,13 @@ async function revokeEntitlementItem(email, type, itemId) {
   if (type === 'pass') {
     revokePass(student, itemId);
   } else {
-    const listFor = { paper: 'allowedExams', page: 'allowedPages', pdf: 'allowedPdfs', planner: 'allowedPlanners', mains: 'allowedMains' }[type];
+    const listFor = { paper: 'allowedExams', page: 'allowedPages', pdf: 'allowedPdfs', planner: 'allowedPlanners', mains: 'allowedMains', mains_test: 'allowedMainsTests' }[type];
     if (listFor) student[listFor] = (student[listFor] || []).filter(id => id !== itemId);
   }
   const { error } = await supabaseClient.from('students').upsert({
     email: student.email, name: student.name, utr: student.utr, status: student.status,
     allowed_exams: student.allowedExams, allowed_pages: student.allowedPages, allowed_pdfs: student.allowedPdfs,
-    allowed_planners: student.allowedPlanners || [], allowed_mains: student.allowedMains || [], passes: student.passes, pass_expiry: student.passExpiry || {}
+    allowed_planners: student.allowedPlanners || [], allowed_mains: student.allowedMains || [], allowed_mains_tests: student.allowedMainsTests || [], passes: student.passes, pass_expiry: student.passExpiry || {}
   });
   if (error) { console.error('Failed to sync revoked access to cloud:', fmtErr(error)); return false; }
   return true;

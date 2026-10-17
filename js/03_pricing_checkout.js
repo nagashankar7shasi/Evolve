@@ -270,6 +270,7 @@
       else if (type === 'pdf') scopeLabel = "Vault Study Document";
       else if (type === 'page') scopeLabel = "Standalone Word Page";
       else if (type === 'mains') scopeLabel = "Mains Question Bank Access";
+      else if (type === 'mains_test') scopeLabel = "Standalone Mains Test Paper";
       else if (type === 'mains_human_eval') scopeLabel = "Mains Personal Review";
 
       document.getElementById('checkout-bill-scope').innerText = scopeLabel;

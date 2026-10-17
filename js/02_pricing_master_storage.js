@@ -327,7 +327,7 @@
 
     function normalizeStudentDirectory() {
       const merged = [];
-      const listKeys = ['allowedExams', 'allowedPages', 'allowedPdfs', 'allowedPlanners', 'allowedMains', 'passes'];
+      const listKeys = ['allowedExams', 'allowedPages', 'allowedPdfs', 'allowedPlanners', 'allowedMains', 'allowedMainsTests', 'passes'];
       studentDirectory.forEach(st => {
         st.email = normalizeEmail(st.email);
         listKeys.forEach(k => { if (!Array.isArray(st[k])) st[k] = []; });
