@@ -275,6 +275,14 @@ async function approveOrder(orderId) {
     receipt_no: receiptNo
   });
 
+  // Task #198: same moment, also a Telegram DM — but only if this student has connected Telegram
+  // (telegramChatId set). Silently skipped otherwise; never blocks the approval either way.
+  const telegramStudent = studentDirectory.find(s => s.email === order.email);
+  if (telegramStudent && telegramStudent.telegramChatId) {
+    sendTelegramDM(telegramStudent.telegramChatId,
+      `✅ Payment verified!\n\nYour payment of ₹${order.amount} for "${order.title || 'your purchase'}" is confirmed and access is unlocked.\n\nReceipt: ${receiptNo}`);
+  }
+
   afterStudentDataChange();
 }
 

@@ -304,6 +304,47 @@
       }
     }
 
+    // Non-blocking per-student Telegram DM (task #198) -- same Edge Function as the broadcast above,
+    // just with an explicit chatId override instead of the default channel target. Never throws,
+    // silently no-ops if the student hasn't connected Telegram (no chatId) -- mirrors sendAutoEmail's
+    // "best effort, never block the caller" contract in js/12a_email.js.
+    async function sendTelegramDM(chatId, text) {
+      if (!chatId) return { success: false, error: 'not connected' };
+      try {
+        const { data, error } = await supabaseClient.functions.invoke('send-telegram-message', { body: { chatId, text } });
+        if (error) throw error;
+        if (data && data.error) throw new Error(data.error);
+        return { success: true };
+      } catch (err) {
+        console.warn('[telegram] DM failed:', fmtErr(err));
+        return { success: false, error: err.message || String(err) };
+      }
+    }
+
+    // One-time (re-runnable) admin setup: looks up the bot's username and registers telegram-webhook
+    // as its webhook, via the telegram-webhook-setup Edge Function. Needed once before "Connect
+    // Telegram" works anywhere on the student dashboard -- the deep link needs the bot's @username,
+    // and Telegram needs to know where to POST /start updates.
+    async function setupTelegramWebhook() {
+      const statusEl = document.getElementById('telegram-webhook-setup-status');
+      const btn = document.querySelector('[onclick="setupTelegramWebhook()"]');
+      if (btn) { btn.disabled = true; btn.innerText = 'Setting up…'; }
+      if (statusEl) statusEl.innerText = '';
+      try {
+        const { data, error } = await supabaseClient.functions.invoke('telegram-webhook-setup', { body: {} });
+        if (error) throw error;
+        if (data && data.error) throw new Error(data.error);
+        await saveCloudAppSetting('telegram_settings', { botUsername: data.botUsername });
+        if (statusEl) statusEl.innerText = `✓ Bot @${data.botUsername} is set up — webhook registered.`;
+      } catch (err) {
+        console.error('Telegram webhook setup failed:', fmtErr(err));
+        if (statusEl) statusEl.innerText = '⚠ Failed — see console for details';
+        alert(`Couldn't set up Telegram connect: ${fmtErr(err)}`);
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerText = 'Set up / re-check Telegram connect'; }
+      }
+    }
+
     async function saveSiteBranding() {
       siteBranding.name = (document.getElementById('branding-name').value || '').trim() || 'EVOLVE+';
       siteBranding.tagline = (document.getElementById('branding-tagline').value || '').trim();
