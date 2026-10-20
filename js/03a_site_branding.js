@@ -542,7 +542,33 @@
        even with the console closed and no Claude session active. This panel only edits the setting
        the server-side job reads, plus offers a manual "post now" button for testing.
     ----------------------------------------------------- */
-    let quizAutoSettings = { enabled: false, questionsPerRun: 1, category: 'any', frequencyHours: 24 };
+    let quizAutoSettings = { enabled: false, questionsPerRun: 1, category: 'any', frequencyHours: 24, topics: [] };
+
+    // Canonical topic buckets offered in the admin UI (checkbox, not free text) -- the question
+    // bank's own `subject` field is messy, overlapping free text written paper-by-paper (e.g.
+    // "Science & Technology – CA", "Karnataka Economy & Infrastructure – CA", "Indian Polity /
+    // Economy / GI Tags"), so a raw dropdown of every distinct subject string would be both huge and
+    // full of near-duplicates. post-telegram-quiz classifies each question's subject into zero or
+    // more of these buckets by keyword match (a subject can land in more than one -- a question is
+    // included if it matches ANY bucket the admin has checked). Keep this list in sync with
+    // TOPIC_BUCKETS in the edge function; `quizAutoSettings.topics` stores an array of these `key`s,
+    // and an empty array means "any topic" (no filtering), same convention as category: 'any'.
+    const QUIZ_TOPIC_BUCKETS = [
+      { key: 'polity_governance', label: 'Polity & Governance' },
+      { key: 'economy', label: 'Economy' },
+      { key: 'history', label: 'History' },
+      { key: 'geography', label: 'Geography' },
+      { key: 'environment', label: 'Environment & Ecology' },
+      { key: 'science_tech', label: 'Science & Technology' },
+      { key: 'art_culture', label: 'Art & Culture' },
+      { key: 'international_relations', label: 'International Relations' },
+      { key: 'social_issues', label: 'Social Issues & Welfare' },
+      { key: 'agriculture', label: 'Agriculture' },
+      { key: 'ethics', label: 'Ethics' },
+      { key: 'aptitude_reasoning_csat', label: 'Aptitude, Reasoning & CSAT' },
+      { key: 'current_affairs', label: 'Current Affairs' },
+      { key: 'other', label: 'Other / General Studies' },
+    ];
 
     async function fetchCloudQuizAutoSettings() {
       const cloud = await fetchCloudAppSetting('telegram_quiz_settings');
@@ -567,6 +593,20 @@
           Object.keys(EXAM_CATEGORIES).map(c => `<option value="${c}">${escapeHtml(EXAM_CATEGORIES[c].name || c)}</option>`).join('');
       }
       catSelect.value = quizAutoSettings.category || 'any';
+
+      const topicsBox = document.getElementById('quiz-auto-topics');
+      const selectedTopics = Array.isArray(quizAutoSettings.topics) ? quizAutoSettings.topics : [];
+      if (topicsBox && !topicsBox.children.length) {
+        topicsBox.innerHTML = QUIZ_TOPIC_BUCKETS.map(t => `
+          <label class="flex items-center gap-1 text-[11px] bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 cursor-pointer">
+            <input type="checkbox" value="${t.key}" class="quiz-auto-topic-cb w-4 h-4" />
+            ${escapeHtml(t.label)}
+          </label>
+        `).join('');
+      }
+      if (topicsBox) {
+        topicsBox.querySelectorAll('.quiz-auto-topic-cb').forEach(cb => { cb.checked = selectedTopics.includes(cb.value); });
+      }
     }
 
     async function saveQuizAutomationSettings() {
@@ -577,6 +617,7 @@
         questionsPerRun: Math.max(1, Math.min(10, parseInt(document.getElementById('quiz-auto-count').value, 10) || 1)),
         frequencyHours: parseInt(document.getElementById('quiz-auto-frequency').value, 10) || 24,
         category: document.getElementById('quiz-auto-category').value || 'any',
+        topics: Array.from(document.querySelectorAll('.quiz-auto-topic-cb:checked')).map(cb => cb.value),
       };
       const ok = await saveCloudAppSetting('telegram_quiz_settings', quizAutoSettings);
       if (statusEl) {
@@ -598,7 +639,7 @@
         const { data, error } = await supabaseClient.functions.invoke('post-telegram-quiz', { body: {} });
         if (error) throw error;
         if (data && data.error) throw new Error(data.error);
-        if (data && data.skipped) throw new Error(data.skipped === 'no eligible questions in the question bank' ? 'No eligible questions found for that category — check the question pool.' : data.skipped);
+        if (data && data.skipped) throw new Error(data.skipped.startsWith('no eligible questions') ? 'No eligible questions found — try widening the exam or topic filters.' : data.skipped);
         const posted = data && typeof data.posted === 'number' ? data.posted : 0;
         if (statusEl) {
           statusEl.textContent = posted > 0 ? `✓ Posted ${posted} quiz poll${posted === 1 ? '' : 's'} to Telegram` : '⚠ Nothing posted — see console for details';
