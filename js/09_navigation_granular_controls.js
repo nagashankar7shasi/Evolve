@@ -340,7 +340,9 @@
         ? `<button onclick="toggleMobileMenu(false); openLoginModal()" class="w-full mt-2 py-2 bg-amber-500 text-slate-950 font-bold rounded-lg">Aspirant Login</button>`
         : `${link('My Dashboard', 'dashboard', 'font-bold text-amber-400')}${isAdmin() ? link('⚙️ Dev Console', 'admin', 'font-bold text-amber-400') : ''}
            <button onclick="toggleMobileMenu(false); logout()" class="py-2 text-slate-400 underline">Logout (${escapeHtml(currentUser.name)})</button>`;
-      box.innerHTML = `<nav aria-label="Main menu">${items}</nav><div class="mt-2 pt-2 border-t border-slate-700">${account}</div>`;
+      // Public, not nested under currentUser -- the feed needs no login, same as Home/Exam Hub.
+      const socialFeedLink = socialFeedEnabled ? `<div class="pt-1 pb-1 border-t border-slate-700">${link('📣 Updates', 'social-feed', 'font-bold')}</div>` : '';
+      box.innerHTML = `<nav aria-label="Main menu">${items}</nav>${socialFeedLink}<div class="mt-2 pt-2 border-t border-slate-700">${account}</div>`;
     }
 
     function toggleMobileMenu(force) {
@@ -353,7 +355,7 @@
 
     function executeNav(action) {
       if (!action || action === '#') return;
-      if (['home', 'tests', 'dashboard', 'admin'].includes(action)) {
+      if (['home', 'tests', 'dashboard', 'admin', 'social-feed'].includes(action)) {
         navigate(action);
       } else if (action.startsWith('category:')) {
         navigate('tests');

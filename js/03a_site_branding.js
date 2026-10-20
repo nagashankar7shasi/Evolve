@@ -185,6 +185,8 @@
         if (descInput) descInput.value = descriptions[p.key] || '';
       });
       renderTelegramAdminConnectStatus();
+      const feedToggle = document.getElementById('social-feed-enabled-toggle');
+      if (feedToggle) feedToggle.checked = socialFeedEnabled;
     }
 
     // ---- Admin's own Telegram connection (task: ping the admin on every new payment claim) ----
@@ -460,5 +462,73 @@
       flash.textContent = ok ? '✓ saved' : "couldn't save";
       flash.className = ok ? 'text-xs font-bold text-emerald-600' : 'text-xs font-bold text-rose-600';
       setTimeout(() => { flash.textContent = ''; }, 2500);
+    }
+
+    /* ----------------------------------------------------
+       SOCIAL UPDATES FEED -- public scrolling page of the bot's Telegram channel posts
+       (captured by telegram-webhook into public.channel_posts, see sql/add_channel_posts_feed.sql).
+       Whole-feature on/off switch lives in app_settings ('social_feed_settings': {enabled}), set
+       from Dev Console -> Site branding, same generic key/value store as everything else here.
+    ----------------------------------------------------- */
+    let socialFeedEnabled = false;
+
+    async function fetchCloudSocialFeedSettings() {
+      const cloud = await fetchCloudAppSetting('social_feed_settings');
+      socialFeedEnabled = !!(cloud && cloud.enabled);
+      renderSocialFeedNavVisibility();
+    }
+
+    // Toggled from Dev Console -> Site branding; saves immediately (a single checkbox doesn't need
+    // its own "Save to cloud" button the way the bigger branding form does).
+    async function toggleSocialFeedEnabled(enabled) {
+      socialFeedEnabled = !!enabled;
+      renderSocialFeedNavVisibility();
+      const ok = await saveCloudAppSetting('social_feed_settings', { enabled: socialFeedEnabled });
+      const flash = document.getElementById('social-feed-toggle-saved');
+      if (flash) {
+        flash.textContent = ok ? '✓ saved' : "couldn't save";
+        flash.className = ok ? 'text-xs font-bold text-emerald-600' : 'text-xs font-bold text-rose-600';
+        setTimeout(() => { flash.textContent = ''; }, 2500);
+      }
+    }
+
+    // Shows/hides the "📣 Updates" nav button and (via renderMobileMenu, called fresh whenever the
+    // mobile menu opens) its mobile-menu equivalent. Called at boot and whenever the admin flips
+    // the toggle above.
+    function renderSocialFeedNavVisibility() {
+      const link = document.getElementById('nav-social-feed-link');
+      if (link) link.classList.toggle('hidden', !socialFeedEnabled);
+    }
+
+    // Fetches the latest captured channel posts and renders them as a scrolling list. Called by
+    // navigate() each time the page is opened, rather than cached at boot, so it's always current.
+    async function renderSocialFeed() {
+      const box = document.getElementById('social-feed-stream');
+      if (!box) return;
+      box.innerHTML = '<p class="text-sm text-slate-400 text-center py-10">Loading…</p>';
+      try {
+        const { data, error } = await supabaseClient
+          .from('channel_posts')
+          .select('*')
+          .order('posted_at', { ascending: false })
+          .limit(50);
+        if (error) throw error;
+        if (!data || !data.length) {
+          box.innerHTML = '<p class="text-sm text-slate-400 text-center py-10">No updates yet — check back soon.</p>';
+          return;
+        }
+        box.innerHTML = data.map(p => `
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <p class="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">${escapeHtml(p.text)}</p>
+            <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
+              <span class="text-[11px] text-slate-400">${new Date(p.posted_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+              <a href="${escapeHtml(p.link)}" target="_blank" rel="noopener" class="text-[11px] font-bold text-sky-700 hover:underline">View on Telegram ↗</a>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('renderSocialFeed failed:', fmtErr(err));
+        box.innerHTML = '<p class="text-sm text-rose-500 text-center py-10">Could not load updates. Try again later.</p>';
+      }
     }
 
