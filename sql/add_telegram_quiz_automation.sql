@@ -18,7 +18,14 @@ CREATE EXTENSION IF NOT EXISTS pg_net;
 
 -- cron.schedule() upserts by job name (re-running this migration updates the existing job rather
 -- than creating a duplicate), so this migration is safe to apply more than once.
--- x-cron-secret must match CRON_SECRET hardcoded in the post-telegram-quiz edge function.
+--
+-- SECURITY NOTE (2026-10-20): this file originally hardcoded the literal x-cron-secret value here,
+-- which GitGuardian flagged as a high-entropy secret exposed on GitHub -- correctly, since this file
+-- is in a public repo. Fixed by rotating the secret AND no longer storing the plaintext anywhere
+-- that could ever be committed: the job now looks it up from Supabase Vault at run time instead
+-- (`vault.create_secret('<new value>', 'telegram_quiz_cron_secret', '...')`, run once, interactively,
+-- directly against the live project -- never pasted into a file). See
+-- sql/add_get_vault_secret_rpc.sql for how the edge function reads the same secret back out.
 SELECT cron.schedule(
   'post-telegram-quiz-hourly',
   '7 * * * *',
@@ -27,7 +34,7 @@ SELECT cron.schedule(
     url := 'https://zghoanrwgihlefgmqmrr.supabase.co/functions/v1/post-telegram-quiz',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'x-cron-secret', 'c4f3a9d1b2e6708f5a3c1d9e7b4f2a06d8c5e3b1f7a9d2c6e4b8f1a3d5c7e9b2'
+      'x-cron-secret', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'telegram_quiz_cron_secret')
     ),
     body := '{}'::jsonb
   );
