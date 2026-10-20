@@ -1138,6 +1138,25 @@
       document.getElementById('rev-stat-correct').innerText = correctCount;
       document.getElementById('rev-stat-wrong').innerText = wrongCount;
 
+      // Time-per-question breakdown (absent on attempts taken before this was tracked, and on
+      // Practice Mode attempts, which are untimed/one-at-a-time already -- questionTimes is just
+      // {} for those, so this degrades to "--" and an empty insight line rather than an error).
+      const qTimes = attempt.questionTimes || {};
+      const timedEntries = Object.entries(qTimes).map(([q, t]) => [parseInt(q, 10), t]).filter(([, t]) => t > 0);
+      const avgTimeEl = document.getElementById('rev-stat-avgtime');
+      const insightEl = document.getElementById('rev-time-insight');
+      if (avgTimeEl) {
+        avgTimeEl.innerText = timedEntries.length
+          ? fmtQTime(timedEntries.reduce((n, [, t]) => n + t, 0) / timedEntries.length)
+          : '--';
+      }
+      if (insightEl) {
+        const slowest = [...timedEntries].sort((a, b) => b[1] - a[1]).slice(0, 3);
+        insightEl.innerText = slowest.length
+          ? `⏱ Spent longest on: ${slowest.map(([q, t]) => `Q${q} (${fmtQTime(t)})`).join(', ')}`
+          : '';
+      }
+
       // Percentile: fetch scores from ALL attempts of the same paper across all students,
       // compute what fraction scored below this student. Async because it's a cloud query;
       // the box shows "…" until it resolves. If it fails, hide the value.
@@ -1197,11 +1216,15 @@
           `;
         });
 
+        const qTime = (activeReviewAttempt.questionTimes || {})[qNum];
         card.innerHTML = `
           <div class="flex justify-between items-center border-b pb-2 mb-2">
             <span class="font-bold text-slate-900">Question ${qNum}${q.subject ? ` <span class="ml-1 px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium">${escapeHtml(q.subject)}</span>` : ''} ${askedBadgeHtml(q)}</span>
-            <span class="font-bold px-2 py-0.5 rounded text-[10px] ${isRight ? 'bg-emerald-100 text-emerald-800' : (isSkipped ? 'bg-slate-200 text-slate-700' : 'bg-rose-100 text-rose-800')}">
-              ${isRight ? `Correct (+${s.marksCorrect})` : (isSkipped ? 'Unattempted (0.00)' : `Incorrect (-${s.marksWrong})`)}
+            <span class="flex items-center gap-2">
+              ${qTime ? `<span class="text-[10px] text-slate-400 font-mono" title="Time spent viewing this question">⏱ ${fmtQTime(qTime)}</span>` : ''}
+              <span class="font-bold px-2 py-0.5 rounded text-[10px] ${isRight ? 'bg-emerald-100 text-emerald-800' : (isSkipped ? 'bg-slate-200 text-slate-700' : 'bg-rose-100 text-rose-800')}">
+                ${isRight ? `Correct (+${s.marksCorrect})` : (isSkipped ? 'Unattempted (0.00)' : `Incorrect (-${s.marksWrong})`)}
+              </span>
             </span>
           </div>
           <div class="font-medium text-slate-900 mb-1 leading-relaxed">${renderQuestionTextHtml(q.q_en)}</div>

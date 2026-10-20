@@ -200,6 +200,14 @@
     let pendingExamModePaperId = null; // set while the mode-picker modal is open; see openExamModePicker
     let timerSeconds = 0;
     let timerInterval = null;
+    // { qNum: seconds } -- active time spent with each question actually in view (tab focused) during
+    // a real, timed OMR attempt. See currentlyVisibleQNum/startTimer in js/10_omr_exam_engine.js.
+    // Untracked for Practice Mode, which is untimed and one-question-at-a-time already.
+    let questionTimeSpent = {};
+    // Guards evaluateOMRSubmission (js/10_omr_exam_engine.js) against a double-fire -- e.g. the
+    // countdown hitting zero at the same moment the student taps Submit, or a manual retry racing
+    // an in-flight one -- so a flaky connection never results in two attempts being inserted.
+    let submitInFlight = false;
 
 // -------- Global error handler --------
 // Catches uncaught JS errors and unhandled promise rejections so the app never
@@ -478,6 +486,7 @@ window.onload = async function() {
       userSelections: a.user_selections,
       questionsSnapshot: a.questions_snapshot,
       schemeSnapshot: a.scheme_snapshot,
+      questionTimes: a.question_times || {},
       mode: a.mode || 'standard'
     }));
     
