@@ -30,7 +30,7 @@
         const shell = document.getElementById('view-admin');
         if (!shell) return false; // shouldn't happen -- the empty shell ships in every index.html
         try {
-          const res = await fetch('admin-console.html?v=86');
+          const res = await fetch('admin-console.html?v=87');
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           shell.innerHTML = await res.text();
           adminConsoleLoaded = true;
@@ -273,18 +273,39 @@
         : 'No recorded visits in this month.';
 
       const max = Math.max(1, ...counts);
-      const W = Math.max(560, daysInMonth * 26), H = 190, pad = 24, bw = (W - pad * 2) / daysInMonth;
+      // Nice round step so the y-axis reads in friendly increments (1/2/5/10/20/50/100…) rather
+      // than an arbitrary fraction of the peak day's count.
+      const rawStep = max / 4;
+      const mag = Math.pow(10, Math.floor(Math.log10(rawStep || 1)));
+      const norm = rawStep / mag;
+      const step = Math.max(1, Math.round((norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag));
+      const topValue = step * 4;
+
+      const W = Math.max(560, daysInMonth * 26), H = 190;
+      const padLeft = 30, padRight = 10, padTop = 14, padBottom = 26;
+      const plotW = W - padLeft - padRight, plotH = H - padTop - padBottom;
+      const bw = plotW / daysInMonth;
+      const yFor = v => padTop + plotH - (plotH * v / topValue);
+
+      const gridlines = Array.from({ length: 5 }, (_, k) => {
+        const value = topValue - k * step;
+        const gy = padTop + (plotH / 4) * k;
+        return `<line x1="${padLeft}" x2="${W - padRight}" y1="${gy}" y2="${gy}" stroke="${k === 4 ? '#cbd5e1' : '#eef2f7'}" stroke-dasharray="${k === 4 ? 'none' : '2,2'}" />
+          <text x="${padLeft - 5}" y="${gy + 3}" text-anchor="end" font-size="9" fill="#94a3b8">${value}</text>`;
+      }).join('');
+
       chartBox.innerHTML = `
         <svg viewBox="0 0 ${W} ${H}" class="w-full h-auto" role="img" aria-label="Visitors per day for ${new Date(y, m - 1, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}">
+          ${gridlines}
           ${counts.map((v, i) => {
-            const h = Math.round((H - 50) * v / max);
-            const x = pad + i * bw + 2, y2 = H - 26 - h;
+            const barTop = yFor(v);
+            const h = Math.max(padTop + plotH - barTop, v ? 2 : 0);
+            const x = padLeft + i * bw + 2, y2 = padTop + plotH - h;
             const isFuture = isCurrentMonth && (i + 1) > lastDay;
             const showLabel = (i + 1) === 1 || (i + 1) === daysInMonth || (i + 1) % 5 === 0;
-            return `<rect x="${x}" y="${y2}" width="${bw - 4}" height="${Math.max(h, v ? 2 : 0)}" rx="2" fill="${isFuture ? '#e2e8f0' : (i + 1 === peakIdx + 1 && v ? '#f59e0b' : '#0f172a')}"><title>${y}-${String(m).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}: ${v} visit${v === 1 ? '' : 's'}</title></rect>
+            return `<rect x="${x}" y="${y2}" width="${bw - 4}" height="${h}" rx="2" fill="${isFuture ? '#e2e8f0' : (i + 1 === peakIdx + 1 && v ? '#f59e0b' : '#0f172a')}"><title>${y}-${String(m).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}: ${v} visit${v === 1 ? '' : 's'}</title></rect>
               ${showLabel ? `<text x="${x + (bw - 4) / 2}" y="${H - 10}" text-anchor="middle" font-size="9" fill="#64748b">${i + 1}</text>` : ''}`;
           }).join('')}
-          <line x1="${pad}" x2="${W - pad}" y1="${H - 26}" y2="${H - 26}" stroke="#cbd5e1" />
         </svg>`;
     }
 
