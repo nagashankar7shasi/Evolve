@@ -156,6 +156,7 @@
 
       userSelections = {};
       markedForReview = {};
+      questionTimeSpent = {};
       examEndsAt = Date.now() + activeTest.scheme.duration * 60 * 1000;
       openExamEngine();
     }
@@ -244,6 +245,7 @@
       if (!examInProgress || !activeTest || !currentUser) return;
       localStorage.setItem('kas_exam_session', JSON.stringify({
         email: normalizeEmail(currentUser.email), paperId: activeTest.id, selections: userSelections, markedForReview: markedForReview, endsAt: examEndsAt, lang: currentLang, mode: examMode,
+        questionTimes: questionTimeSpent,
         customPaper: activeTest.isCustom ? activeTest : null
       }));
     }
@@ -261,6 +263,7 @@
       activeTest = paper;
       userSelections = saved.selections || {};
       markedForReview = saved.markedForReview || {};
+      questionTimeSpent = saved.questionTimes || {};
       currentLang = saved.lang || 'en';
       examMode = saved.mode === 'difficult' ? 'difficult' : 'easy';
       examEndsAt = saved.endsAt;
@@ -445,6 +448,41 @@
       }
     }
     function setLanguage(l) { currentLang = l; renderPaper(); saveExamSession(); }
+
+    // Which question is most prominently in view inside the scrollable paper pane right now, or
+    // null if none are rendered. Powers the per-question time tracking below -- since this engine
+    // shows every question on one long scrolling page rather than one-at-a-time, "which question is
+    // the student looking at" has to be inferred from scroll position rather than read off a current
+    // step index.
+    function currentlyVisibleQNum() {
+      if (!activeTest || !Array.isArray(activeTest.questions)) return null;
+      const container = document.getElementById('paper-container');
+      if (!container) return null;
+      const containerRect = container.getBoundingClientRect();
+      // A reading student's eyes tend to sit in the upper third of the visible pane, not dead
+      // center -- this probe line tracks that better than the geometric middle.
+      const probeY = containerRect.top + containerRect.height * 0.35;
+      let best = null, bestDist = Infinity;
+      for (let i = 0; i < activeTest.questions.length; i++) {
+        const qNum = i + 1;
+        const el = document.getElementById(`q-card-${qNum}`);
+        if (!el) continue;
+        const r = el.getBoundingClientRect();
+        if (r.bottom < containerRect.top || r.top > containerRect.bottom) continue; // not visible at all
+        const dist = Math.abs(r.top - probeY);
+        if (dist < bestDist) { bestDist = dist; best = qNum; }
+      }
+      return best;
+    }
+
+    // "1m 45s" / "42s" -- used on the result/review screens' per-question time badges.
+    function fmtQTime(sec) {
+      sec = Math.round(sec || 0);
+      if (sec < 60) return `${sec}s`;
+      const m = Math.floor(sec / 60), s = sec % 60;
+      return s ? `${m}m ${s}s` : `${m}m`;
+    }
+
     // Counts down to a fixed end time, so background tabs and refreshes can't stretch the exam
     function startTimer() {
       clearInterval(timerInterval);
@@ -457,6 +495,12 @@
         const el = document.getElementById('exam-timer');
         el.innerText = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
         el.classList.toggle('text-rose-400', timerSeconds <= 300);
+        // Attribute this second to whichever question the student is actually looking at, as long
+        // as the tab has focus -- a backgrounded/blurred tab shouldn't count as "time spent reading."
+        if (document.hasFocus()) {
+          const visibleQ = currentlyVisibleQNum();
+          if (visibleQ) questionTimeSpent[visibleQ] = (questionTimeSpent[visibleQ] || 0) + 1;
+        }
         // 5-minute warning
         if (!warned5 && timerSeconds <= 300 && timerSeconds > 60) {
           warned5 = true;
@@ -496,11 +540,13 @@
     }
 
 async function evaluateOMRSubmission() {
-  if (!examInProgress || !activeTest) return; // guards against double submission
-  examInProgress = false;
+  if (!activeTest) return;
+  if (!examInProgress) return; // already submitted successfully and torn down -- nothing to do
+  if (submitInFlight) return; // a submission is already in flight (timer hit 0 while Submit was
+                               // also tapped, or a retry racing an earlier call) -- don't double-insert
+  submitInFlight = true;
   clearInterval(timerInterval);
-  clearExamSession();
-  
+
   const s = activeTest.scheme;
   let correct = 0, wrong = 0, unattempted = 0;
 
@@ -547,23 +593,50 @@ async function evaluateOMRSubmission() {
     // 'easy' or 'difficult' (see launchExamPaper/openExamModePicker) -- both are real, timed, scored
     // attempts like the 'standard' tag used to mean before this existed; only 'practice' is excluded
     // from peer-percentile comparisons (see getVisibleAttempts, js/11b_practice_mistakes_topic_builder.js).
-    mode: examMode
+    mode: examMode,
+    // Active seconds spent on each question while it was the one in view and the tab had focus --
+    // see currentlyVisibleQNum/startTimer. Powers the "time per question" breakdown on the result
+    // and review screens.
+    question_times: { ...questionTimeSpent }
   };
 
-  // Insert the record into the cloud database
-  const { data, error } = await supabaseClient
-    .from('attempts')
-    .insert([attemptRecord]);
+  // Insert with a few retries -- a flaky connection (patchy wifi, a mobile network drop right at
+  // submit time) shouldn't strand a finished attempt. The exam session is deliberately NOT cleared
+  // and examInProgress stays true until an insert actually succeeds, so a failure here leaves the
+  // student exactly where they were: answers intact, Submit button live again, safe to just tap it
+  // once more (or keep answering while connectivity returns) -- instead of the old behavior, where a
+  // failed insert still tore down the session, leaving the attempt unsubmittable and unrecoverable.
+  let insertError = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const { error } = await supabaseClient.from('attempts').insert([attemptRecord]);
+    if (!error) { insertError = null; break; }
+    // 23505 = unique-violation on the client-generated id: this means an EARLIER try in this same
+    // loop actually went through and only its response got lost in transit (ambiguous commit over a
+    // flaky connection) -- the record is already there, so treat it as success rather than failing
+    // a perfectly good submission.
+    if (error.code === '23505') { insertError = null; break; }
+    insertError = error;
+    if (attempt < 3) await new Promise(r => setTimeout(r, attempt * 1500));
+  }
 
   if (submitBtn) {
     submitBtn.innerText = originalBtnText;
     submitBtn.disabled = false;
   }
+  submitInFlight = false;
 
-  if (error) {
-    console.error("Supabase Insert Error:", fmtErr(error));
-    return alert("Failed to submit exam to the server. Please try again or contact the academy.");
+  if (insertError) {
+    console.error("Supabase Insert Error:", fmtErr(insertError));
+    // Time may genuinely be up (auto-submit path) -- only restart the countdown if there's still
+    // time left; otherwise leave it at 00:00:00 with Submit available to retry.
+    if (examEndsAt > Date.now()) startTimer();
+    alert("Couldn't reach the server to submit your exam (connection issue). Nothing has been lost — your answers are still saved here. Tap \"Submit OMR\" again once you're back online.");
+    return;
   }
+
+  // Only now is the attempt safely recorded -- safe to tear down the live session.
+  examInProgress = false;
+  clearExamSession();
 
   // Remap back to camelCase for the local UI to render instantly
   const localAttempt = {
@@ -584,6 +657,7 @@ async function evaluateOMRSubmission() {
     userSelections: attemptRecord.user_selections,
     questionsSnapshot: attemptRecord.questions_snapshot,
     schemeSnapshot: attemptRecord.scheme_snapshot,
+    questionTimes: attemptRecord.question_times,
     mode: attemptRecord.mode
   };
 
@@ -609,8 +683,11 @@ async function evaluateOMRSubmission() {
     item.innerHTML = `
       <div class="flex justify-between items-center mb-1">
         <span class="font-bold text-slate-800">Q${qNum}</span>
-        <span class="font-bold ${isRight ? 'text-emerald-600' : (choice === 'Skipped' ? 'text-slate-400' : 'text-rose-600')}">
-          ${isRight ? `+${s.marksCorrect.toFixed(2)}` : (choice === 'Skipped' ? '0.00' : `-${s.marksWrong.toFixed(2)}`)}
+        <span class="flex items-center gap-2">
+          ${questionTimeSpent[qNum] ? `<span class="text-[10px] text-slate-400 font-mono" title="Time spent viewing this question">⏱ ${fmtQTime(questionTimeSpent[qNum])}</span>` : ''}
+          <span class="font-bold ${isRight ? 'text-emerald-600' : (choice === 'Skipped' ? 'text-slate-400' : 'text-rose-600')}">
+            ${isRight ? `+${s.marksCorrect.toFixed(2)}` : (choice === 'Skipped' ? '0.00' : `-${s.marksWrong.toFixed(2)}`)}
+          </span>
         </span>
       </div>
       <div class="text-slate-700 mb-1.5">${renderQuestionTextHtml(q.q_en)}</div>
