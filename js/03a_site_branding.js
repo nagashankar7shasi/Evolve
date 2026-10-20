@@ -4,7 +4,11 @@
        key/value store as pricingMaster/authSettings/featureAccess above —
        no new table needed.
     ----------------------------------------------------- */
-    let siteBranding = { name: 'EVOLVE+', tagline: 'Transform Potential into Performance', logoImageDataUrl: '', pdfWatermarkImageDataUrl: '', socialLinks: {} };
+    let siteBranding = { name: 'EVOLVE+', tagline: 'Transform Potential into Performance', logoImageDataUrl: '', pdfWatermarkImageDataUrl: '', socialLinks: {}, socialLinkDescriptions: {} };
+    // Bot's own username (same source as the student/admin Telegram-connect flows), cached at boot
+    // so the floating "Chat on Telegram" button can open a real 1:1 chat with the bot instead of
+    // reusing the channel link meant for the footer icon -- see renderSocialLinks below.
+    let cachedTelegramBotUsername = '';
 
     // Real brand marks (exact path data from simple-icons, viewBox 0 0 24 24) instead of emoji --
     // emoji glyphs render differently (or not recognizably at all -- 👍 for Facebook, a generic
@@ -43,8 +47,12 @@
     }
 
     async function fetchCloudSiteBranding() {
-      const cloud = await fetchCloudAppSetting('site_branding');
+      const [cloud, telegramSettings] = await Promise.all([
+        fetchCloudAppSetting('site_branding'),
+        fetchCloudAppSetting('telegram_settings')
+      ]);
       if (cloud) siteBranding = { ...siteBranding, ...cloud };
+      cachedTelegramBotUsername = (telegramSettings && telegramSettings.botUsername) || '';
       applySiteBranding();
       hydrateBrandingAdmin();
     }
@@ -105,14 +113,15 @@
       box.innerHTML = active.map(p => `<a href="${escapeHtml(links[p.key])}" target="_blank" rel="noopener" aria-label="${escapeHtml(p.label)}" title="${escapeHtml(p.label)}" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition">${p.icon}</a>`).join('');
       box.classList.toggle('hidden', !active.length);
 
-      // Same Telegram link, promoted to a floating "Chat with us" button (see index.html) --
-      // a much more visible support channel than the small footer icon above, for anyone who'd
-      // rather message you directly than email. Hidden whenever no Telegram link is configured.
+      // A real 1:1 chat with the bot -- deliberately NOT the same link as the footer's Telegram
+      // icon above (that one is the channel, for following/joining, not chatting). The bot's
+      // username is the same one the student/admin Telegram-connect flows already use, so this
+      // needs no separate admin setup -- it just needs "Telegram connect setup" to have been run
+      // once (admin-console.html). Hidden whenever that hasn't happened yet.
       const fab = document.getElementById('telegram-chat-fab');
       if (fab) {
-        const tgLink = links.telegram;
-        if (tgLink) {
-          fab.href = tgLink;
+        if (cachedTelegramBotUsername) {
+          fab.href = `https://t.me/${cachedTelegramBotUsername}`;
           fab.innerHTML = `${SOCIAL_ICON_SVGS.telegram}<span class="hidden sm:inline">Chat on Telegram</span>`;
           fab.classList.remove('hidden');
           fab.classList.add('flex');
@@ -121,6 +130,40 @@
           fab.classList.remove('flex');
         }
       }
+
+      // Dashboard "Community" icon (see openSocialLinksModal) -- only worth showing once at least
+      // one platform is actually configured. Toggled the same remove/add-class way as the FAB
+      // above rather than a plain classList.toggle('hidden', ...) -- Tailwind's .hidden and
+      // .inline-flex both set `display`, with equal specificity, so whichever rule the build
+      // happens to emit last would otherwise silently win regardless of class order in markup.
+      const dashBtn = document.getElementById('dash-social-btn');
+      if (dashBtn) {
+        if (active.length) { dashBtn.classList.remove('hidden'); dashBtn.classList.add('inline-flex'); }
+        else { dashBtn.classList.add('hidden'); dashBtn.classList.remove('inline-flex'); }
+      }
+    }
+
+    // Opens the dashboard's "Community" modal: every configured platform, with the admin's own
+    // description of what a student will find there (e.g. "Daily current affairs + test alerts"),
+    // and a button that opens it in a new tab. Platforms with no link configured are left out
+    // entirely rather than shown greyed-out -- nothing for a student to do with those.
+    function openSocialLinksModal() {
+      const box = document.getElementById('social-links-modal-body');
+      if (!box) return;
+      const links = siteBranding.socialLinks || {};
+      const descriptions = siteBranding.socialLinkDescriptions || {};
+      const active = SOCIAL_PLATFORMS.filter(p => links[p.key]);
+      box.innerHTML = active.length ? active.map(p => `
+        <div class="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+          <span class="w-9 h-9 shrink-0 rounded-full bg-slate-900 text-white flex items-center justify-center">${p.icon}</span>
+          <div class="min-w-0 flex-1">
+            <div class="font-bold text-sm text-slate-900">${escapeHtml(p.label)}</div>
+            ${descriptions[p.key] ? `<p class="text-xs text-slate-500 mt-0.5">${escapeHtml(descriptions[p.key])}</p>` : ''}
+          </div>
+          <a href="${escapeHtml(links[p.key])}" target="_blank" rel="noopener" class="shrink-0 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-xs">Open</a>
+        </div>
+      `).join('') : '<p class="text-sm text-slate-400 text-center py-6">No social links configured yet.</p>';
+      openModal('social-links-modal');
     }
 
     // Fills the admin form fields from the current siteBranding state (called when the panel is
@@ -134,9 +177,12 @@
       renderLogoPreview();
       renderPdfWatermarkPreview();
       const links = siteBranding.socialLinks || {};
+      const descriptions = siteBranding.socialLinkDescriptions || {};
       SOCIAL_PLATFORMS.forEach(p => {
         const input = document.getElementById('branding-social-' + p.key);
         if (input) input.value = links[p.key] || '';
+        const descInput = document.getElementById('branding-social-desc-' + p.key);
+        if (descInput) descInput.value = descriptions[p.key] || '';
       });
       renderTelegramAdminConnectStatus();
     }
@@ -399,10 +445,14 @@
       siteBranding.name = (document.getElementById('branding-name').value || '').trim() || 'EVOLVE+';
       siteBranding.tagline = (document.getElementById('branding-tagline').value || '').trim();
       siteBranding.socialLinks = {};
+      siteBranding.socialLinkDescriptions = {};
       SOCIAL_PLATFORMS.forEach(p => {
         const input = document.getElementById('branding-social-' + p.key);
         const url = normalizeSocialUrl(input ? input.value : '');
         if (url) siteBranding.socialLinks[p.key] = url;
+        const descInput = document.getElementById('branding-social-desc-' + p.key);
+        const desc = (descInput ? descInput.value : '').trim();
+        if (desc) siteBranding.socialLinkDescriptions[p.key] = desc;
       });
       applySiteBranding();
       const ok = await saveCloudAppSetting('site_branding', siteBranding);
