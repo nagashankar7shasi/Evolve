@@ -638,6 +638,10 @@
               <span class="font-bold text-slate-500">Columns</span>
               <button type="button" onmousedown="event.preventDefault()" onclick="columnsAction('addCol')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">+ Column</button>
               <button type="button" onmousedown="event.preventDefault()" onclick="columnsAction('delCol')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">− Column</button>
+              <label class="flex items-center gap-1 px-2 py-1 bg-white border rounded cursor-pointer" title="Add a border around each column — off by default">
+                <input type="checkbox" id="cols-border-toggle" onmousedown="event.preventDefault()" onchange="columnsAction('toggleBorder')" class="rounded" />
+                <span>Border</span>
+              </label>
             </span>
             <span id="stats-tools" class="hidden items-center gap-1 ml-1 pl-2 border-l border-slate-300">
               <span class="font-bold text-slate-500">Key figures</span>
@@ -675,12 +679,13 @@
 
           <div class="flex justify-between items-center pt-2">
             <div class="flex items-center gap-2">
-              <button type="button" onclick="resetWordEditorToNew()" class="px-4 py-2 border border-slate-300 hover:bg-slate-50 font-bold rounded-lg text-slate-700">
+              <button type="button" onclick="clearWordEditorPage()" class="px-4 py-2 border border-slate-300 hover:bg-slate-50 font-bold rounded-lg text-slate-700">
                 Clear / Start New Blank Page
               </button>
               <button type="button" onclick="savePageAsTemplate()" title="Save this page's current content + icon/summary/layout as a reusable template for daily posts" class="px-4 py-2 border border-indigo-300 bg-indigo-50 hover:bg-indigo-100 font-bold rounded-lg text-indigo-700">
                 💾 Save as Template
               </button>
+              <span id="page-draft-status" class="text-[11px] text-emerald-600 font-bold whitespace-nowrap"></span>
             </div>
             <div class="flex items-center gap-2">
               <button type="button" onclick="downloadWordEditorPagePdf()" title="Export whatever is in the canvas right now (including unsaved changes) as a PDF -- for your own review, not shown to students" class="px-4 py-2 border border-slate-300 hover:bg-slate-50 font-bold rounded-lg text-slate-700">

@@ -30,7 +30,7 @@
         const shell = document.getElementById('view-admin');
         if (!shell) return false; // shouldn't happen -- the empty shell ships in every index.html
         try {
-          const res = await fetch('admin-console.html?v=92');
+          const res = await fetch('admin-console.html?v=95');
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           shell.innerHTML = await res.text();
           adminConsoleLoaded = true;
@@ -43,6 +43,7 @@
           if (typeof attachWordEditorCanvasKeydownHandler === 'function') attachWordEditorCanvasKeydownHandler();
           if (typeof wireWordCount === 'function') wireWordCount();
           if (typeof wireEditorImages === 'function') wireEditorImages();
+          if (typeof wirePageDraftAutosave === 'function') wirePageDraftAutosave();
           return true;
         } catch (err) {
           console.error('Failed to load admin-console.html', fmtErr(err));
@@ -79,6 +80,7 @@
       resetMenuForm();
       renderPricingMasterSettings();
       resetWordEditorToNew();
+      if (typeof offerToResumePageDraft === 'function') offerToResumePageDraft();
       if (typeof hydrateBrandingAdmin === 'function') hydrateBrandingAdmin();
       if (typeof renderCouponsAdmin === 'function') renderCouponsAdmin();
       if (typeof renderMainsQuestionsAdmin === 'function') renderMainsQuestionsAdmin();

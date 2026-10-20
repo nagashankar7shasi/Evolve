@@ -22,6 +22,11 @@
         if (colsTools) {
           colsTools.classList.toggle('hidden', !colsBlock);
           colsTools.classList.toggle('inline-flex', !!colsBlock);
+          // Reflects whichever columns block the caret is currently in -- moving between an
+          // unbordered and a bordered block keeps this checkbox truthful rather than "sticky" from
+          // the last block it was toggled on.
+          const borderCb = document.getElementById('cols-border-toggle');
+          if (borderCb) borderCb.checked = !!(colsBlock && colsBlock.classList.contains('kb-bordered'));
         }
         // Same floating-toolbar pattern, one per block type that supports adding/removing an item
         // after it's been inserted (stats/timeline/FAQ/grid previously had no way to do this short
@@ -169,7 +174,23 @@
     // buildResourceCardHtml/insertPageCard/insertTestPaperCard below.
     const BLOCK_MOVE_BTNS =
       '<button type="button" class="kb-block-move kb-block-move-up" contenteditable="false" title="Move this block up" onmousedown="event.preventDefault()" onclick="event.preventDefault(); event.stopPropagation(); moveBlockUp(this);">▲</button>' +
-      '<button type="button" class="kb-block-move kb-block-move-down" contenteditable="false" title="Move this block down" onmousedown="event.preventDefault()" onclick="event.preventDefault(); event.stopPropagation(); moveBlockDown(this);">▼</button>';
+      '<button type="button" class="kb-block-move kb-block-move-down" contenteditable="false" title="Move this block down" onmousedown="event.preventDefault()" onclick="event.preventDefault(); event.stopPropagation(); moveBlockDown(this);">▼</button>' +
+      '<button type="button" class="kb-block-move kb-block-duplicate" contenteditable="false" title="Duplicate this block" onmousedown="event.preventDefault()" onclick="event.preventDefault(); event.stopPropagation(); duplicateBlock(this);">⧉</button>';
+
+    // Deep-clones whichever block the button lives in and drops the copy immediately after the
+    // original -- same "closest reorderable ancestor" lookup moveBlockUp/moveBlockDown already use,
+    // so this works identically on every block type that carries BLOCK_MOVE_BTNS (table, columns,
+    // video, page card, resource card, section nav). Safe to clone verbatim: none of these wrapper
+    // elements carry a unique DOM `id` themselves (only data-* attributes, or in the table/columns
+    // case, plain editable text) -- the one place a real id lives is a heading target a section-nav
+    // link points at, which isn't inside the nav block being cloned, so there's nothing to collide.
+    function duplicateBlock(btn) {
+      const block = closestMovableBlock(btn);
+      if (!block) return;
+      const clone = block.cloneNode(true);
+      block.parentNode.insertBefore(clone, block.nextSibling);
+      clone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 
     // The closest ancestor that is itself one of the reorderable block types -- a move button can
     // be nested arbitrarily deep inside one of these (e.g. a resource card inside a column), so this
@@ -245,6 +266,11 @@
         (caretCol && cols.includes(caretCol) ? caretCol : cols[cols.length - 1]).remove();
         const remaining = [...block.children].filter(c => c.tagName === 'DIV');
         moveEditorCaretTo(remaining[remaining.length - 1]);
+      } else if (action === 'toggleBorder') {
+        // Purely a CSS class on the block itself (see .kb-bordered in css/main.css) -- off by
+        // default, same rendering path (.word-canvas) on both the editor canvas and the live public
+        // page, so toggling it here is exactly what a student will see, no extra publish-time step.
+        block.classList.toggle('kb-bordered');
       }
       applyColsWidth(block);
     }
@@ -1413,6 +1439,142 @@
       renderHomeSections();
     }
 
+    // ---- Draft autosave/recovery ----
+    // A real autosave (debounced on every edit), not a manual "Save draft" button like Test Paper
+    // Studio's -- a crashed tab, an accidental back-button, or the admin console simply not being
+    // reloaded for hours shouldn't cost a half-written page. Single slot (not per-page), same
+    // "one thing in progress at a time" simplicity Studio's draft uses, but unlike Studio this also
+    // covers in-progress EDITS of an already-published page, not just a brand-new one -- there's no
+    // real downside to covering both, and losing an in-progress edit to a crash is just as painful.
+    const PAGE_DRAFT_KEY = 'kas_page_editor_draft';
+    let pageDraftAutosaveTimer = null;
+
+    function pageSerializeDraft() {
+      return {
+        savedAt: new Date().toISOString(),
+        editingPageId: editingPageId || null,
+        title: document.getElementById('page-title-input').value,
+        slug: document.getElementById('page-slug-input').value,
+        slugManuallyEdited: !!slugManuallyEdited,
+        isGated: document.getElementById('page-gated-check').checked,
+        bundleOnly: document.getElementById('page-bundleonly-check').checked,
+        price: document.getElementById('page-price-input').value,
+        content: document.getElementById('word-editor-canvas').innerHTML,
+        parentId: document.getElementById('page-parent-input').value,
+        icon: document.getElementById('page-icon-input').value,
+        image: pendingPageImage,
+        summary: document.getElementById('page-summary-input').value,
+        childStyle: document.getElementById('page-childstyle-input').value,
+        order: document.getElementById('page-order-input').value,
+        showOnHome: document.getElementById('page-home-check').checked,
+        publishedAt: document.getElementById('page-published-at-input').value,
+        datePosition: document.getElementById('page-date-position-input').value,
+        allowPdfDownload: document.getElementById('page-allow-pdf-check').checked
+      };
+    }
+
+    function savePageDraftNow() {
+      const canvas = document.getElementById('word-editor-canvas');
+      if (!canvas) return;
+      const draft = pageSerializeDraft();
+      // Nothing worth recovering yet -- a blank title on a blank, still-seeded canvas is exactly
+      // the state resetWordEditorToNew() leaves things in, not an in-progress edit.
+      const canvasEmpty = !draft.content || draft.content === '<p><br></p>';
+      if (!draft.title.trim() && canvasEmpty) return;
+      try {
+        localStorage.setItem(PAGE_DRAFT_KEY, JSON.stringify(draft));
+        const status = document.getElementById('page-draft-status');
+        if (status) {
+          status.innerText = `✓ Autosaved ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`;
+          setTimeout(() => { if (status.innerText.startsWith('✓')) status.innerText = ''; }, 4000);
+        }
+      } catch (err) {
+        console.error('Page draft autosave failed (browser storage may be full):', fmtErr(err));
+      }
+    }
+
+    function schedulePageDraftAutosave() {
+      clearTimeout(pageDraftAutosaveTimer);
+      pageDraftAutosaveTimer = setTimeout(savePageDraftNow, 1500);
+    }
+
+    // Called once from ensureAdminConsoleLoaded() (js/03b_dev_console.js), same lazy-load-aware
+    // pattern as wireWordCount/wireEditorImages -- #word-editor-canvas and its <form> don't exist
+    // until admin-console.html is fetched in. A single pair of listeners on the form (not on every
+    // individual field) catches typing in text/number inputs and the contenteditable canvas via
+    // 'input', and checkbox/select changes via 'change', since both bubble up to it.
+    function wirePageDraftAutosave() {
+      const canvas = document.getElementById('word-editor-canvas');
+      const form = canvas && canvas.closest('form');
+      if (!form) return;
+      form.addEventListener('input', schedulePageDraftAutosave);
+      form.addEventListener('change', schedulePageDraftAutosave);
+    }
+
+    function pageLoadDraftIntoForm(draft) {
+      editingPageId = draft.editingPageId || null;
+      slugManuallyEdited = !!draft.slugManuallyEdited;
+      const picker = document.getElementById('load-existing-page-picker');
+      if (picker) picker.value = editingPageId || '';
+      document.getElementById('page-title-input').value = draft.title || '';
+      document.getElementById('page-slug-input').value = draft.slug || '';
+      document.getElementById('page-gated-check').checked = !!draft.isGated;
+      document.getElementById('page-bundleonly-check').checked = !!draft.bundleOnly;
+      document.getElementById('page-price-input').value = draft.price || '0';
+      document.getElementById('word-editor-canvas').innerHTML = draft.content || '<p><br></p>';
+      fillParentPicker(editingPageId, draft.parentId || null);
+      document.getElementById('page-icon-input').value = draft.icon || '📄';
+      setPageImage(draft.image || '');
+      document.getElementById('page-summary-input').value = draft.summary || '';
+      document.getElementById('page-childstyle-input').value = draft.childStyle || 'tiles';
+      document.getElementById('page-order-input').value = draft.order ?? 0;
+      document.getElementById('page-home-check').checked = !!draft.showOnHome;
+      document.getElementById('page-published-at-input').value = draft.publishedAt || '';
+      document.getElementById('page-date-position-input').value = draft.datePosition || 'above';
+      document.getElementById('page-allow-pdf-check').checked = draft.allowPdfDownload !== false;
+      setSlugFieldEditable(false);
+      updateSlugHint();
+      const status = document.getElementById('page-draft-status');
+      if (status) status.innerText = `↩ Resumed draft from ${new Date(draft.savedAt).toLocaleString('en-IN')}`;
+    }
+
+    function pageDiscardDraft() {
+      localStorage.removeItem(PAGE_DRAFT_KEY);
+    }
+
+    // Offers to resume a saved draft, once, right after the console's initial reset-to-blank (see
+    // paintAdminConsoleOnce() in js/03b_dev_console.js) -- the same "fresh start" moment Test Paper
+    // Studio's draft-resume check uses. A draft pointing at a since-deleted page (edited here,
+    // deleted elsewhere/another tab before this was resumed) can't be resumed meaningfully, so it's
+    // silently dropped rather than offering to "resume" into a page that no longer exists.
+    function offerToResumePageDraft() {
+      try {
+        const raw = localStorage.getItem(PAGE_DRAFT_KEY);
+        if (!raw) return;
+        const draft = JSON.parse(raw);
+        const editedPage = draft.editingPageId ? findPage(draft.editingPageId) : null;
+        if (draft.editingPageId && !editedPage) { pageDiscardDraft(); return; }
+        const when = new Date(draft.savedAt).toLocaleString('en-IN');
+        const what = editedPage ? `your in-progress edits to "${editedPage.title}"` : `your unsaved new page "${draft.title || '(untitled)'}"`;
+        if (confirm(`Resume ${what} (autosaved ${when})?\n\nClick Cancel to discard it and start fresh.`)) {
+          pageLoadDraftIntoForm(draft);
+        } else {
+          pageDiscardDraft();
+        }
+      } catch (err) {
+        console.error('Failed to read saved page draft:', fmtErr(err));
+      }
+    }
+
+    // Explicit "give up on what's in the box" action -- unlike every other resetWordEditorToNew()
+    // call site (loading a different existing page, adding a sub-page, a template reset, the
+    // currently-open page getting deleted elsewhere), clicking this button IS the admin saying they
+    // don't want to continue from the autosaved state, so this is the one place that also discards it.
+    function clearWordEditorPage() {
+      resetWordEditorToNew();
+      pageDiscardDraft();
+    }
+
     function resetWordEditorToNew() {
       if (!document.getElementById('load-existing-page-picker')) return; // admin console (view-admin) not loaded -- not an admin
       editingPageId = null;
@@ -1923,6 +2085,10 @@
   if (error) {
     return alert("Failed to save page to cloud: " + error.message);
   }
+  // Now safely stored for real -- the autosaved recovery copy would only ever re-offer stale,
+  // already-published content from here on, so it's cleared on every successful save (new page or
+  // edit), not just gated to 'new' mode the way Test Paper Studio's manual draft-save is.
+  pageDiscardDraft();
 
   if (existing) {
     Object.assign(existing, { title, slug, isGated, price, content: htmlContent, oldSlugs, ...meta });
