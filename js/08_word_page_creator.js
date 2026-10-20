@@ -1011,8 +1011,10 @@
       const liveYet = isTestLiveYet(p);
       const s = p.scheme || {};
       // bundle-only papers never show a standalone price here either -- same reasoning as the Test
-      // Papers grid card: there's no individual-buy path for a ₹ amount to actually mean.
-      const priceLabel = p.bundleOnly ? 'BUNDLE' : (p.price === 0 ? 'FREE' : `₹${p.price}`);
+      // Papers grid card: there's no individual-buy path for a ₹ amount to actually mean. Coming Soon
+      // is a separate, independent flag (see studioPublish's comment) and overrides all of this --
+      // "this paper is written but not ready for students yet", regardless of price/bundle/unlock.
+      const priceLabel = p.comingSoon ? '⏱ COMING SOON' : (p.bundleOnly ? 'BUNDLE' : (p.price === 0 ? 'FREE' : `₹${p.price}`));
       const metaBits = [
         p.questionCount ? `${p.questionCount} Qs` : '',
         s.duration ? `${s.duration} min` : ''
@@ -1025,16 +1027,20 @@
       // live) -- same isUnlocked-but-not-liveYet distinction as the Exam Hub's own card. The click
       // target is unchanged either way; launchExamPaper() (reached via openExamModePicker) is the one
       // place that actually enforces this, this label just has to describe it truthfully.
-      const ctaLabel = !isUnlocked ? lockedCtaLabel : (liveYet ? 'Start Test →' : `🗓 Live on ${new Date(p.scheduled_for).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`);
-      return `<a href="javascript:void(0)" onclick="openExamModePicker('${p.id}')" class="kb-paper-card">
+      const ctaLabel = p.comingSoon ? '⏱ Coming Soon' : (!isUnlocked ? lockedCtaLabel : (liveYet ? 'Start Test →' : `🗓 Live on ${new Date(p.scheduled_for).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`));
+      const hasRevisionNotes = !!(p.revisionNotes && (p.revisionNotes.text || p.revisionNotes.fileUrl));
+      // Coming Soon makes the tile non-interactive (nothing to open yet) -- href/onclick are simply
+      // dropped rather than wired to a no-op, same "truthfully describe the state" spirit as the CTA
+      // label above.
+      return `<a ${p.comingSoon ? '' : `href="javascript:void(0)" onclick="openExamModePicker('${p.id}')"`} class="kb-paper-card${p.comingSoon ? ' is-coming-soon' : ''}">
         <div class="kb-paper-card-head">
           ${s.examBadge ? `<span class="kb-paper-card-badge">${escapeHtml(s.examBadge)}</span>` : '<span></span>'}
-          <span class="kb-paper-card-price${p.bundleOnly ? ' is-bundle' : (p.price === 0 ? ' is-free' : '')}">${priceLabel}</span>
+          <span class="kb-paper-card-price${p.comingSoon ? ' is-coming-soon' : (p.bundleOnly ? ' is-bundle' : (p.price === 0 ? ' is-free' : ''))}">${priceLabel}</span>
         </div>
         <span class="kb-paper-card-title">📝 ${escapeHtml(p.title)}</span>
         ${metaBits ? `<span class="kb-paper-card-meta">${metaBits}</span>` : ''}
         <span class="kb-paper-card-cta">${ctaLabel}</span>
-      </a>`;
+      </a>${hasRevisionNotes ? `<button type="button" onclick="openRevisionNotes('${p.id}')" class="kb-paper-card-notes-btn">📄 Revision Notes</button>` : ''}`;
     }
 
     // ---- Resource card (image + text bundled with a PDF or page link) ----
@@ -1055,6 +1061,7 @@
       preview.src = '';
       preview.classList.add('hidden');
       resourceCardThumbDataUrl = '';
+      document.getElementById('res-card-coming-soon').checked = false;
 
       document.getElementById('resource-card-modal-title').innerText = editingResourceCardEl ? '📚 Edit Resource card' : '📚 Insert Resource card';
       document.getElementById('resource-card-modal-submit').innerText = editingResourceCardEl ? 'Save changes' : 'Insert card';
@@ -1073,6 +1080,7 @@
         document.getElementById('res-card-target-type').value = type;
         refreshResourceCardTarget();
         document.getElementById('res-card-target-id').value = editingResourceCardEl.dataset.targetId || '';
+        document.getElementById('res-card-coming-soon').checked = editingResourceCardEl.dataset.comingSoon === '1';
       } else {
         // Remember where the cursor was so a brand-new card gets inserted back at the right spot.
         placeCaretInEditor();
@@ -1148,15 +1156,20 @@
     // was pulled out, the wizard had its own second copy of this markup that silently drifted
     // out of sync with this one: it kept the old "Open PDF →" pill label and never got a
     // delete button when this card type was redesigned.
-    function buildResourceCardHtml({ type, targetId, title, desc, thumbHtml }) {
-      const ctaLabel = type === 'pdf' ? 'Download' : (type === 'page' ? 'Open page' : '');
+    function buildResourceCardHtml({ type, targetId, title, desc, thumbHtml, comingSoon }) {
+      // Coming Soon is independent of "Links to" -- see the admin's refinement in the resource-card
+      // modal: a "page" target stays clickable even when marked Coming Soon (it's the teaser-page
+      // use case -- linking to a page describing what's coming), while "pdf"/"none" targets just
+      // show the badge with no CTA at all, since there's nothing to open yet.
+      const ctaLabel = (comingSoon && type !== 'page') ? '' : (type === 'pdf' ? 'Download' : (type === 'page' ? 'Open page' : ''));
       const ctaClass = type === 'pdf' ? 'pdf' : (type === 'page' ? 'page' : '');
       const ctaHtml = (type === 'none' || !ctaLabel) ? '' : `<span class="kb-resource-cta ${ctaClass}">${ctaLabel}</span>`;
+      const badgeHtml = comingSoon ? `<span class="kb-resource-badge">⏱ Coming Soon</span>` : '';
       const editorLabel = type === 'pdf'
         ? 'Resource → PDF'
         : (type === 'page' ? 'Resource → Page' : 'Resource card');
       return (
-        `<div class="kb-resource-card" contenteditable="false" data-target-type="${type}" data-target-id="${escapeHtml(targetId || '')}" data-editor-label="${editorLabel}">` +
+        `<div class="kb-resource-card${comingSoon ? ' is-coming-soon' : ''}" contenteditable="false" data-target-type="${type}" data-target-id="${escapeHtml(targetId || '')}" data-coming-soon="${comingSoon ? '1' : '0'}" data-editor-label="${editorLabel}">` +
           `<button type="button" class="kb-block-delete kb-block-delete-edit" title="Edit this resource card" onclick="event.preventDefault(); event.stopPropagation(); openResourceCardModal(this.closest('.kb-resource-card'));">✎</button>` +
           `<button type="button" class="kb-block-delete" title="Delete this resource card" onclick="event.preventDefault(); event.stopPropagation(); if (confirm('Delete this resource card?')) this.closest('.kb-resource-card').remove();">✕</button>` +
           BLOCK_MOVE_BTNS +
@@ -1164,6 +1177,7 @@
           `<div class="kb-resource-body">` +
             `<h4 class="kb-resource-title">${escapeHtml(title)}</h4>` +
             (desc ? `<p class="kb-resource-desc">${escapeHtml(desc)}</p>` : '') +
+            badgeHtml +
             ctaHtml +
           `</div>` +
         `</div><p><br></p>`
@@ -1175,6 +1189,7 @@
       const desc  = document.getElementById('res-card-desc').value.trim();
       const type  = document.getElementById('res-card-target-type').value;
       const targetId = document.getElementById('res-card-target-id').value;
+      const comingSoon = document.getElementById('res-card-coming-soon').checked;
 
       if (!title) return alert('Give the card a title.');
       if (type !== 'none' && !targetId) return alert('Pick something to link to, or switch "Links to" to "Nothing".');
@@ -1183,7 +1198,7 @@
         ? `<div class="kb-resource-thumb"><img src="${escapeHtml(resourceCardThumbDataUrl)}" alt="" /></div>`
         : `<div class="kb-resource-thumb" aria-hidden="true">${type === 'pdf' ? '📕' : (type === 'page' ? '📄' : '📚')}</div>`;
 
-      const card = buildResourceCardHtml({ type, targetId, title, desc, thumbHtml });
+      const card = buildResourceCardHtml({ type, targetId, title, desc, thumbHtml, comingSoon });
 
       closeModal('resource-card-modal');
 
@@ -2298,6 +2313,10 @@
         const type = card.dataset.targetType;
         const id   = card.dataset.targetId;
         if (!type || type === 'none' || !id) return;
+        // Coming Soon suppresses the click for pdf targets (nothing to open yet) but NOT for page
+        // targets -- a page link is the deliberate teaser-page exception (buildResourceCardHtml
+        // has the same branch for which CTA label to show).
+        if (card.dataset.comingSoon === '1' && type === 'pdf') return;
 
         if (type === 'pdf') {
           // Skip if the PDF was deleted from the vault

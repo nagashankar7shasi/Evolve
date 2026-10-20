@@ -656,7 +656,7 @@ async function fetchCloudVisitStats() {
     // toggle), which hides a paper from the Test Papers browse grid/search while leaving it fully
     // purchasable via a direct link or a page's Test paper card.
     supabaseClient.from('tests_catalog_public')
-      .select('id, category, extra_categories, also_list_categories, active, delisted, bundle_only, title, price, scheme, scheduled_for, question_count, order_num'),
+      .select('id, category, extra_categories, also_list_categories, active, delisted, bundle_only, title, price, scheme, scheduled_for, question_count, order_num, coming_soon, revision_notes'),
     supabaseClient.from('custom_pages').select('*'),
     supabaseClient.from('bundles').select('*'),
     supabaseClient.from('nav_menu').select('*').order('order_num'),
@@ -690,10 +690,19 @@ async function fetchCloudVisitStats() {
         try { alsoListCategories = JSON.parse(alsoListCategories); } catch (_) { alsoListCategories = []; }
       }
       if (!Array.isArray(alsoListCategories)) alsoListCategories = [];
+      // revision_notes is small (just typed text + an uploaded file's URL/name, never question
+      // content) so it's cheap to ship in this bulk metadata fetch, same as question_count --
+      // unlike `questions` below, cards need to know up front whether to show the "📄 Revision
+      // Notes" button at all, not just once a student opens the paper.
+      let revisionNotes = t.revision_notes;
+      if (typeof revisionNotes === 'string') {
+        try { revisionNotes = JSON.parse(revisionNotes); } catch (_) { revisionNotes = null; }
+      }
+      if (!revisionNotes || typeof revisionNotes !== 'object') revisionNotes = null;
       // `questions` is intentionally left unset here — [] would look like "loaded, zero questions"
       // and silently mask a paper failing to load; leaving it undefined makes every loader below
       // treat this paper as "content not fetched yet" until ensurePaperQuestionsLoaded runs.
-      return { id: t.id, category: t.category, extraCategories, alsoListCategories, active: t.active !== false, delisted: !!t.delisted, bundleOnly: !!t.bundle_only, title: t.title, price: t.price, scheme, questionCount: +t.question_count || 0, scheduled_for: t.scheduled_for || null, order: Number.isFinite(+t.order_num) ? +t.order_num : 0 };
+      return { id: t.id, category: t.category, extraCategories, alsoListCategories, active: t.active !== false, delisted: !!t.delisted, bundleOnly: !!t.bundle_only, comingSoon: !!t.coming_soon, revisionNotes, title: t.title, price: t.price, scheme, questionCount: +t.question_count || 0, scheduled_for: t.scheduled_for || null, order: Number.isFinite(+t.order_num) ? +t.order_num : 0 };
     });
   }
 

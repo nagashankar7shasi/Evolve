@@ -411,6 +411,16 @@
     .word-canvas .kb-resource-cta.pdf:hover   { background: #b91c1c; }
     .word-canvas .kb-resource-cta.page { background: #2563eb; }
     .word-canvas .kb-resource-cta.page:hover  { background: #1d4ed8; }
+    /* Coming Soon: independent of "Links to" (data-target-type) -- see buildResourceCardHtml's
+       comment. Muted card + a small badge instead of (or alongside, for a "page" target) the CTA. */
+    .word-canvas .kb-resource-card.is-coming-soon { background: #f8fafc; }
+    .word-canvas .kb-resource-card.is-coming-soon .kb-resource-thumb { filter: grayscale(60%) opacity(.75); }
+    .word-canvas .kb-resource-card.is-coming-soon:hover { border-color: #e2e8f0; box-shadow: 0 1px 3px rgba(15,23,42,.06); transform: none; }
+    .word-canvas .kb-resource-badge {
+      display: inline-block; align-self: flex-start; font-size: 11px; font-weight: 800;
+      color: #64748b; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 99px;
+      padding: 2px 10px; margin-bottom: 0.5rem;
+    }
 
     /* editor-only guides for resource cards. The card's own public-render rule
        (.word-canvas .kb-resource-card, above) sets overflow:hidden so the thumbnail's corners
@@ -445,6 +455,23 @@
     .word-canvas .kb-paper-card-meta { font-size: 11px; font-family: monospace; color: #64748b; }
     .word-canvas .kb-paper-card-cta { margin-top: 10px; align-self: flex-start; font-size: 11px; font-weight: 800; color: #4338ca; }
     .word-canvas .kb-paper-card:hover .kb-paper-card-cta { text-decoration: underline; }
+    /* Coming Soon: muted + non-interactive (testPaperCardHtml drops the href/onclick entirely for
+       this state, so there's no hover affordance to suppress here beyond the color/cursor). */
+    .word-canvas .kb-paper-card.is-coming-soon { cursor: default; background: #f8fafc; }
+    .word-canvas .kb-paper-card.is-coming-soon:hover { border-color: #e2e8f0; box-shadow: 0 1px 3px rgba(15,23,42,.06); transform: none; }
+    .word-canvas .kb-paper-card-price.is-coming-soon { color: #94a3b8; }
+    .word-canvas .kb-paper-card.is-coming-soon .kb-paper-card-cta { color: #94a3b8; }
+    .word-canvas .kb-paper-card.is-coming-soon:hover .kb-paper-card-cta { text-decoration: none; }
+    /* Revision notes button: sits just below the (possibly Coming Soon) tile, same family but its
+       own small pill rather than part of the card link, since the two need independent click
+       targets (see testPaperCardHtml -- it's a sibling, not nested inside the <a>). */
+    .word-canvas .kb-paper-card-notes-btn {
+      display: block; width: 100%; margin-top: -0.5rem; margin-bottom: 0.75rem;
+      font-size: 11px; font-weight: 800; text-align: center; cursor: pointer;
+      color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;
+      padding: 6px 10px; transition: background-color .15s;
+    }
+    .word-canvas .kb-paper-card-notes-btn:hover { background: #dbeafe; }
 
     /* ---------- Home page: ticker, stats, section styling ---------- */
     @keyframes ticker-scroll { from { transform: translateX(100%); } to { transform: translateX(-100%); } }

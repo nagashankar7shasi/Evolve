@@ -52,7 +52,7 @@
        load; this is the same utility classes, generated once at commit time instead. Rebuild with
        `npm run build-css` (see tailwind.config.js) whenever a new utility class is used anywhere
        in index.html or js/*.js that isn't already covered by the existing build. -->
-  <link rel="stylesheet" href="css/tailwind.css?v=92">
+  <link rel="stylesheet" href="css/tailwind.css?v=93">
   <!-- PapaParse for CSV parsing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <!-- pdf-lib: stamps a watermark footer onto PDFs we host, at download/open time -->
@@ -60,7 +60,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
   <!-- Add Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="css/main.css?v=92">
+  <link rel="stylesheet" href="css/main.css?v=93">
 
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col select-none">
@@ -889,6 +889,17 @@
     </div>
   </div>
 
+  <!-- ================= REVISION NOTES MODAL (per-paper, optional) ================= -->
+  <div id="revision-notes-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" onclick="if(event.target===this) closeModal('revision-notes-modal')">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl max-h-[85vh] flex flex-col">
+      <div class="flex justify-between items-center border-b pb-3 mb-3 shrink-0">
+        <h3 id="revision-notes-modal-title" class="text-lg font-black text-slate-900">📄 Revision Notes</h3>
+        <button onclick="closeModal('revision-notes-modal')" class="text-slate-400 hover:text-slate-700 text-2xl font-bold leading-none" aria-label="Close">&times;</button>
+      </div>
+      <div id="revision-notes-modal-body" class="flex-1 overflow-y-auto space-y-3 text-sm text-slate-700"></div>
+    </div>
+  </div>
+
   <!-- ================= DYNAMIC CONTEXTUAL CHECKOUT MODAL ================= -->
   <div id="checkout-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative max-h-[95vh] overflow-y-auto">
@@ -1420,6 +1431,16 @@
             <span class="font-bold text-slate-700">Delist</span>
           </label>
         </div>
+        <div class="pt-1 flex items-center justify-between gap-2">
+          <div>
+            <b class="text-slate-500 uppercase tracking-wider text-[10px] block">Not ready yet</b>
+            <p class="text-[10px] text-slate-500 mt-0.5">Shows a "⏱ Coming Soon" badge instead of the price/unlock button on browse cards, for a paper that's written but not ready for students yet. Independent of Active/Delist/Bundle-only above.</p>
+          </div>
+          <label class="flex items-center gap-1.5 cursor-pointer shrink-0">
+            <input type="checkbox" id="studio-coming-soon" class="rounded" />
+            <span class="font-bold text-slate-700">Coming Soon</span>
+          </label>
+        </div>
         <div class="border-t pt-3">
           <b class="text-slate-500 uppercase tracking-wider text-[10px] block mb-1.5">Marking scheme</b>
           <div class="grid grid-cols-2 gap-2">
@@ -1449,6 +1470,18 @@
             <input type="datetime-local" id="studio-scheduled-for" class="w-full mt-0.5 px-2 py-1 border rounded font-mono text-[11px]" />
           </label>
           <p class="text-[10px] text-slate-500 mt-1">If set, students can't open or start this paper until that date/time — even if they already own it, they'll see "🗓 Live on &lt;date&gt;" instead of the Start button. It also shows as "Live at &lt;date&gt;" on the home page. You (admin) can still open it early to preview/QA it. Leave blank for an on-demand paper, available any time.</p>
+        </div>
+
+        <div class="border-t pt-3">
+          <b class="text-slate-500 uppercase tracking-wider text-[10px] block mb-1.5">Revision notes (optional)</b>
+          <p class="text-[10px] text-slate-500 mb-1.5">Shown to students via a "📄 Revision Notes" button on this paper's card, reachable without owning the paper. Leave both empty to not show any button at all.</p>
+          <textarea id="studio-revision-notes-text" rows="4" placeholder="Key points, formulas, or a quick summary — one per line works well." class="w-full px-2 py-1.5 border rounded-lg text-xs font-mono"></textarea>
+          <div class="mt-2 flex items-center gap-2 flex-wrap">
+            <input type="file" id="studio-revision-notes-file" accept=".pdf,image/*" class="hidden" onchange="studioUploadRevisionNotesFile(this)" />
+            <button type="button" onclick="document.getElementById('studio-revision-notes-file').click()" class="text-[11px] font-bold px-2.5 py-1.5 border rounded-lg hover:bg-slate-50">📎 Attach PDF/image</button>
+            <a id="studio-revision-notes-file-link" href="#" target="_blank" rel="noopener" class="text-[11px] text-blue-600 underline hidden"></a>
+            <button type="button" id="studio-revision-notes-file-remove" onclick="studioRemoveRevisionNotesFile()" class="text-[11px] text-rose-600 font-bold hover:underline hidden">Remove</button>
+          </div>
         </div>
 
         <div class="border-t pt-3">
@@ -2014,6 +2047,16 @@ B. Article 360 | 2. Financial Emergency</pre>
         <select id="res-card-target-id" class="w-full px-2.5 py-1.5 border rounded-lg bg-white outline-none"></select>
       </div>
 
+      <div class="flex items-center justify-between gap-2 pt-1 border-t">
+        <div class="pt-2">
+          <label class="block font-bold text-slate-700">Coming Soon</label>
+          <p class="text-[11px] text-slate-500 mt-0.5">Mutes the card with a "⏱ Coming Soon" badge. A "page" link stays clickable (handy for teasing what's coming); a PDF/no-link card just shows the badge.</p>
+        </div>
+        <label class="flex items-center gap-1.5 cursor-pointer shrink-0 pt-2">
+          <input type="checkbox" id="res-card-coming-soon" class="rounded" />
+        </label>
+      </div>
+
       <div class="flex justify-end gap-2 pt-2">
         <button onclick="closeModal('resource-card-modal')" class="px-4 py-2 border border-slate-300 hover:bg-slate-50 font-bold rounded-lg">Cancel</button>
         <button id="resource-card-modal-submit" onclick="insertResourceCard()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg">Insert card</button>
@@ -2120,40 +2163,40 @@ B. Article 360 | 2. Financial Emergency</pre>
   </footer>
 
   <!-- ================= JAVASCRIPT ARCHITECTURE ================= -->
-  <script src="js/00_supabase_init.js?v=92" defer></script>
-  <script src="js/01_exam_category_master.js?v=92" defer></script>
-  <script src="js/02_pricing_master_storage.js?v=92" defer></script>
-  <script src="js/02a_bundles.js?v=92" defer></script>
-  <script src="js/03_pricing_checkout.js?v=92" defer></script>
-  <script src="js/03a_site_branding.js?v=92" defer></script>
-  <script src="js/03b_dev_console.js?v=92" defer></script>
-  <script src="js/03c_bundles_admin_editor.js?v=92" defer></script>
-  <script src="js/03d_payment_claims.js?v=92" defer></script>
-  <script src="js/03e_feedback.js?v=92" defer></script>
-  <script src="js/03f_coupons.js?v=92" defer></script>
-  <script src="js/04_access_permission_checkers.js?v=92" defer></script>
-  <script src="js/05_student_entitlements_desk.js?v=92" defer></script>
-  <script src="js/06_exam_pages_test_ingestion.js?v=92" defer></script>
-  <script src="js/06a_test_paper_studio.js?v=92" defer></script>
-  <script src="js/06b_mains_studio.js?v=92" defer></script>
-  <script src="js/06c_mains_practice.js?v=92" defer></script>
-  <script src="js/06d_mains_test_studio.js?v=92" defer></script>
-  <script src="js/07_pdf_vault.js?v=92" defer></script>
-  <script src="js/07a_pdf_publishing_wizard.js?v=92" defer></script>
-  <script src="js/08_word_page_creator.js?v=92" defer></script>
-  <script src="js/09_navigation_granular_controls.js?v=92" defer></script>
-  <script src="js/09a_site_search.js?v=92" defer></script>
-  <script src="js/10_omr_exam_engine.js?v=92" defer></script>
-  <script src="js/11_dashboard_review_modal.js?v=92" defer></script>
-  <script src="js/11a_study_planners.js?v=92" defer></script>
-  <script src="js/11c_dashboard_access_layers.js?v=92" defer></script>
-  <script src="js/11d_study_planner_admin_csv.js?v=92" defer></script>
-  <script src="js/11b_practice_mistakes_topic_builder.js?v=92" defer></script>
-  <script src="js/12_authentication_export.js?v=92" defer></script>
-  <script src="js/12a_email.js?v=92" defer></script>
-  <script src="js/12b_home_page_configuration.js?v=92" defer></script>
-  <script src="js/13_announcements.js?v=92" defer></script>
-  <script src="js/14_student_directory_admin.js?v=92" defer></script>
-  <script src="js/15_backup_export_restore.js?v=92" defer></script>
+  <script src="js/00_supabase_init.js?v=93" defer></script>
+  <script src="js/01_exam_category_master.js?v=93" defer></script>
+  <script src="js/02_pricing_master_storage.js?v=93" defer></script>
+  <script src="js/02a_bundles.js?v=93" defer></script>
+  <script src="js/03_pricing_checkout.js?v=93" defer></script>
+  <script src="js/03a_site_branding.js?v=93" defer></script>
+  <script src="js/03b_dev_console.js?v=93" defer></script>
+  <script src="js/03c_bundles_admin_editor.js?v=93" defer></script>
+  <script src="js/03d_payment_claims.js?v=93" defer></script>
+  <script src="js/03e_feedback.js?v=93" defer></script>
+  <script src="js/03f_coupons.js?v=93" defer></script>
+  <script src="js/04_access_permission_checkers.js?v=93" defer></script>
+  <script src="js/05_student_entitlements_desk.js?v=93" defer></script>
+  <script src="js/06_exam_pages_test_ingestion.js?v=93" defer></script>
+  <script src="js/06a_test_paper_studio.js?v=93" defer></script>
+  <script src="js/06b_mains_studio.js?v=93" defer></script>
+  <script src="js/06c_mains_practice.js?v=93" defer></script>
+  <script src="js/06d_mains_test_studio.js?v=93" defer></script>
+  <script src="js/07_pdf_vault.js?v=93" defer></script>
+  <script src="js/07a_pdf_publishing_wizard.js?v=93" defer></script>
+  <script src="js/08_word_page_creator.js?v=93" defer></script>
+  <script src="js/09_navigation_granular_controls.js?v=93" defer></script>
+  <script src="js/09a_site_search.js?v=93" defer></script>
+  <script src="js/10_omr_exam_engine.js?v=93" defer></script>
+  <script src="js/11_dashboard_review_modal.js?v=93" defer></script>
+  <script src="js/11a_study_planners.js?v=93" defer></script>
+  <script src="js/11c_dashboard_access_layers.js?v=93" defer></script>
+  <script src="js/11d_study_planner_admin_csv.js?v=93" defer></script>
+  <script src="js/11b_practice_mistakes_topic_builder.js?v=93" defer></script>
+  <script src="js/12_authentication_export.js?v=93" defer></script>
+  <script src="js/12a_email.js?v=93" defer></script>
+  <script src="js/12b_home_page_configuration.js?v=93" defer></script>
+  <script src="js/13_announcements.js?v=93" defer></script>
+  <script src="js/14_student_directory_admin.js?v=93" defer></script>
+  <script src="js/15_backup_export_restore.js?v=93" defer></script>
 </body>
 </html>
