@@ -187,6 +187,7 @@
       renderTelegramAdminConnectStatus();
       const feedToggle = document.getElementById('social-feed-enabled-toggle');
       if (feedToggle) feedToggle.checked = socialFeedEnabled;
+      renderQuizAutoAdmin();
     }
 
     // ---- Admin's own Telegram connection (task: ping the admin on every new payment claim) ----
@@ -529,6 +530,85 @@
       } catch (err) {
         console.error('renderSocialFeed failed:', fmtErr(err));
         box.innerHTML = '<p class="text-sm text-rose-500 text-center py-10">Could not load updates. Try again later.</p>';
+      }
+    }
+
+    /* ----------------------------------------------------
+       TELEGRAM QUIZ AUTOMATION -- scheduled posting of native Telegram quiz polls (sendPoll,
+       type="quiz") to the channel, pulled from the live question bank. The actual posting (and the
+       schedule itself) happens entirely server-side -- a pg_cron job calls the post-telegram-quiz
+       Edge Function on an hourly tick, which self-throttles against this app_setting's
+       frequencyHours/lastRunAt (see sql/add_telegram_quiz_automation.sql) -- so this keeps running
+       even with the console closed and no Claude session active. This panel only edits the setting
+       the server-side job reads, plus offers a manual "post now" button for testing.
+    ----------------------------------------------------- */
+    let quizAutoSettings = { enabled: false, questionsPerRun: 1, category: 'any', frequencyHours: 24 };
+
+    async function fetchCloudQuizAutoSettings() {
+      const cloud = await fetchCloudAppSetting('telegram_quiz_settings');
+      if (cloud) quizAutoSettings = { ...quizAutoSettings, ...cloud };
+      renderQuizAutoAdmin();
+    }
+
+    // Fills the admin panel's inputs from the cached settings. Separate from hydrateBrandingAdmin()
+    // since this settings fetch happens on its own schedule (boot Promise.all) rather than only when
+    // the branding panel opens, same reasoning as fetchCloudSocialFeedSettings above.
+    function renderQuizAutoAdmin() {
+      const toggle = document.getElementById('quiz-auto-enabled-toggle');
+      const countInput = document.getElementById('quiz-auto-count');
+      const freqSelect = document.getElementById('quiz-auto-frequency');
+      const catSelect = document.getElementById('quiz-auto-category');
+      if (!toggle) return; // panel not in the DOM yet (admin console not open) -- fine, nothing to hydrate
+      toggle.checked = !!quizAutoSettings.enabled;
+      countInput.value = quizAutoSettings.questionsPerRun || 1;
+      freqSelect.value = String(quizAutoSettings.frequencyHours || 24);
+      if (!catSelect.options.length) {
+        catSelect.innerHTML = '<option value="any">Any category</option>' +
+          Object.keys(EXAM_CATEGORIES).map(c => `<option value="${c}">${escapeHtml(EXAM_CATEGORIES[c].name || c)}</option>`).join('');
+      }
+      catSelect.value = quizAutoSettings.category || 'any';
+    }
+
+    async function saveQuizAutomationSettings() {
+      const statusEl = document.getElementById('quiz-auto-status');
+      quizAutoSettings = {
+        ...quizAutoSettings,
+        enabled: document.getElementById('quiz-auto-enabled-toggle').checked,
+        questionsPerRun: Math.max(1, Math.min(10, parseInt(document.getElementById('quiz-auto-count').value, 10) || 1)),
+        frequencyHours: parseInt(document.getElementById('quiz-auto-frequency').value, 10) || 24,
+        category: document.getElementById('quiz-auto-category').value || 'any',
+      };
+      const ok = await saveCloudAppSetting('telegram_quiz_settings', quizAutoSettings);
+      if (statusEl) {
+        statusEl.textContent = ok ? '✓ saved — the scheduled job will pick this up within the hour' : "couldn't save";
+        statusEl.className = ok ? 'text-[11px] font-bold text-emerald-600' : 'text-[11px] font-bold text-rose-600';
+        setTimeout(() => { statusEl.textContent = ''; }, 4000);
+      }
+    }
+
+    // Manual trigger ("Post a quiz now") -- calls the same Edge Function the scheduled job calls,
+    // but via a normal admin-authenticated client request instead of the x-cron-secret header, and
+    // ignoring the frequency throttle (that's the point of a manual button: post immediately to
+    // test the end-to-end flow without waiting for the next scheduled run).
+    async function postTelegramQuizNow() {
+      const statusEl = document.getElementById('quiz-auto-status');
+      if (!isAdmin()) return alert('Admin only.');
+      if (statusEl) { statusEl.textContent = 'Posting…'; statusEl.className = 'text-[11px] font-bold text-slate-500'; }
+      try {
+        const { data, error } = await supabaseClient.functions.invoke('post-telegram-quiz', { body: {} });
+        if (error) throw error;
+        if (data && data.error) throw new Error(data.error);
+        if (data && data.skipped) throw new Error(data.skipped === 'no eligible questions in the question bank' ? 'No eligible questions found for that category — check the question pool.' : data.skipped);
+        const posted = data && typeof data.posted === 'number' ? data.posted : 0;
+        if (statusEl) {
+          statusEl.textContent = posted > 0 ? `✓ Posted ${posted} quiz poll${posted === 1 ? '' : 's'} to Telegram` : '⚠ Nothing posted — see console for details';
+          statusEl.className = posted > 0 ? 'text-[11px] font-bold text-emerald-600' : 'text-[11px] font-bold text-rose-600';
+        }
+        if (posted < (data?.results?.length || 0)) console.warn('post-telegram-quiz: some polls failed to send:', data.results);
+      } catch (err) {
+        console.error('postTelegramQuizNow failed:', fmtErr(err));
+        if (statusEl) { statusEl.textContent = '⚠ Failed — see console for details'; statusEl.className = 'text-[11px] font-bold text-rose-600'; }
+        alert(`Couldn't post the quiz: ${fmtErr(err)}\n\nCheck that TELEGRAM_BOT_TOKEN is set as a Supabase secret and the bot is still an admin of the channel.`);
       }
     }
 
