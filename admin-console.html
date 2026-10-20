@@ -31,7 +31,24 @@
 
       <!-- PANEL: OVERVIEW -->
       <div data-panel="overview" class="space-y-6">
+        <div class="flex items-center justify-between gap-3 text-[11px] text-slate-500">
+          <span id="ov-last-updated">Loading…</span>
+          <button type="button" onclick="refreshOverviewData()" id="ov-refresh-btn" class="px-2.5 py-1 border rounded-lg bg-white font-bold hover:bg-slate-50">⟳ Refresh</button>
+        </div>
         <div id="ov-cards" class="grid grid-cols-2 xl:grid-cols-4 gap-4"></div>
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+          <div class="flex flex-wrap items-end justify-between gap-3 border-b pb-3">
+            <div>
+              <h3 class="font-bold text-base text-slate-900">👣 Daily visitors</h3>
+              <p class="text-xs text-slate-500 mt-0.5">One count per browser per day (not full analytics). Each day's count resets at 12:00 AM UTC — 5:30 AM IST — not local midnight, so "today" can look low right after midnight IST.</p>
+            </div>
+            <label class="text-xs">Month
+              <select id="ov-visitors-month" onchange="renderVisitorsChart()" class="block mt-1 px-2 py-1.5 border rounded-lg bg-white outline-none"></select>
+            </label>
+          </div>
+          <div id="ov-visitors-summary" class="text-xs text-slate-600"></div>
+          <div id="ov-visitors-chart" class="overflow-x-auto"></div>
+        </div>
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <h3 class="font-bold text-sm text-slate-900 mb-3">Latest payments</h3>
