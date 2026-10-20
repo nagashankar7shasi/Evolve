@@ -296,10 +296,17 @@
     #word-editor-canvas .kb-cols .kb-block-move-down,
     #word-editor-canvas .kb-cols-3 .kb-block-move-down,
     #word-editor-canvas .kb-cols-4 .kb-block-move-down { top: 24px; left: 6px; }
+    #word-editor-canvas .kb-table-wrap .kb-block-duplicate,
+    #word-editor-canvas .kb-video-wrap .kb-block-duplicate,
+    #word-editor-canvas .kb-cols .kb-block-duplicate,
+    #word-editor-canvas .kb-cols-3 .kb-block-duplicate,
+    #word-editor-canvas .kb-cols-4 .kb-block-duplicate { top: 42px; left: 6px; }
     #word-editor-canvas .kb-resource-card .kb-block-move-up   { top: 6px;  left: 6px; }
     #word-editor-canvas .kb-resource-card .kb-block-move-down { top: 24px; left: 6px; }
+    #word-editor-canvas .kb-resource-card .kb-block-duplicate { top: 42px; left: 6px; }
     #word-editor-canvas .kb-pagelink .kb-block-move-up   { top: 50%; right: 30px; transform: translateY(-50%); }
     #word-editor-canvas .kb-pagelink .kb-block-move-down { top: 50%; right: 54px; transform: translateY(-50%); }
+    #word-editor-canvas .kb-pagelink .kb-block-duplicate { top: 50%; right: 78px; transform: translateY(-50%); }
     /* In-page section nav: a row of pill links that scroll (never navigate -- see
        scrollToPageAnchor() in 08_word_page_creator.js) to headings further down the SAME page.
        Shared under .word-canvas (not editor-only) since the pills ARE the real published content --
@@ -313,6 +320,7 @@
     #word-editor-canvas .kb-section-nav .kb-block-delete { top: 6px; right: 6px; }
     #word-editor-canvas .kb-section-nav .kb-block-move-up   { top: 6px;  left: 6px; }
     #word-editor-canvas .kb-section-nav .kb-block-move-down { top: 24px; left: 6px; }
+    #word-editor-canvas .kb-section-nav .kb-block-duplicate { top: 42px; left: 6px; }
     /* Click-to-select for the video embed, same idea as img.kb-selected below -- the iframe itself
        is pointer-events:none ONLY inside the editor (never on the public page, where it must stay
        playable), so a click lands on the wrapper div underneath instead of being swallowed by the
@@ -357,6 +365,12 @@
        set via inline style must still collapse on tablet/phone widths. */
     @media (max-width: 900px) { .word-canvas .kb-cols-3, .word-canvas .kb-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
     @media (max-width: 640px) { .word-canvas .kb-cols-3, .word-canvas .kb-cols-4 { grid-template-columns: minmax(0, 1fr) !important; } }
+
+    /* ---------- New: optional column border (admin-toggled per block, off by default — see
+       columnsAction('toggleBorder') in js/08_word_page_creator.js) ---------- */
+    .word-canvas .kb-cols.kb-bordered > div,
+    .word-canvas .kb-cols-3.kb-bordered > div,
+    .word-canvas .kb-cols-4.kb-bordered > div { border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem; }
 
     /* ---------- New: magazine / resource grid (auto-flow of cards) ---------- */
     .word-canvas .kb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin: 1rem 0; }
