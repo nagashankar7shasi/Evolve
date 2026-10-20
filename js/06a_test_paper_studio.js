@@ -77,6 +77,8 @@
     let studioLangMode = 'en';      // 'en' | 'kn' | 'both'
     let studioInputMode = 'csv';    // 'csv' | 'paste' | 'manual' | 'bank'
     let studioBankPool = [];        // last-scanned question bank pool for the 'bank' generate mode
+    let studioBankExpandedSubjects = new Set(); // which subject rows are drilled into sub-topics
+    let studioSplitPlan = null;    // computed-but-not-yet-saved plan from studioPreviewSectionalSplit()
     let studioEditingIndex = -1;    // index of the question open in the edit modal
     let studioPendingMapping = null; // { headers:[], mapping:{}, rows:[] } — when parser needs help
 
@@ -315,6 +317,8 @@
       studioInputMode = 'csv';
       studioPendingMapping = null;
       studioBankPool = [];
+      studioBankExpandedSubjects = new Set();
+      studioSplitPlan = null;
       document.getElementById('studio-draft-status').innerText = '';
 
       // Reset sidebar defaults
@@ -563,6 +567,36 @@
       return bySubject;
     }
 
+    // Groups one subject's pooled items (static+ca together) by sub-topic, case/whitespace-
+    // insensitively (same normalization the sub-topic cleanup tool uses), then splits each group back
+    // into static/ca so the drill-down row can show the same two count inputs the subject-level row
+    // does. "(no sub-topic)" is always last -- it's the catch-all for untagged questions, not a real
+    // sub-topic to feature alongside named ones. The raw (not lowercased) text of whichever variant is
+    // most common within the group is used as the display label and the data-bank-subtopic key, same
+    // "most common spelling wins" convention as the cleanup tool's merge suggestion.
+    function studioBankSubTopicGroups(subjectPool) {
+      const groups = {}; // normalized key -> { variants: Map(rawText -> count), static: [], ca: [] }
+      [...(subjectPool.static || []), ...(subjectPool.ca || [])].forEach(b => {
+        const raw = (b.q.subTopic || '').trim();
+        const key = raw ? raw.toLowerCase() : '\u0000none';
+        if (!groups[key]) groups[key] = { variants: new Map(), static: [], ca: [] };
+        if (raw) groups[key].variants.set(raw, (groups[key].variants.get(raw) || 0) + 1);
+        groups[key][b.contentType].push(b);
+      });
+      const none = groups['\u0000none'];
+      delete groups['\u0000none'];
+      const named = Object.values(groups)
+        .map(g => ({ label: [...g.variants.entries()].sort((a, b) => b[1] - a[1])[0][0], static: g.static, ca: g.ca }))
+        .sort((a, b) => (b.static.length + b.ca.length) - (a.static.length + a.ca.length));
+      return none ? [...named, { label: '(no sub-topic)', static: none.static, ca: none.ca }] : named;
+    }
+
+    function studioToggleBankSubjectExpanded(subject) {
+      if (studioBankExpandedSubjects.has(subject)) studioBankExpandedSubjects.delete(subject);
+      else studioBankExpandedSubjects.add(subject);
+      renderStudioBankSubjectRows();
+    }
+
     function renderStudioBankSubjectRows() {
       const root = document.getElementById('studio-bank-subject-rows');
       const genRow = document.getElementById('studio-bank-generate-row');
@@ -571,6 +605,7 @@
         root.innerHTML = '<p class="text-[11px] text-slate-400">No questions found yet — tag some papers to feed this category\'s bank (the "Feeds the question bank of" field in this sidebar), or upload directly into this category, then scan again.</p>';
         genRow.classList.add('hidden');
         suggestRow.classList.add('hidden');
+        studioRefreshSplitSubjectOptions();
         return;
       }
       const cat = document.getElementById('studio-category').value;
@@ -580,12 +615,29 @@
         const { static: staticPool, ca: caPool } = bySubject[s];
         const staticPyq = staticPool.filter(b => b.isPyq).length;
         const caPyq = caPool.filter(b => b.isPyq).length;
+        const expanded = studioBankExpandedSubjects.has(s);
+        const subTopicGroups = expanded ? studioBankSubTopicGroups(bySubject[s]) : [];
         return `
         <div class="border border-slate-200 rounded-lg p-2" data-bank-subject-row="${escapeHtml(s)}">
           <div class="flex items-center gap-2 text-xs mb-1.5">
+            <button type="button" onclick="studioToggleBankSubjectExpanded(${JSON.stringify(s).replace(/"/g, '&quot;')})" class="text-slate-400 hover:text-slate-700 font-mono w-4 shrink-0" title="${expanded ? 'Collapse' : 'Drill into sub-topics'}">${expanded ? '▾' : '▸'}</button>
             <span class="flex-1 font-bold text-slate-700">${escapeHtml(s)}</span>
             <span class="text-slate-400" title="Importance weight — set per-subject in Exam Categories admin → Subjects">Weight ${subjectWeight(cat, s)}/5</span>
           </div>
+          ${expanded ? subTopicGroups.map(g => `
+          <div class="grid grid-cols-2 gap-2 text-xs border-t border-dashed pt-1.5 mt-1.5 pl-5">
+            <div class="col-span-2 text-slate-500 font-semibold truncate -mb-0.5" title="${escapeHtml(g.label)}">${escapeHtml(g.label)}</div>
+            <label class="flex items-center gap-1.5">
+              <span class="w-16 text-slate-500 shrink-0">📖 Static</span>
+              <span class="text-slate-400 shrink-0">(${g.static.length}${g.static.filter(b => b.isPyq).length ? `, ⭐${g.static.filter(b => b.isPyq).length}` : ''})</span>
+              <input type="number" min="0" max="${g.static.length}" value="0" data-bank-subject="${escapeHtml(s)}" data-bank-subtopic="${escapeHtml(g.label)}" data-bank-type="static" oninput="studioUpdateBankTotal()" class="w-16 px-2 py-1 border rounded-lg font-mono text-right" />
+            </label>
+            <label class="flex items-center gap-1.5">
+              <span class="w-16 text-slate-500 shrink-0">📰 CA</span>
+              <span class="text-slate-400 shrink-0">(${g.ca.length}${g.ca.filter(b => b.isPyq).length ? `, ⭐${g.ca.filter(b => b.isPyq).length}` : ''})</span>
+              <input type="number" min="0" max="${g.ca.length}" value="0" data-bank-subject="${escapeHtml(s)}" data-bank-subtopic="${escapeHtml(g.label)}" data-bank-type="ca" oninput="studioUpdateBankTotal()" class="w-16 px-2 py-1 border rounded-lg font-mono text-right" />
+            </label>
+          </div>`).join('') : `
           <div class="grid grid-cols-2 gap-2 text-xs">
             <label class="flex items-center gap-1.5">
               <span class="w-16 text-slate-500 shrink-0">📖 Static</span>
@@ -597,12 +649,13 @@
               <span class="text-slate-400 shrink-0">(${caPool.length}${caPyq ? `, ⭐${caPyq}` : ''})</span>
               <input type="number" min="0" max="${caPool.length}" value="0" data-bank-subject="${escapeHtml(s)}" data-bank-type="ca" oninput="studioUpdateBankTotal()" class="w-16 px-2 py-1 border rounded-lg font-mono text-right" />
             </label>
-          </div>
+          </div>`}
         </div>`;
       }).join('');
       genRow.classList.remove('hidden');
       suggestRow.classList.remove('hidden');
       studioUpdateBankTotal();
+      studioRefreshSplitSubjectOptions();
     }
 
     function studioUpdateBankTotal() {
@@ -625,6 +678,34 @@
         if (stillShort > 0) a = Math.min(a + stillShort, aAvail);
       }
       return { a, b };
+    }
+
+    // N-bucket generalization of splitWithCaps, for the difficulty mix (easy/medium/hard rather than
+    // just static/ca). Allocates `total` across buckets roughly per `ratios` (same length as `avails`,
+    // needn't sum to 100 -- normalized here), capped by each bucket's own `avails[i]`, then water-fills
+    // any shortfall one unit at a time into whichever bucket still has the most spare capacity -- so a
+    // target total is still hit whenever the combined pool allows it, even if one difficulty tier is
+    // thin, rather than silently under-filling the paper. Kept separate from splitWithCaps (2-bucket,
+    // with "spill the rest into the other bucket" semantics tailored to static/CA) rather than
+    // generalizing it in place, since that function is relied on elsewhere and working.
+    function splitWithCapsN(total, avails, ratios) {
+      const n = avails.length;
+      const ratioSum = ratios.reduce((sum, r) => sum + r, 0) || 1;
+      const norm = ratios.map(r => r / ratioSum);
+      const counts = avails.map((avail, i) => Math.min(Math.round(total * norm[i]), avail));
+      let shortfall = total - counts.reduce((sum, c) => sum + c, 0);
+      let guard = 0;
+      while (shortfall > 0 && guard++ < total + n + 5) {
+        let bestIdx = -1, bestSpare = 0;
+        for (let i = 0; i < n; i++) {
+          const spare = avails[i] - counts[i];
+          if (spare > bestSpare) { bestSpare = spare; bestIdx = i; }
+        }
+        if (bestIdx === -1) break; // no bucket has any spare capacity left at all
+        counts[bestIdx]++;
+        shortfall--;
+      }
+      return counts;
     }
 
     // Pre-fills every subject's Static/CA count inputs proportional to (a) how much of the target
@@ -650,9 +731,29 @@
         const avail = staticPool.length + caPool.length;
         if (!avail) return;
         const share = Math.min(Math.round(target * subjectWeight(cat, s) / totalWeight), avail);
+        const subjectInputs = [...document.querySelectorAll('[data-bank-subject]')].filter(el => el.dataset.bankSubject === s);
+        // When this subject's row is drilled into sub-topics, every input for it carries
+        // data-bank-subtopic -- split the subject's share across those groups (proportional to each
+        // group's own pool size) instead of writing into a subject-level pair that isn't on screen.
+        if (subjectInputs.length && subjectInputs[0].dataset.bankSubtopic) {
+          const groups = studioBankSubTopicGroups(bySubject[s]);
+          const totalAvail = groups.reduce((sum, g) => sum + g.static.length + g.ca.length, 0);
+          if (!totalAvail) return;
+          groups.forEach(g => {
+            const gAvail = g.static.length + g.ca.length;
+            if (!gAvail) return;
+            const gShare = Math.min(Math.round(share * gAvail / totalAvail), gAvail);
+            const { a: staticCount, b: caCount } = splitWithCaps(gShare, g.static.length, g.ca.length, caMix);
+            const staticInput = subjectInputs.find(el => el.dataset.bankType === 'static' && el.dataset.bankSubtopic === g.label);
+            const caInput = subjectInputs.find(el => el.dataset.bankType === 'ca' && el.dataset.bankSubtopic === g.label);
+            if (staticInput) staticInput.value = staticCount;
+            if (caInput) caInput.value = caCount;
+          });
+          return;
+        }
         const { a: staticCount, b: caCount } = splitWithCaps(share, staticPool.length, caPool.length, caMix);
-        const staticInput = [...document.querySelectorAll('[data-bank-subject][data-bank-type="static"]')].find(el => el.dataset.bankSubject === s);
-        const caInput = [...document.querySelectorAll('[data-bank-subject][data-bank-type="ca"]')].find(el => el.dataset.bankSubject === s);
+        const staticInput = subjectInputs.find(el => el.dataset.bankType === 'static');
+        const caInput = subjectInputs.find(el => el.dataset.bankType === 'ca');
         if (staticInput) staticInput.value = staticCount;
         if (caInput) caInput.value = caCount;
       });
@@ -745,28 +846,67 @@
         await Promise.all(siblings.map(ensurePaperQuestionsLoaded));
       }
       const bySubject = studioBankBySubjectAndType();
+      // Computed lazily, once per subject that actually has a drilled-down row, rather than for every
+      // subject up front -- most generations won't touch the drill-down at all.
+      const subTopicGroupsCache = {};
       const prioritizePyq = document.getElementById('studio-bank-prioritize-pyq').checked;
+      const diffEasy = Math.max(0, Math.min(100, parseInt(document.getElementById('studio-bank-diff-easy').value, 10) || 0));
+      const diffMedium = Math.max(0, Math.min(100, parseInt(document.getElementById('studio-bank-diff-medium').value, 10) || 0));
+      const diffHard = Math.max(0, Math.min(100, parseInt(document.getElementById('studio-bank-diff-hard').value, 10) || 0));
+      const useDifficultyMix = (diffEasy + diffMedium + diffHard) > 0;
       const rows = [...document.querySelectorAll('[data-bank-subject]')];
       let added = 0, skippedAsBundleDup = 0;
       const difficultyCounts = {}, typeCounts = { static: 0, ca: 0 };
       rows.forEach(el => {
-        const subject = el.dataset.bankSubject, type = el.dataset.bankType;
+        const subject = el.dataset.bankSubject, type = el.dataset.bankType, subTopic = el.dataset.bankSubtopic;
         const want = parseInt(el.value, 10) || 0;
         if (!want) return;
-        let pool = ((bySubject[subject] || {})[type] || []).slice();
+        // A drilled-down row's data-bank-subtopic scopes the pool down to just that sub-topic's
+        // questions instead of the whole subject -- same subject/type pair as a non-drilled-down row,
+        // so nothing else here needs to change to tell the two apart.
+        let pool;
+        if (subTopic) {
+          if (!subTopicGroupsCache[subject]) subTopicGroupsCache[subject] = studioBankSubTopicGroups(bySubject[subject] || {});
+          const group = subTopicGroupsCache[subject].find(g => g.label === subTopic);
+          pool = (group ? group[type] : []).slice();
+        } else {
+          pool = ((bySubject[subject] || {})[type] || []).slice();
+        }
         if (siblings.length) {
           const before = pool.length;
           pool = pool.filter(b => !studioFindBundleMatch(b.q, siblings));
           skippedAsBundleDup += before - pool.length;
         }
-        // Sampling without replacement, PYQ-first when requested: shuffle the "asked before" and
-        // "never asked" questions separately, then take PYQ ones first up to `want` before falling
-        // back to the rest — so a generation that asks for fewer questions than are PYQ-tagged still
-        // fills entirely from proven, previously-asked content.
-        const ordered = prioritizePyq
-          ? [...shuffle(pool.filter(b => b.isPyq)), ...shuffle(pool.filter(b => !b.isPyq))]
-          : shuffle(pool);
-        ordered.slice(0, Math.min(want, ordered.length)).forEach(b => {
+        // Sampling without replacement. Two modes:
+        // - Difficulty mix on (any of easy/medium/hard target % > 0): partition the pool into easy
+        //   (difficulty 1-2) / medium (3, or unrated/null) / hard (4-5) buckets, use splitWithCapsN to
+        //   decide how many to draw from each so the final mix tracks the admin's targets even when one
+        //   tier is thin, sample PYQ-first within each bucket when requested, then shuffle the combined
+        //   picks so tiers aren't block-grouped within the generated paper.
+        // - Otherwise (the original behaviour, fully backward compatible): PYQ-first when requested --
+        //   shuffle the "asked before" and "never asked" questions separately, then take PYQ ones first
+        //   up to `want` before falling back to the rest — so a generation that asks for fewer questions
+        //   than are PYQ-tagged still fills entirely from proven, previously-asked content.
+        let chosen;
+        if (useDifficultyMix) {
+          const easyPool = pool.filter(b => Number.isInteger(b.q.difficulty) && b.q.difficulty <= 2);
+          const hardPool = pool.filter(b => Number.isInteger(b.q.difficulty) && b.q.difficulty >= 4);
+          const mediumPool = pool.filter(b => !easyPool.includes(b) && !hardPool.includes(b));
+          const buckets = [easyPool, mediumPool, hardPool];
+          const counts = splitWithCapsN(Math.min(want, pool.length), buckets.map(p => p.length), [diffEasy, diffMedium, diffHard]);
+          chosen = shuffle(buckets.flatMap((bucketPool, i) => {
+            const ordered = prioritizePyq
+              ? [...shuffle(bucketPool.filter(b => b.isPyq)), ...shuffle(bucketPool.filter(b => !b.isPyq))]
+              : shuffle(bucketPool);
+            return ordered.slice(0, counts[i]);
+          }));
+        } else {
+          const ordered = prioritizePyq
+            ? [...shuffle(pool.filter(b => b.isPyq)), ...shuffle(pool.filter(b => !b.isPyq))]
+            : shuffle(pool);
+          chosen = ordered.slice(0, Math.min(want, ordered.length));
+        }
+        chosen.forEach(b => {
           // Deep clone: this generated paper's copy is now independent of the source paper — editing
           // or deleting the source later never silently changes an already-generated paper.
           const q = JSON.parse(JSON.stringify(b.q));
@@ -796,6 +936,189 @@
       const diffSummary = Object.keys(difficultyCounts).sort().map(d => `${d === 'unrated' ? 'Unrated' : 'Lvl ' + d}: ${difficultyCounts[d]}`).join(', ');
       const bundleNote = skippedAsBundleDup ? `\n🔁 Skipped ${skippedAsBundleDup} question(s) already used elsewhere in the selected bundle.` : '';
       alert(`${added} question${added === 1 ? '' : 's'} generated from the bank (Static: ${typeCounts.static}, Current Affairs: ${typeCounts.ca}).\nDifficulty mix — ${diffSummary}.${bundleNote}\n\nReview them below — you can edit or delete any of them — then Publish when ready.`);
+    }
+
+    // ---- Bulk "split into sectional tests" ----
+    // One click, category+subject scoped: groups a subject's bank pool by sub-topic (reusing the same
+    // grouping the drill-down UI uses) and turns each group into one or more brand-new, unpublished
+    // (active:false) draft papers — e.g. 2,069 untagged-then-backfilled "Polity" questions across 5
+    // sub-topics becomes 5+ ready-to-review sectional test drafts in one go, instead of hand-building
+    // each one through Generate-from-Bank. Writes nothing to the database until the admin reviews the
+    // preview table and clicks "Create N draft papers" — see studioPreviewSectionalSplit /
+    // studioConfirmSectionalSplit below.
+
+    function studioRefreshSplitSubjectOptions() {
+      const sel = document.getElementById('studio-split-subject');
+      if (!sel) return;
+      const prevValue = sel.value;
+      const bySubject = studioBankBySubjectAndType();
+      const subjects = Object.keys(bySubject).sort((a, b) => a.localeCompare(b));
+      sel.innerHTML = subjects.length
+        ? subjects.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('')
+        : '<option value="">— scan the bank first —</option>';
+      if (subjects.includes(prevValue)) sel.value = prevValue;
+      document.getElementById('studio-split-preview').innerHTML = '';
+      studioSplitPlan = null;
+    }
+
+    // Splits `total` into as few roughly-equal papers as possible, each capped at `maxCap`, each as
+    // close to the others in size as the remainder allows (e.g. 130 with cap 60 → [44, 43, 43], not
+    // [60, 60, 10] — a lopsided last paper is exactly the kind of result an admin reviewing the preview
+    // table would reject and redo by hand). Returns [] when `total` can't support even one paper at the
+    // admin's chosen minimum — the caller skips that group entirely rather than forcing an under-floor
+    // paper into existence.
+    function studioBalancedPaperSizes(total, minFloor, maxCap) {
+      if (total < minFloor) return [];
+      const numPapers = Math.max(1, Math.ceil(total / maxCap));
+      const base = Math.floor(total / numPapers);
+      const extra = total % numPapers;
+      return Array.from({ length: numPapers }, (_, i) => base + (i < extra ? 1 : 0));
+    }
+
+    async function studioPreviewSectionalSplit() {
+      const subject = document.getElementById('studio-split-subject').value;
+      const preview = document.getElementById('studio-split-preview');
+      if (!subject) { studioSplitPlan = null; preview.innerHTML = ''; return alert('Scan the bank first, then pick a subject.'); }
+      const minFloor = Math.max(1, parseInt(document.getElementById('studio-split-min').value, 10) || 15);
+      const maxCap = Math.max(minFloor, parseInt(document.getElementById('studio-split-max').value, 10) || 60);
+      const cat = document.getElementById('studio-category').value;
+      preview.innerHTML = '<p class="text-[11px] text-slate-500">Checking the whole category for duplicates…</p>';
+
+      const bySubject = studioBankBySubjectAndType();
+      const subjectPool = bySubject[subject] || { static: [], ca: [] };
+      const allGroups = studioBankSubTopicGroups(subjectPool);
+      const named = allGroups.filter(g => g.label !== '(no sub-topic)');
+      const untagged = allGroups.find(g => g.label === '(no sub-topic)');
+      const untaggedCount = untagged ? untagged.static.length + untagged.ca.length : 0;
+
+      // Global duplicate scan: every OTHER paper in this category (own + cross-tagged via
+      // extraCategories) — NOT just bundle siblings, unlike studioFindBundleMatch's other caller —
+      // checked against every candidate question in every named sub-topic group. Each question is
+      // checked against every category paper EXCEPT its own bank source paper (that match is just the
+      // original it was copied from, not a real duplicate) — otherwise every single bank question would
+      // trivially "duplicate" itself and the whole split would come back empty.
+      const categoryPapers = testsCatalog.filter(p => p.category === cat || (p.extraCategories || []).includes(cat));
+      await Promise.all(categoryPapers.map(ensurePaperQuestionsLoaded));
+
+      let dupCount = 0;
+      const cleanPool = (items) => items.filter(b => {
+        const others = categoryPapers.filter(p => p.id !== b.paperId);
+        const isDup = !!studioFindBundleMatch(b.q, others);
+        if (isDup) dupCount++;
+        return !isDup;
+      });
+
+      const rows = named.map(g => {
+        const pool = shuffle([...cleanPool(g.static), ...cleanPool(g.ca)]);
+        const sizes = studioBalancedPaperSizes(pool.length, minFloor, maxCap);
+        const titles = sizes.map((_, i) => `${subject} — ${g.label}${sizes.length > 1 ? ` (Part ${i + 1} of ${sizes.length})` : ''}`);
+        return { label: g.label, total: pool.length, pool, sizes, titles };
+      });
+      const eligible = rows.filter(r => r.sizes.length);
+      const tooSmall = rows.filter(r => !r.sizes.length && r.total > 0);
+      studioSplitPlan = { subject, cat, groups: eligible };
+
+      if (!eligible.length) {
+        preview.innerHTML = `<p class="text-[11px] text-amber-700">No sub-topic in "${escapeHtml(subject)}" has at least ${minFloor} question(s) available${dupCount ? ` after excluding ${dupCount} already used elsewhere in this category` : ''}. Lower the minimum, pick a different subject, or add more questions first.</p>`;
+        return;
+      }
+
+      const totalPapers = eligible.reduce((sum, r) => sum + r.sizes.length, 0);
+      const totalQuestions = eligible.reduce((sum, r) => sum + r.sizes.reduce((a, b) => a + b, 0), 0);
+      const tableRows = eligible.flatMap(r => r.sizes.map((size, i) =>
+        `<tr><td class="py-1 pr-3">${escapeHtml(r.label)}</td><td class="py-1 pr-3">${escapeHtml(r.titles[i])}</td><td class="py-1 text-right font-mono">${size}</td></tr>`
+      )).join('');
+
+      preview.innerHTML = `
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-[11px]">
+          ${dupCount ? `<p class="text-amber-800 mb-1.5">🔁 Excluded ${dupCount} question(s) already used elsewhere in this category.</p>` : ''}
+          ${tooSmall.length ? `<p class="text-slate-500 mb-1.5">Skipped (below the ${minFloor}-question minimum): ${tooSmall.map(r => `${escapeHtml(r.label)} (${r.total})`).join(', ')}.</p>` : ''}
+          ${untaggedCount ? `<p class="text-slate-500 mb-1.5">${untaggedCount} question(s) in "${escapeHtml(subject)}" have no sub-topic yet and were left out — re-upload with a Sub_Topic column to include them (see 🧩 Sub-topics in Exam Categories admin).</p>` : ''}
+          <table class="w-full border-collapse mb-2">
+            <thead><tr class="text-left text-slate-500"><th class="py-1 pr-3">Sub-topic</th><th class="py-1 pr-3">Proposed paper</th><th class="py-1 text-right">Questions</th></tr></thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+          <p class="font-bold text-slate-700 mb-2">${totalPapers} draft paper${totalPapers === 1 ? '' : 's'}, ${totalQuestions} question${totalQuestions === 1 ? '' : 's'} total — unpublished (inactive) until you review and activate each one. Nothing is saved yet.</p>
+          <button id="studio-split-confirm-btn" onclick="studioConfirmSectionalSplit()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg">Create ${totalPapers} draft paper${totalPapers === 1 ? '' : 's'}</button>
+        </div>`;
+    }
+
+    async function studioConfirmSectionalSplit() {
+      if (!studioSplitPlan || !studioSplitPlan.groups.length) return;
+      const { subject, cat, groups } = studioSplitPlan;
+      const btn = document.getElementById('studio-split-confirm-btn');
+      const oldText = btn ? btn.innerText : '';
+      if (btn) { btn.disabled = true; btn.innerText = 'Creating…'; }
+
+      const def = EXAM_CATEGORIES[cat]?.defaultScheme || {};
+      const scheme = {
+        examBadge: def.examBadge || 'EXAM',
+        marksCorrect: def.marksCorrect || 2,
+        marksWrong: def.marksWrong || 0.5,
+        duration: def.duration || 120,
+        cutoff: def.cutoff || 0
+      };
+      // Appends after everything currently in the catalog, same "don't make the admin think about
+      // display order" default studioPublish's new-paper path uses.
+      const baseOrder = (testsCatalog || []).reduce((max, p) => Math.max(max, p.order || 0), 0) + 10;
+
+      const newPapers = [];
+      groups.forEach(g => {
+        let offset = 0;
+        g.sizes.forEach((size, partIdx) => {
+          const picked = g.pool.slice(offset, offset + size);
+          offset += size;
+          const cleanQuestions = picked.map((b, qi) => {
+            const q = JSON.parse(JSON.stringify(b.q));
+            return {
+              id: qi + 1, q_en: q.q_en || '', q_kn: q.q_kn || '',
+              options_en: Array.isArray(q.options_en) ? q.options_en.slice(0, 4) : ['', '', '', ''],
+              options_kn: Array.isArray(q.options_kn) ? q.options_kn.slice(0, 4) : ['', '', '', ''],
+              correct: q.correct, exp: q.exp || '', exp_kn: q.exp_kn || '',
+              subject: q.subject || subject, subTopic: q.subTopic || '',
+              image_url: q.image_url || '', image_url_kn: q.image_url_kn || '',
+              exp_image_url: q.exp_image_url || '', exp_image_url_kn: q.exp_image_url_kn || '',
+              contentType: q.contentType === 'ca' ? 'ca' : 'static',
+              relevantPeriod: q.relevantPeriod || '', relevantUntil: q.relevantUntil || '',
+              askedInYears: Array.isArray(q.askedInYears) ? q.askedInYears : [],
+              retired: !!q.retired,
+              // Same bank-generation lineage tag Generate-from-Bank uses, chained through an
+              // already-generated source question if this bank item was itself one (see
+              // studioGenerateFromBank) — so getQuestionBank() never shows the same question twice.
+              sourceQuestionId: q.sourceQuestionId || `${b.paperId}::${b.q.id}`
+            };
+          });
+          newPapers.push({
+            id: `paper_${Date.now()}_${newPapers.length}`,
+            category: cat, extra_categories: [], also_list_categories: [],
+            active: false, delisted: false, bundle_only: false, coming_soon: false, revision_notes: null,
+            title: g.titles[partIdx], price: 0, scheme,
+            questions: cleanQuestions, question_count: cleanQuestions.length,
+            scheduled_for: null, order_num: baseOrder + newPapers.length * 10
+          });
+        });
+      });
+
+      try {
+        const { error } = await supabaseClient.from('tests_catalog').upsert(newPapers);
+        if (error) throw error;
+        newPapers.forEach(p => {
+          testsCatalog.push({
+            id: p.id, category: p.category, extraCategories: p.extra_categories, alsoListCategories: p.also_list_categories,
+            active: p.active, delisted: p.delisted, bundleOnly: p.bundle_only, comingSoon: p.coming_soon, revisionNotes: p.revision_notes,
+            title: p.title, price: p.price, scheme: p.scheme, questions: p.questions, questionCount: p.question_count,
+            scheduled_for: p.scheduled_for, order: p.order_num
+          });
+        });
+        renderTestsCatalogAdmin();
+        if (typeof filterExamCategory === 'function') filterExamCategory(selectedCategory);
+        studioSplitPlan = null;
+        document.getElementById('studio-split-preview').innerHTML = '';
+        alert(`✓ Created ${newPapers.length} draft paper${newPapers.length === 1 ? '' : 's'} for "${subject}" (unpublished — review and tick "Active" on each in Manage Tests when ready).`);
+      } catch (err) {
+        alert('Split failed: ' + err.message);
+        if (btn) { btn.disabled = false; btn.innerText = oldText; }
+      }
     }
 
     function studioSetLangMode(mode) {

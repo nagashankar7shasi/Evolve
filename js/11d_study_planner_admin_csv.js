@@ -367,6 +367,16 @@
         <button onclick="renderSubjectCleanupTool('${catId}')" class="text-[11px] font-bold text-amber-700 hover:underline">🧹 Find & merge duplicate subjects in this category's questions</button>
         <div id="ec-subject-cleanup-${catId}" class="mt-2"></div>
         <div class="mt-3 border-t pt-2">
+          <div class="text-[11px] font-bold text-slate-700 mb-1">🧩 Sub-topics <span class="text-slate-400 font-normal">— optional, nested one level under a subject (e.g. Polity → "Fundamental Rights"); lets Generate-from-Bank drill down and powers the "split into sectional tests" tool</span></div>
+          <div class="flex items-center gap-2 mb-2">
+            <select id="ec-subtopic-subject-${catId}" onchange="renderSubTopicCleanupTool('${catId}')" class="flex-1 px-2 py-1 border rounded-lg bg-white text-[11px] outline-none">
+              <option value="">— Pick a subject to scan its sub-topics —</option>
+              ${[...usedSubjectsForCategory(catId)].sort((a, b) => a.localeCompare(b)).map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('')}
+            </select>
+          </div>
+          <div id="ec-subtopic-cleanup-${catId}"></div>
+        </div>
+        <div class="mt-3 border-t pt-2">
           <div class="text-[11px] font-bold text-slate-700 mb-1">📦 Subject groups <span class="text-slate-400 font-normal">— combine subjects into one row on the student Weakness/Strength dashboard (e.g. "History" + "Art &amp; Culture" → "Humanities"); a question's own subject tag is never changed, so ungrouping is just as easy</span></div>
           <div id="ec-subject-groups-${catId}"></div>
         </div>
@@ -672,6 +682,123 @@
       }
       showAdminToast(`Merged ${changed} question${changed === 1 ? '' : 's'} across ${touchedPapers.length} paper(s) into "${canonical}".`);
       renderCategorySubjectsAdmin(catId);
+    }
+
+    // ---- Sub-topic cleanup (per category, nested under one subject at a time) ----
+    // Same spelling-collision-merge mechanic as subjectCleanupScan/applySubjectMerge above, one level
+    // deeper: sub-topics only mean anything scoped to a subject (e.g. "Emergency Provisions" under
+    // Polity isn't the same thing as a same-named sub-topic that happens to occur under a different
+    // subject), so this always takes a subject and only scans questions matching it. Subject matching
+    // is case-insensitive against the trimmed text, same normalization subjectCleanupScan's own keys
+    // use, so this still finds everything even if that subject itself hasn't been merged to one
+    // canonical spelling yet.
+    //
+    // Unlike subject (which every question has always had), subTopic is a newer, optional field --
+    // most existing questions were imported before it existed and have never been tagged at all. That
+    // "untagged" count is reported separately from the merge groups below (nothing to merge an empty
+    // string into) so an admin backfilling a large bank via CSV re-upload (download → fill in the
+    // Sub_Topic column → Clear All → re-upload → Publish) has a running count of progress.
+    function subTopicCleanupScan(catId, subject) {
+      const subjKey = (subject || '').trim().toLowerCase();
+      const groups = {}; // normalized key -> { variants: Map(rawText -> count), total }
+      let untagged = 0;
+      testsCatalog.filter(p => p.category === catId && Array.isArray(p.questions)).forEach(p => {
+        p.questions.forEach(q => {
+          if ((q.subject || '').trim().toLowerCase() !== subjKey) return;
+          const raw = (q.subTopic || '').trim();
+          if (!raw) { untagged++; return; }
+          const key = raw.toLowerCase();
+          if (!groups[key]) groups[key] = { variants: new Map(), total: 0 };
+          groups[key].variants.set(raw, (groups[key].variants.get(raw) || 0) + 1);
+          groups[key].total++;
+        });
+      });
+      return { groups: Object.values(groups).sort((a, b) => b.total - a.total), untagged };
+    }
+
+    // Same "default to just the real collisions" behavior as cleanupShowAll, keyed by `${catId}::${subject}`
+    // since the set of groups worth showing differs per subject.
+    let subTopicCleanupShowAll = {};
+
+    function toggleSubTopicCleanupShowAll(catId, showAll) {
+      const subject = (document.getElementById(`ec-subtopic-subject-${catId}`) || {}).value || '';
+      subTopicCleanupShowAll[`${catId}::${subject}`] = showAll;
+      renderSubTopicCleanupTool(catId);
+    }
+
+    async function renderSubTopicCleanupTool(catId) {
+      const root = document.getElementById(`ec-subtopic-cleanup-${catId}`);
+      if (!root) return;
+      const subject = (document.getElementById(`ec-subtopic-subject-${catId}`) || {}).value || '';
+      if (!subject) { root.innerHTML = ''; return; }
+      root.innerHTML = '<p class="text-[11px] text-slate-400 mt-1">Scanning…</p>';
+      await Promise.all(testsCatalog.filter(p => p.category === catId).map(ensurePaperQuestionsLoaded));
+      const { groups: allGroups, untagged } = subTopicCleanupScan(catId, subject);
+      const untaggedLine = untagged
+        ? `<p class="text-[11px] text-amber-700 mb-2">⏳ ${untagged} question${untagged === 1 ? '' : 's'} tagged "${escapeHtml(subject)}" still has no sub-topic. Download that paper's CSV in Studio, fill in the Sub_Topic column, then Clear All → re-upload → Publish to backfill it.</p>`
+        : `<p class="text-[11px] text-emerald-700 mb-2">✓ Every "${escapeHtml(subject)}" question already has a sub-topic.</p>`;
+      if (!allGroups.length) {
+        root.innerHTML = untaggedLine + '<p class="text-[11px] text-slate-400">No tagged sub-topics found yet for this subject.</p>';
+        return;
+      }
+      const showAll = !!subTopicCleanupShowAll[`${catId}::${subject}`];
+      const groups = showAll ? allGroups : allGroups.filter(g => g.variants.size > 1);
+      const hiddenCount = allGroups.length - groups.length;
+      const toggleLine = hiddenCount
+        ? (showAll
+            ? `<button onclick="toggleSubTopicCleanupShowAll('${catId}', false)" class="text-[11px] text-slate-400 hover:underline block mb-2">▲ Hide the ${hiddenCount} with only one spelling</button>`
+            : `<button onclick="toggleSubTopicCleanupShowAll('${catId}', true)" class="text-[11px] text-slate-400 hover:underline block mb-2">▼ Show ${hiddenCount} more with just one spelling (clean, but still available for a manual rename)</button>`)
+        : '';
+      if (!groups.length) {
+        root.innerHTML = untaggedLine + `<p class="text-[11px] text-emerald-700 mb-1">✓ No spelling duplicates found — every sub-topic already has one consistent spelling.</p>${toggleLine}`;
+        return;
+      }
+      root.innerHTML = untaggedLine + `<div class="space-y-2 border-t pt-2">` + groups.map((g, gi) => {
+        const variants = [...g.variants.entries()];
+        const suggestion = variants.sort((a, b) => b[1] - a[1])[0][0];
+        return `
+        <div class="p-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px]">
+          <div class="flex flex-wrap items-center gap-1.5 mb-1">
+            ${variants.map(([text, count]) => `<span class="bg-white border border-slate-200 px-1.5 py-0.5 rounded font-mono">${escapeHtml(text)} <b>×${count}</b></span>`).join('')}
+          </div>
+          <div class="flex items-center gap-1.5">
+            <input type="text" id="ec-subtopic-target-${catId}-${gi}" value="${escapeHtml(suggestion)}" class="flex-1 px-2 py-1 border rounded-lg" />
+            <button onclick="applySubTopicMerge('${catId}', ${JSON.stringify(subject).replace(/"/g, '&quot;')}, ${gi}, ${JSON.stringify(variants.map(v => v[0])).replace(/"/g, '&quot;')})" class="px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg">Merge → this spelling</button>
+          </div>
+        </div>`;
+      }).join('') + `</div>` + toggleLine;
+    }
+
+    // Rewrites every question in this category whose subject matches `subject` (case-insensitive) AND
+    // whose sub-topic matches any of `fromVariants` to the canonical spelling typed into that group's
+    // input. Scoped to (catId, subject) so merging "Fundamnetal Rights" -> "Fundamental Rights" under
+    // Polity can never accidentally touch a same-named sub-topic under a different subject.
+    async function applySubTopicMerge(catId, subject, groupIndex, fromVariants) {
+      const input = document.getElementById(`ec-subtopic-target-${catId}-${groupIndex}`);
+      const canonical = (input.value || '').trim();
+      if (!canonical) return alert('Type the spelling to merge these into first.');
+      const subjKey = (subject || '').trim().toLowerCase();
+      const fromSet = new Set(fromVariants);
+      let changed = 0;
+      const touchedPapers = [];
+      testsCatalog.filter(p => p.category === catId && Array.isArray(p.questions)).forEach(p => {
+        let paperChanged = false;
+        p.questions.forEach(q => {
+          if ((q.subject || '').trim().toLowerCase() !== subjKey) return;
+          if (fromSet.has((q.subTopic || '').trim())) { q.subTopic = canonical; changed++; paperChanged = true; }
+        });
+        if (paperChanged) touchedPapers.push(p);
+      });
+      if (!changed) return alert('Nothing matched — it may have already been merged.');
+      for (const p of touchedPapers) {
+        try {
+          await supabaseClient.from('tests_catalog').update({ questions: p.questions }).eq('id', p.id);
+        } catch (err) {
+          console.error(`Failed to save merged sub-topics for paper "${p.id}":`, fmtErr(err));
+        }
+      }
+      showAdminToast(`Merged ${changed} question${changed === 1 ? '' : 's'} across ${touchedPapers.length} paper(s) into "${canonical}".`);
+      renderSubTopicCleanupTool(catId);
     }
 
     // ---- Coverage dashboard + Current Affairs staleness review (per category) ----
