@@ -187,6 +187,10 @@
         active: document.getElementById('studio-active').checked,
         delisted: document.getElementById('studio-delisted').checked,
         bundleOnly: document.getElementById('studio-bundleonly').checked,
+        comingSoon: document.getElementById('studio-coming-soon').checked,
+        revisionNotesText: document.getElementById('studio-revision-notes-text').value,
+        revisionNotesFileUrl: document.getElementById('studio-revision-notes-file-link').dataset.url || '',
+        revisionNotesFileName: document.getElementById('studio-revision-notes-file-link').dataset.name || '',
         price: document.getElementById('studio-price').value,
         scheduledFor: document.getElementById('studio-scheduled-for').value,
         markCorrect: document.getElementById('studio-mark-correct').value,
@@ -225,6 +229,55 @@
       }
     }
 
+    // Shared by draft-resume and edit-mode hydration (openStudio) -- populates the little file-link
+    // affordance next to "📎 Attach PDF/image" from a previously uploaded revision-notes file, or
+    // clears it back to the empty state when there isn't one.
+    function studioSetRevisionNotesFile(url, name) {
+      const link = document.getElementById('studio-revision-notes-file-link');
+      const removeBtn = document.getElementById('studio-revision-notes-file-remove');
+      if (url) {
+        link.href = url;
+        link.dataset.url = url;
+        link.dataset.name = name || 'attachment';
+        link.textContent = '📄 ' + (name || 'attachment');
+        link.classList.remove('hidden');
+        removeBtn.classList.remove('hidden');
+      } else {
+        link.href = '#';
+        link.textContent = '';
+        delete link.dataset.url;
+        delete link.dataset.name;
+        link.classList.add('hidden');
+        removeBtn.classList.add('hidden');
+      }
+    }
+
+    // Uploads a revision-notes attachment (PDF or image) to the same `study_materials` bucket
+    // question/explanation images already use (see editUploadImage below) -- same size cap and
+    // sanitized-filename-with-timestamp path convention, just its own folder.
+    async function studioUploadRevisionNotesFile(input) {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        input.value = '';
+        return alert('File is bigger than 5 MB. Compress it first, or paste a link in the notes text instead.');
+      }
+      const path = `revision_notes/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      try {
+        const { error } = await supabaseClient.storage.from('study_materials').upload(path, file, { cacheControl: '3600', upsert: false });
+        if (error) throw error;
+        const { data } = supabaseClient.storage.from('study_materials').getPublicUrl(path);
+        studioSetRevisionNotesFile(data.publicUrl, file.name);
+      } catch (err) {
+        alert('Upload failed: ' + err.message);
+      }
+      input.value = '';
+    }
+
+    function studioRemoveRevisionNotesFile() {
+      studioSetRevisionNotesFile('', '');
+    }
+
     function studioLoadDraftIntoForm(draft) {
       document.getElementById('studio-paper-title').value = draft.title || '';
       document.getElementById('studio-category').value = draft.category || Object.keys(EXAM_CATEGORIES)[0] || 'kpsc_kas';
@@ -233,6 +286,9 @@
       document.getElementById('studio-active').checked = draft.active !== false;
       document.getElementById('studio-delisted').checked = !!draft.delisted;
       document.getElementById('studio-bundleonly').checked = !!draft.bundleOnly;
+      document.getElementById('studio-coming-soon').checked = !!draft.comingSoon;
+      document.getElementById('studio-revision-notes-text').value = draft.revisionNotesText || '';
+      studioSetRevisionNotesFile(draft.revisionNotesFileUrl || '', draft.revisionNotesFileName || '');
       document.getElementById('studio-price').value = draft.price || 99;
       document.getElementById('studio-scheduled-for').value = draft.scheduledFor || '';
       if (draft.markCorrect != null) document.getElementById('studio-mark-correct').value = draft.markCorrect;
@@ -270,6 +326,9 @@
       document.getElementById('studio-active').checked = true;
       document.getElementById('studio-delisted').checked = false;
       document.getElementById('studio-bundleonly').checked = false;
+      document.getElementById('studio-coming-soon').checked = false;
+      document.getElementById('studio-revision-notes-text').value = '';
+      studioSetRevisionNotesFile('', '');
       studioApplyCategoryDefaults(firstCatId);
       studioRefreshExtraCategoryOptions([]);
       studioRefreshAlsoListCategoryOptions([]);
@@ -317,6 +376,9 @@
           document.getElementById('studio-active').checked = p.active !== false;
           document.getElementById('studio-delisted').checked = !!p.delisted;
           document.getElementById('studio-bundleonly').checked = !!p.bundleOnly;
+          document.getElementById('studio-coming-soon').checked = !!p.comingSoon;
+          document.getElementById('studio-revision-notes-text').value = (p.revisionNotes && p.revisionNotes.text) || '';
+          studioSetRevisionNotesFile((p.revisionNotes && p.revisionNotes.fileUrl) || '', (p.revisionNotes && p.revisionNotes.fileName) || '');
           // SECURITY FIX: if p.price is undefined/null/NaN (older rows, direct DB edits, or any
           // upload path that didn't set it), assigning it straight to .value leaves the field blank.
           // On save, parseInt("") is NaN, which the old publish code silently coerced to 0 — meaning
@@ -1451,6 +1513,15 @@
       const active = document.getElementById('studio-active').checked;
       const delisted = document.getElementById('studio-delisted').checked;
       const bundleOnly = document.getElementById('studio-bundleonly').checked;
+      const comingSoon = document.getElementById('studio-coming-soon').checked;
+      // Optional per-paper revision notes -- typed text and/or an uploaded PDF/image, both optional;
+      // null (not {}) when neither is present, so hasRevisionNotes checks on the student side stay a
+      // simple truthiness check rather than having to also inspect the object's fields.
+      const revNotesText = document.getElementById('studio-revision-notes-text').value.trim();
+      const revNotesFileLink = document.getElementById('studio-revision-notes-file-link');
+      const revNotesFileUrl = revNotesFileLink.dataset.url || '';
+      const revNotesFileName = revNotesFileLink.dataset.name || '';
+      const revisionNotes = (revNotesText || revNotesFileUrl) ? { text: revNotesText, fileUrl: revNotesFileUrl, fileName: revNotesFileName } : null;
       // SECURITY FIX: previously `parseInt(rawValue, 10) || 0` treated a BLANK/invalid field exactly
       // the same as an admin explicitly typing 0 — meaning a stray cleared field silently published a
       // paid paper as free, with no warning. Now those two cases are told apart: blank/invalid requires
@@ -1534,12 +1605,12 @@
 
       try {
         const { error } = await supabaseClient.from('tests_catalog').upsert({
-          id: paperId, category, extra_categories: extraCategories, also_list_categories: alsoListCategories, active, delisted, bundle_only: bundleOnly, title, price, scheme, questions: cleanQuestions, question_count: cleanQuestions.length, scheduled_for: scheduledFor, order_num: orderNum
+          id: paperId, category, extra_categories: extraCategories, also_list_categories: alsoListCategories, active, delisted, bundle_only: bundleOnly, coming_soon: comingSoon, revision_notes: revisionNotes, title, price, scheme, questions: cleanQuestions, question_count: cleanQuestions.length, scheduled_for: scheduledFor, order_num: orderNum
         });
         if (error) throw error;
 
         // Update local catalog
-        const runtimePaper = { id: paperId, category, extraCategories, alsoListCategories, active, delisted, bundleOnly, title, price, scheme, questions: cleanQuestions, questionCount: cleanQuestions.length, scheduled_for: scheduledFor, order: orderNum };
+        const runtimePaper = { id: paperId, category, extraCategories, alsoListCategories, active, delisted, bundleOnly, comingSoon, revisionNotes, title, price, scheme, questions: cleanQuestions, questionCount: cleanQuestions.length, scheduled_for: scheduledFor, order: orderNum };
         const existingIdx = testsCatalog.findIndex(p => p.id === paperId);
         if (existingIdx >= 0) testsCatalog[existingIdx] = runtimePaper;
         else testsCatalog.push(runtimePaper);

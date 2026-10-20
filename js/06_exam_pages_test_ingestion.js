@@ -233,14 +233,17 @@
       // bundle-only papers never show a standalone price -- their price column is optional/
       // informational at best, since there's no individual-buy path for isTestUnlockedForUser to
       // gate on. A "BUNDLE" badge instead of a ₹ amount keeps the card from implying a price that
-      // can't actually be paid on its own.
-      const priceLabel = paper.bundleOnly ? 'BUNDLE' : (paper.price === 0 ? 'FREE DEMO' : `₹${paper.price}`);
+      // can't actually be paid on its own. "Coming Soon" is checked first and overrides this
+      // entirely -- it's a separate, independent flag (see studioPublish's comment) for "this
+      // paper is written but not ready for students yet", regardless of price/bundle/unlock state.
+      const priceLabel = paper.comingSoon ? '⏱ COMING SOON' : (paper.bundleOnly ? 'BUNDLE' : (paper.price === 0 ? 'Free' : `₹${paper.price}`));
+      const hasRevisionNotes = !!(paper.revisionNotes && (paper.revisionNotes.text || paper.revisionNotes.fileUrl));
       return `
         <div ${domId ? `id="${domId}"` : ''} class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between transition-shadow">
           <div>
             <div class="flex items-center justify-between">
               <span class="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full">${s.examBadge}</span>
-              <span class="text-xs font-mono font-bold ${paper.bundleOnly ? 'text-violet-600' : (paper.price === 0 ? 'text-emerald-600' : 'text-slate-900')}">${priceLabel}</span>
+              <span class="text-xs font-mono font-bold ${paper.comingSoon ? 'text-slate-400' : (paper.bundleOnly ? 'text-violet-600' : (paper.price === 0 ? 'text-emerald-600' : 'text-slate-900'))}">${priceLabel}</span>
             </div>
             <h3 class="text-lg font-bold text-slate-900 mt-2">${paper.title}</h3>
             <p class="text-xs text-slate-500 mt-0.5 font-mono">${paper.questionCount} Bilingual Questions • ${s.duration} Mins</p>
@@ -251,23 +254,53 @@
               <div class="flex justify-between font-sans pt-1 border-t"><span>Max Attainable Marks:</span><b class="text-slate-900">${maxMarks}</b></div>
             </div>` : ''}
           </div>
-          ${isUnlocked && !liveYet ? `
-            <div class="mt-6 w-full py-3 bg-amber-50 border border-amber-200 text-amber-800 font-bold text-xs rounded-lg text-center" title="You already have access -- it just isn't open yet">
-              🗓 Live on ${liveDateStr}
-            </div>
-          ` : isUnlocked ? `
-            <button onclick="openExamModePicker('${paper.id}')" class="mt-6 w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg transition shadow">
-              Launch OMR Mock Exam
-            </button>
-            <button onclick="launchExamPaperPractice('${paper.id}')" class="mt-2 w-full py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-xs rounded-lg transition" title="Untimed, one question at a time, answer shown immediately">
-              🎯 Attempt in Practice Mode
-            </button>
-          ` : (paper.bundleOnly ? bundleOnlyUnlockCta(paper) : `
-            <button onclick="openPaperCheckout('${paper.id}')" class="mt-6 w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition shadow flex items-center justify-center gap-1.5">
-              <span>🔒 Unlock Paper (₹${paper.price})</span>
-            </button>
-          `)}
+          <div class="mt-6 space-y-2">
+            ${hasRevisionNotes ? `
+              <button onclick="openRevisionNotes('${paper.id}')" class="w-full py-2.5 border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-lg transition">
+                📄 Revision Notes
+              </button>
+            ` : ''}
+            ${paper.comingSoon ? `
+              <div class="w-full py-3 bg-slate-100 border border-slate-200 text-slate-500 font-bold text-xs rounded-lg text-center">
+                ⏱ Coming Soon
+              </div>
+            ` : (isUnlocked && !liveYet ? `
+              <div class="w-full py-3 bg-amber-50 border border-amber-200 text-amber-800 font-bold text-xs rounded-lg text-center" title="You already have access -- it just isn't open yet">
+                🗓 Live on ${liveDateStr}
+              </div>
+            ` : isUnlocked ? `
+              <button onclick="openExamModePicker('${paper.id}')" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg transition shadow">
+                Launch OMR Mock Exam
+              </button>
+              <button onclick="launchExamPaperPractice('${paper.id}')" class="w-full py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-xs rounded-lg transition" title="Untimed, one question at a time, answer shown immediately">
+                🎯 Attempt in Practice Mode
+              </button>
+            ` : (paper.bundleOnly ? bundleOnlyUnlockCta(paper) : `
+              <button onclick="openPaperCheckout('${paper.id}')" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition shadow flex items-center justify-center gap-1.5">
+                <span>🔒 Unlock Paper (₹${paper.price})</span>
+              </button>
+            `))}
+          </div>
         </div>`;
+    }
+
+    // Shows a paper's optional revision notes (typed text and/or an uploaded PDF/image, authored in
+    // Test Paper Studio) in a lightweight modal. Reading these never requires owning the paper --
+    // they're free supporting content, same spirit as a free-demo paper. Shared by both paper-card
+    // renderers (this file's testGridPaperCardHtml and 08_word_page_creator.js's testPaperCardHtml).
+    function openRevisionNotes(paperId) {
+      const paper = testsCatalog.find(p => p.id === paperId);
+      const notes = paper && paper.revisionNotes;
+      if (!notes || (!notes.text && !notes.fileUrl)) return;
+      const body = document.getElementById('revision-notes-modal-body');
+      const parts = [];
+      if (notes.text) parts.push(`<div class="whitespace-pre-wrap leading-relaxed">${escapeHtml(notes.text)}</div>`);
+      if (notes.fileUrl) {
+        parts.push(`<a href="${escapeHtml(notes.fileUrl)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-lg transition">📎 Open ${escapeHtml(notes.fileName || 'attachment')}</a>`);
+      }
+      body.innerHTML = parts.join('');
+      document.getElementById('revision-notes-modal-title').innerText = `📄 ${paper.title}`;
+      openModal('revision-notes-modal');
     }
 
     // ---- Dashboard "Daily Practice" boxes (students only) ----
