@@ -155,7 +155,8 @@
         if (location.hash.startsWith('#/bundle/')) clearPageHash();
       }
       if (view !== 'engine' && !(await guardLeavingExam())) return;
-      ['home', 'tests', 'dashboard', 'admin', 'custom-page', 'bundle-landing', 'engine'].forEach(v => {
+      if (view === 'social-feed') renderSocialFeed();
+      ['home', 'tests', 'dashboard', 'admin', 'custom-page', 'bundle-landing', 'engine', 'social-feed'].forEach(v => {
         document.getElementById(`view-${v}`).classList.add('hidden');
       });
       // Mains Practice is a self-managed full-screen overlay (like the engine above), never a

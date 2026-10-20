@@ -433,6 +433,7 @@ window.onload = async function() {
         fetchCloudPlanners(),
         fetchCloudAnnouncements(),
         fetchCloudSiteBranding(),  // header logo/name/tagline — same generic app_settings pattern
+        fetchCloudSocialFeedSettings(), // whole-feature on/off switch for the public "Updates" nav link/page
         fetchCloudCoupons(),
         fetchCloudCouponRedemptions(), // admin-only (RLS); no-op data for everyone else
         fetchCloudMainsQuestions(),
