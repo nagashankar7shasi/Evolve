@@ -288,7 +288,11 @@
             parentId: r.parent_id || null,
             // daily_practice_box is newer still -- missing/undefined means "off", same as the
             // DB column's own default, so no existing category suddenly gets a Dashboard box.
-            dailyPracticeBox: !!r.daily_practice_box
+            dailyPracticeBox: !!r.daily_practice_box,
+            // prelims_date/mains_date are newer still -- both optional, null/missing means "not
+            // set yet", which simply hides the dashboard countdown chip for that category.
+            prelimsDate: r.prelims_date || null,
+            mainsDate: r.mains_date || null
           };
         });
         // Self-heal: push up any category that exists locally (including the 4 built-in defaults
@@ -299,7 +303,8 @@
           const { error: upErr } = await supabaseClient.from('exam_categories').upsert({
             id: c.id, name: c.name, desc: c.desc || '', default_scheme: c.defaultScheme,
             order_num: c.order || 0, active: c.active !== false, show_scoring_pattern: c.showScoringPattern !== false,
-            parent_id: c.parentId || null, daily_practice_box: !!c.dailyPracticeBox
+            parent_id: c.parentId || null, daily_practice_box: !!c.dailyPracticeBox,
+            prelims_date: c.prelimsDate || null, mains_date: c.mainsDate || null
           });
           if (upErr) console.error(`Failed to restore exam category "${c.id}" to the cloud:`, fmtErr(upErr));
         }
@@ -321,7 +326,8 @@
           await supabaseClient.from('exam_categories').upsert({
             id: c.id, name: c.name, desc: c.desc || '', default_scheme: c.defaultScheme,
             order_num: c.order || 0, active: c.active !== false, show_scoring_pattern: c.showScoringPattern !== false,
-            parent_id: c.parentId || null, daily_practice_box: !!c.dailyPracticeBox
+            parent_id: c.parentId || null, daily_practice_box: !!c.dailyPracticeBox,
+            prelims_date: c.prelimsDate || null, mains_date: c.mainsDate || null
           });
         }
       } catch (err) {
@@ -336,7 +342,8 @@
         const { error } = await supabaseClient.from('exam_categories').upsert({
           id: cat.id, name: cat.name, desc: cat.desc || '', default_scheme: cat.defaultScheme,
           order_num: cat.order || 0, active: cat.active !== false, show_scoring_pattern: cat.showScoringPattern !== false,
-          parent_id: cat.parentId || null, daily_practice_box: !!cat.dailyPracticeBox
+          parent_id: cat.parentId || null, daily_practice_box: !!cat.dailyPracticeBox,
+          prelims_date: cat.prelimsDate || null, mains_date: cat.mainsDate || null
         });
         if (error) throw error;
         return true;
