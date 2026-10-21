@@ -30,7 +30,7 @@
         const shell = document.getElementById('view-admin');
         if (!shell) return false; // shouldn't happen -- the empty shell ships in every index.html
         try {
-          const res = await fetch('admin-console.html?v=95');
+          const res = await fetch('admin-console.html?v=96');
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           shell.innerHTML = await res.text();
           adminConsoleLoaded = true;
@@ -44,6 +44,8 @@
           if (typeof wireWordCount === 'function') wireWordCount();
           if (typeof wireEditorImages === 'function') wireEditorImages();
           if (typeof wirePageDraftAutosave === 'function') wirePageDraftAutosave();
+          if (typeof wireBlockDragReorder === 'function') wireBlockDragReorder();
+          if (typeof wireInsertPicker === 'function') wireInsertPicker();
           return true;
         } catch (err) {
           console.error('Failed to load admin-console.html', fmtErr(err));

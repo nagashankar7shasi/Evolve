@@ -175,7 +175,8 @@
     const BLOCK_MOVE_BTNS =
       '<button type="button" class="kb-block-move kb-block-move-up" contenteditable="false" title="Move this block up" onmousedown="event.preventDefault()" onclick="event.preventDefault(); event.stopPropagation(); moveBlockUp(this);">▲</button>' +
       '<button type="button" class="kb-block-move kb-block-move-down" contenteditable="false" title="Move this block down" onmousedown="event.preventDefault()" onclick="event.preventDefault(); event.stopPropagation(); moveBlockDown(this);">▼</button>' +
-      '<button type="button" class="kb-block-move kb-block-duplicate" contenteditable="false" title="Duplicate this block" onmousedown="event.preventDefault()" onclick="event.preventDefault(); event.stopPropagation(); duplicateBlock(this);">⧉</button>';
+      '<button type="button" class="kb-block-move kb-block-duplicate" contenteditable="false" title="Duplicate this block" onmousedown="event.preventDefault()" onclick="event.preventDefault(); event.stopPropagation(); duplicateBlock(this);">⧉</button>' +
+      '<button type="button" class="kb-block-move kb-block-drag-handle" contenteditable="false" title="Drag to reorder this block" onclick="event.preventDefault(); event.stopPropagation();" onmousedown="event.preventDefault(); startBlockDrag(this);">⠿</button>';
 
     // Deep-clones whichever block the button lives in and drops the copy immediately after the
     // original -- same "closest reorderable ancestor" lookup moveBlockUp/moveBlockDown already use,
@@ -233,6 +234,147 @@
       // for two siblings -- and avoids re-deriving "the sibling after next" separately.
       block.parentNode.insertBefore(next, block);
       block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // Drag-and-drop reordering, as a free-position alternative to the one-step-at-a-time move
+    // up/down arrows above. The block itself is never draggable by default (so an ordinary click
+    // or text selection anywhere on the page can never accidentally start dragging a whole block
+    // around) -- only a mousedown on its own dedicated ⠿ handle (see BLOCK_MOVE_BTNS) makes it so,
+    // and only for the duration of that one drag gesture.
+    let draggedBlockEl = null;
+
+    function startBlockDrag(handleBtn) {
+      const block = closestMovableBlock(handleBtn);
+      if (!block) return;
+      block.setAttribute('draggable', 'true');
+      // A plain click (mousedown then mouseup with no drag in between) never fires dragstart, so
+      // without this the block would stay draggable=true indefinitely and could get swept into an
+      // unrelated later drag gesture started elsewhere on the page.
+      const clearIfNoDragStarted = () => {
+        if (draggedBlockEl !== block) block.removeAttribute('draggable');
+        document.removeEventListener('mouseup', clearIfNoDragStarted);
+      };
+      document.addEventListener('mouseup', clearIfNoDragStarted);
+    }
+
+    // Wired once per canvas load (see wirePageDraftAutosave()'s call site in
+    // js/03b_dev_console.js). Reorders by relocating the dragged block to sit immediately before
+    // or after whichever sibling the pointer's current vertical position is closest to -- scoped
+    // to the dragged block's OWN parent, the same way moveBlockUp/moveBlockDown operate on
+    // whatever container the block actually lives in (the top-level canvas, or a column's own div
+    // when the block is nested inside a columns block), so a drag can reorder within that
+    // container but can't jump the block out into a different one.
+    function wireBlockDragReorder() {
+      const canvas = document.getElementById('word-editor-canvas');
+      if (!canvas || canvas.dataset.dndWired) return;
+      canvas.dataset.dndWired = '1';
+
+      canvas.addEventListener('dragstart', (e) => {
+        const block = e.target.closest && e.target.closest('[draggable="true"]');
+        if (!block || !canvas.contains(block)) { e.preventDefault(); return; }
+        draggedBlockEl = block;
+        block.classList.add('kb-block-dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        try { e.dataTransfer.setData('text/plain', ''); } catch (err) { /* Firefox needs some data set to permit the drag at all */ }
+      });
+
+      canvas.addEventListener('dragover', (e) => {
+        if (!draggedBlockEl) return;
+        e.preventDefault(); // required for drop to be allowed to fire at all
+        const parent = draggedBlockEl.parentNode;
+        if (!parent) return;
+        let target = null, placeBefore = false;
+        for (const sib of parent.children) {
+          if (sib === draggedBlockEl) continue;
+          const rect = sib.getBoundingClientRect();
+          target = sib;
+          if (e.clientY < rect.top + rect.height / 2) { placeBefore = true; break; }
+          placeBefore = false;
+        }
+        if (!target) return; // nothing else in this container to anchor against
+        parent.insertBefore(draggedBlockEl, placeBefore ? target : target.nextSibling);
+      });
+
+      canvas.addEventListener('drop', (e) => { if (draggedBlockEl) e.preventDefault(); });
+
+      canvas.addEventListener('dragend', () => {
+        if (draggedBlockEl) {
+          draggedBlockEl.classList.remove('kb-block-dragging');
+          draggedBlockEl.removeAttribute('draggable');
+          draggedBlockEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        draggedBlockEl = null;
+      });
+    }
+
+    // Grouped/searchable "+ Insert" picker -- collapses what used to be a flat row of 18
+    // individual buttons into one dropdown, grouped by kind (Text/Layout/Data/Cards & links/
+    // Media) with a search box that filters by each button's data-insert-label. Every button's
+    // own onclick (insertBlock('info'), openResourceCardModal(), etc.) is unchanged from the old
+    // flat row -- this only changes how they're reached.
+    function toggleInsertPicker() {
+      const panel = document.getElementById('insert-picker-panel');
+      if (!panel) return;
+      if (panel.classList.contains('hidden')) openInsertPicker(); else closeInsertPicker();
+    }
+
+    function openInsertPicker() {
+      const panel = document.getElementById('insert-picker-panel');
+      if (!panel) return;
+      panel.classList.remove('hidden');
+      const search = document.getElementById('insert-picker-search');
+      if (search) {
+        search.value = '';
+        filterInsertPicker('');
+        search.focus();
+      }
+    }
+
+    function closeInsertPicker() {
+      const panel = document.getElementById('insert-picker-panel');
+      if (panel) panel.classList.add('hidden');
+    }
+
+    function filterInsertPicker(query) {
+      const panel = document.getElementById('insert-picker-panel');
+      if (!panel) return;
+      const q = query.trim().toLowerCase();
+      let anyVisible = false;
+      panel.querySelectorAll('[data-insert-group]').forEach((group) => {
+        let groupHasMatch = false;
+        group.querySelectorAll('button[data-insert-label]').forEach((btn) => {
+          const hay = (btn.dataset.insertLabel + ' ' + btn.textContent).toLowerCase();
+          const match = !q || hay.includes(q);
+          btn.style.display = match ? '' : 'none';
+          if (match) groupHasMatch = true;
+        });
+        group.style.display = groupHasMatch ? '' : 'none';
+        if (groupHasMatch) anyVisible = true;
+      });
+      const empty = document.getElementById('insert-picker-empty');
+      if (empty) empty.classList.toggle('hidden', anyVisible);
+    }
+
+    // Wired once per canvas load (see ensureAdminConsoleLoaded() in 03b_dev_console.js).
+    function wireInsertPicker() {
+      const panel = document.getElementById('insert-picker-panel');
+      if (!panel || panel.dataset.wired) return;
+      panel.dataset.wired = '1';
+      // Any actual insert button click already ran its own onclick (that fires first, during the
+      // target phase); this delegated listener on the panel just catches the same click bubbling
+      // up afterward, so picking a block also closes the picker without touching 18 onclick
+      // attributes individually.
+      panel.addEventListener('click', (e) => {
+        if (e.target.closest('button[data-insert-label]')) closeInsertPicker();
+      });
+      // Click-outside-to-close -- the toggle button itself lives in the same .relative wrapper as
+      // the panel, so the click that OPENS the picker also bubbles here without immediately
+      // closing it again.
+      document.addEventListener('click', (e) => {
+        const wrapper = panel.closest('.relative');
+        if (wrapper && !wrapper.contains(e.target)) closeInsertPicker();
+      });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeInsertPicker(); });
     }
 
     // Recomputes the actual number of columns (every child except the delete-button island) and
@@ -2671,6 +2813,34 @@
       }
       // Genuinely external web links (Google Drive, other sites) open directly, unmodified
       window.open(url, '_blank', 'noopener');
+    }
+
+    // Admin-only "live preview" button on the Word Page Editor screen (Dev Console) -- shows the
+    // canvas's current content, including anything unsaved, in a modal styled exactly like the
+    // real public page would show it. Reuses hydratePageCards() (the same materialization step
+    // renderDynamicCustomPage() runs) so page/test-paper/resource cards show their live tile
+    // rather than the raw placeholder div, and strips the same editor-only ✎/✕/▲/▼/⧉/⠿ overlay
+    // buttons downloadWordEditorPagePdf() strips below -- but, unlike that PDF export, leaves
+    // video embeds as real playable iframes, since this is a live DOM view rather than a static
+    // print target. The preview container (#page-preview-content) carries the same .word-canvas
+    // class as both the editor canvas and #page-render-content on the live page, so it picks up
+    // identical styling with no separate "preview" CSS to keep in sync.
+    function openPagePreview() {
+      const canvas = document.getElementById('word-editor-canvas');
+      if (!canvas.textContent.trim() && !canvas.querySelector('img, table, .kb-pagelink, .kb-resource-card, .kb-video-wrap')) {
+        return alert('This page has no content yet to preview.');
+      }
+      const title = (document.getElementById('page-title-input').value || '').trim() || 'Untitled page';
+      const icon = document.getElementById('page-icon-input').value || '';
+
+      const temp = document.createElement('div');
+      temp.innerHTML = canvas.innerHTML;
+      temp.querySelectorAll('.kb-block-delete, .kb-block-move').forEach(btn => btn.remove());
+      hydratePageCards(temp);
+
+      document.getElementById('page-preview-title').innerText = `${icon ? icon + ' ' : ''}${title}`;
+      document.getElementById('page-preview-content').innerHTML = temp.innerHTML;
+      openModal('page-preview-modal');
     }
 
     // Admin-only export button on the Word Page Editor screen (Dev Console) -- lets the admin grab

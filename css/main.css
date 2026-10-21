@@ -301,12 +301,27 @@
     #word-editor-canvas .kb-cols .kb-block-duplicate,
     #word-editor-canvas .kb-cols-3 .kb-block-duplicate,
     #word-editor-canvas .kb-cols-4 .kb-block-duplicate { top: 42px; left: 6px; }
+    #word-editor-canvas .kb-table-wrap .kb-block-drag-handle,
+    #word-editor-canvas .kb-video-wrap .kb-block-drag-handle,
+    #word-editor-canvas .kb-cols .kb-block-drag-handle,
+    #word-editor-canvas .kb-cols-3 .kb-block-drag-handle,
+    #word-editor-canvas .kb-cols-4 .kb-block-drag-handle { top: 60px; left: 6px; }
     #word-editor-canvas .kb-resource-card .kb-block-move-up   { top: 6px;  left: 6px; }
     #word-editor-canvas .kb-resource-card .kb-block-move-down { top: 24px; left: 6px; }
     #word-editor-canvas .kb-resource-card .kb-block-duplicate { top: 42px; left: 6px; }
+    #word-editor-canvas .kb-resource-card .kb-block-drag-handle { top: 60px; left: 6px; }
     #word-editor-canvas .kb-pagelink .kb-block-move-up   { top: 50%; right: 30px; transform: translateY(-50%); }
     #word-editor-canvas .kb-pagelink .kb-block-move-down { top: 50%; right: 54px; transform: translateY(-50%); }
     #word-editor-canvas .kb-pagelink .kb-block-duplicate { top: 50%; right: 78px; transform: translateY(-50%); }
+    #word-editor-canvas .kb-pagelink .kb-block-drag-handle { top: 50%; right: 102px; transform: translateY(-50%); }
+    /* Drag handle is the one move-cluster button that opts the block INTO native HTML5 drag-and-
+       drop (see startBlockDrag()/wireBlockDragReorder() in 08_word_page_creator.js) -- every other
+       .kb-block-move button stays click-only, so this one gets its own grab/grabbing cursor and a
+       distinct icon instead of reusing .kb-block-move's default pointer cursor. The block being
+       dragged gets a dashed-outline ghost treatment so it's clear which one will land where. */
+    #word-editor-canvas .kb-block-drag-handle { cursor: grab; font-size: 11px; }
+    #word-editor-canvas .kb-block-drag-handle:active { cursor: grabbing; }
+    #word-editor-canvas .kb-block-dragging { opacity: 0.35; outline: 2px dashed #2563eb; outline-offset: 2px; }
     /* In-page section nav: a row of pill links that scroll (never navigate -- see
        scrollToPageAnchor() in 08_word_page_creator.js) to headings further down the SAME page.
        Shared under .word-canvas (not editor-only) since the pills ARE the real published content --
@@ -321,6 +336,7 @@
     #word-editor-canvas .kb-section-nav .kb-block-move-up   { top: 6px;  left: 6px; }
     #word-editor-canvas .kb-section-nav .kb-block-move-down { top: 24px; left: 6px; }
     #word-editor-canvas .kb-section-nav .kb-block-duplicate { top: 42px; left: 6px; }
+    #word-editor-canvas .kb-section-nav .kb-block-drag-handle { top: 60px; left: 6px; }
     /* Click-to-select for the video embed, same idea as img.kb-selected below -- the iframe itself
        is pointer-events:none ONLY inside the editor (never on the public page, where it must stay
        playable), so a click lands on the wrapper div underneath instead of being swallowed by the

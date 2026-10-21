@@ -578,27 +578,70 @@
             </button>
           </div>
           <div class="px-2 py-1.5 bg-slate-50 border border-t-0 border-slate-200 flex flex-wrap items-center gap-1.5 text-xs">
-            <span class="font-bold text-slate-500 mr-1">Insert</span>
-            <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('info')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">ℹ️ Info box</button>
-            <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('tip')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">✅ Tip</button>
-            <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('warn')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">⚠️ Warning</button>
-            <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('facts')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">📌 Key facts</button>
-            <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('table')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">▦ Table</button>
-            <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('video')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50" title="Embed a YouTube video">🎥 Video</button>
-            <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('hr')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50" title="Horizontal divider line">➖ Divider</button>
-            <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('cols')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">◫ 2 columns</button>
-            <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('cols3')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">◫ 3 columns</button>
-            <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('cols4')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">◫ 4 columns</button>
-            <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('grid')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50" title="Auto-flowing grid — ideal for magazine/PDF listings">🗂 Card grid</button>
-            <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('stats')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">🔢 Key figures</button>
-            <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('timeline')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">🕰️ Timeline</button>
-            <button type="button" onmousedown="event.preventDefault()" onclick="insertBlock('faq')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">❓ FAQ</button>
-            <button type="button" onmousedown="event.preventDefault()" onclick="openPageCardPicker()" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">🧭 Page card</button>
-            <button type="button" onmousedown="event.preventDefault()" onclick="openSectionNavPicker()" class="px-2 py-1 bg-white border rounded hover:bg-slate-50" title="A row of jump links to headings further down this same page">🧷 Section nav</button>
-            <button type="button" onmousedown="event.preventDefault()" onclick="openResourceCardModal()" class="px-2 py-1 bg-amber-50 border border-amber-300 rounded hover:bg-amber-100" title="Image + title + text bundled with a PDF or page link">📚 Resource card</button>
-            <button type="button" onmousedown="event.preventDefault()" onclick="openTestPaperCardPicker()" class="px-2 py-1 bg-indigo-50 border border-indigo-300 rounded hover:bg-indigo-100" title="A clickable card linking to one of your uploaded test papers — price/lock status always shows live">📝 Test paper card</button>
-            <button type="button" onmousedown="event.preventDefault()" onclick="document.getElementById('editor-image-file').click()" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">🖼️ Image</button>
-            <button type="button" onmousedown="event.preventDefault()" onclick="insertImageFromLink()" class="px-2 py-1 bg-white border rounded hover:bg-slate-50">🔗 Image from link</button>
+            <!-- Grouped/searchable "+ Insert" picker -- replaces what used to be a flat row of 18
+                 individual buttons (every one of those onclick calls is unchanged, just moved in
+                 here grouped by kind, with a data-insert-label added for the search filter in
+                 filterInsertPicker()). See toggleInsertPicker()/wireInsertPicker() in
+                 08_word_page_creator.js. -->
+            <div class="relative inline-block">
+              <button type="button" onmousedown="event.preventDefault()" onclick="event.preventDefault(); event.stopPropagation(); toggleInsertPicker();" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg flex items-center gap-1">
+                <span>+ Insert</span>
+              </button>
+              <div id="insert-picker-panel" class="hidden absolute z-30 mt-1 w-80 max-h-80 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-lg p-2">
+                <input type="text" id="insert-picker-search" placeholder="Search blocks…" oninput="filterInsertPicker(this.value)" onclick="event.stopPropagation()" class="w-full px-2 py-1 mb-2 border border-slate-200 rounded text-xs sticky top-0 bg-white" />
+                <div id="insert-picker-empty" class="hidden text-center text-slate-400 py-4">No blocks match that search.</div>
+
+                <div data-insert-group>
+                  <div class="font-bold text-slate-400 uppercase tracking-wide px-1 mb-1" style="font-size:10px">Text</div>
+                  <div class="grid grid-cols-2 gap-1 mb-2">
+                    <button type="button" data-insert-label="info box callout" onmousedown="event.preventDefault()" onclick="insertBlock('info')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-left">ℹ️ Info box</button>
+                    <button type="button" data-insert-label="tip success" onmousedown="event.preventDefault()" onclick="insertBlock('tip')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-left">✅ Tip</button>
+                    <button type="button" data-insert-label="warning alert" onmousedown="event.preventDefault()" onclick="insertBlock('warn')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-left">⚠️ Warning</button>
+                    <button type="button" data-insert-label="key facts list" onmousedown="event.preventDefault()" onclick="insertBlock('facts')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-left">📌 Key facts</button>
+                    <button type="button" data-insert-label="divider horizontal rule line" onmousedown="event.preventDefault()" onclick="insertBlock('hr')" title="Horizontal divider line" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-left">➖ Divider</button>
+                  </div>
+                </div>
+
+                <div data-insert-group>
+                  <div class="font-bold text-slate-400 uppercase tracking-wide px-1 mb-1" style="font-size:10px">Layout</div>
+                  <div class="grid grid-cols-2 gap-1 mb-2">
+                    <button type="button" data-insert-label="2 two columns" onmousedown="event.preventDefault()" onclick="insertBlock('cols')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-left">◫ 2 columns</button>
+                    <button type="button" data-insert-label="3 three columns" onmousedown="event.preventDefault()" onclick="insertBlock('cols3')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-left">◫ 3 columns</button>
+                    <button type="button" data-insert-label="4 four columns" onmousedown="event.preventDefault()" onclick="insertBlock('cols4')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-left">◫ 4 columns</button>
+                    <button type="button" data-insert-label="card grid magazine" onmousedown="event.preventDefault()" onclick="insertBlock('grid')" title="Auto-flowing grid — ideal for magazine/PDF listings" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-left">🗂 Card grid</button>
+                  </div>
+                </div>
+
+                <div data-insert-group>
+                  <div class="font-bold text-slate-400 uppercase tracking-wide px-1 mb-1" style="font-size:10px">Data</div>
+                  <div class="grid grid-cols-2 gap-1 mb-2">
+                    <button type="button" data-insert-label="table" onmousedown="event.preventDefault()" onclick="insertBlock('table')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-left">▦ Table</button>
+                    <button type="button" data-insert-label="key figures numbers stats" onmousedown="event.preventDefault()" onclick="insertBlock('stats')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-left">🔢 Key figures</button>
+                    <button type="button" data-insert-label="timeline history" onmousedown="event.preventDefault()" onclick="insertBlock('timeline')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-left">🕰️ Timeline</button>
+                    <button type="button" data-insert-label="faq question answer" onmousedown="event.preventDefault()" onclick="insertBlock('faq')" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-left">❓ FAQ</button>
+                  </div>
+                </div>
+
+                <div data-insert-group>
+                  <div class="font-bold text-slate-400 uppercase tracking-wide px-1 mb-1" style="font-size:10px">Cards &amp; links</div>
+                  <div class="grid grid-cols-2 gap-1 mb-2">
+                    <button type="button" data-insert-label="page card link" onmousedown="event.preventDefault()" onclick="openPageCardPicker()" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-left">🧭 Page card</button>
+                    <button type="button" data-insert-label="section nav jump links" onmousedown="event.preventDefault()" onclick="openSectionNavPicker()" title="A row of jump links to headings further down this same page" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-left">🧷 Section nav</button>
+                    <button type="button" data-insert-label="resource card pdf" onmousedown="event.preventDefault()" onclick="openResourceCardModal()" title="Image + title + text bundled with a PDF or page link" class="px-2 py-1 bg-amber-50 border border-amber-300 rounded hover:bg-amber-100 text-left">📚 Resource card</button>
+                    <button type="button" data-insert-label="test paper card" onmousedown="event.preventDefault()" onclick="openTestPaperCardPicker()" title="A clickable card linking to one of your uploaded test papers — price/lock status always shows live" class="px-2 py-1 bg-indigo-50 border border-indigo-300 rounded hover:bg-indigo-100 text-left">📝 Test paper card</button>
+                  </div>
+                </div>
+
+                <div data-insert-group>
+                  <div class="font-bold text-slate-400 uppercase tracking-wide px-1 mb-1" style="font-size:10px">Media</div>
+                  <div class="grid grid-cols-2 gap-1">
+                    <button type="button" data-insert-label="video youtube embed" onmousedown="event.preventDefault()" onclick="insertBlock('video')" title="Embed a YouTube video" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-left">🎥 Video</button>
+                    <button type="button" data-insert-label="image picture upload" onmousedown="event.preventDefault()" onclick="document.getElementById('editor-image-file').click()" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-left">🖼️ Image</button>
+                    <button type="button" data-insert-label="image from link url" onmousedown="event.preventDefault()" onclick="insertImageFromLink()" class="px-2 py-1 bg-white border rounded hover:bg-slate-50 text-left">🔗 Image from link</button>
+                  </div>
+                </div>
+              </div>
+            </div>
             <input type="file" id="editor-image-file" accept="image/*" class="hidden" onchange="handleEditorImage(this)" />
             <span id="image-tools" class="hidden items-center gap-1 ml-1 pl-2 border-l border-slate-300 flex-wrap">
               <span class="font-bold text-slate-500">Size</span>
@@ -688,6 +731,9 @@
               <span id="page-draft-status" class="text-[11px] text-emerald-600 font-bold whitespace-nowrap"></span>
             </div>
             <div class="flex items-center gap-2">
+              <button type="button" onclick="openPagePreview()" title="See the canvas right now (including unsaved changes) exactly as a student would -- nothing is published or saved" class="px-4 py-2 border border-slate-300 hover:bg-slate-50 font-bold rounded-lg text-slate-700">
+                👁️ Preview
+              </button>
               <button type="button" onclick="downloadWordEditorPagePdf()" title="Export whatever is in the canvas right now (including unsaved changes) as a PDF -- for your own review, not shown to students" class="px-4 py-2 border border-slate-300 hover:bg-slate-50 font-bold rounded-lg text-slate-700">
                 ⬇️ Download as PDF
               </button>
