@@ -835,37 +835,60 @@
       const testsBox = document.getElementById('dash-my-tests');
       const unlockedPapers = testsCatalog.filter(p => isTestUnlockedForUser(p.id));
       const lockedCount = testsCatalog.length - unlockedPapers.length;
-      testsBox.innerHTML = unlockedPapers.length === 0
-        ? '<p class="text-slate-400 py-4 text-center">No test papers unlocked yet. Browse the Exam Hub to unlock one.</p>'
-        : unlockedPapers.map(p => {
-            const tries = myAttempts.filter(a => a.paperId === p.id);
-            const best = tries.length ? Math.max(...tries.map(a => parseFloat(a.score))).toFixed(2) : null;
-            const status = tries.length
-              ? `Attempted ${tries.length} time${tries.length > 1 ? 's' : ''}. Best score ${best}.`
-              : 'Not attempted yet.';
-            return `
-              <div class="flex items-center justify-between gap-3 p-3 bg-slate-50 border rounded-xl">
-                <div class="min-w-0">
-                  <div class="flex items-center gap-2">
-                    <span class="px-2 py-0.5 bg-amber-100 text-amber-900 rounded text-[10px] font-bold">${escapeHtml(p.scheme.examBadge)}</span>
-                    ${p.price === 0 ? '<span class="text-[10px] font-bold text-emerald-600">Free</span>'
-                      : activeBundlesFor(student).some(b => bundleCoversPaper(b, p))
-                        ? '<span class="text-[10px] font-bold text-emerald-700">Included in your pass</span>'
-                        : '<span class="text-[10px] font-bold text-slate-500">Purchased</span>'}
-                  </div>
-                  <div class="font-bold text-slate-900 mt-1 truncate">${escapeHtml(p.title)}</div>
-                  <div class="text-[11px] text-slate-500">${status}</div>
-                </div>
-                <div class="shrink-0 flex flex-col gap-1.5 items-stretch">
-                  <button onclick="openExamModePicker('${p.id}')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-[11px]">
-                    ${tries.length ? 'Retake' : 'Start'}
-                  </button>
-                  <button onclick="launchExamPaperPractice('${p.id}')" class="px-3 py-1 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg font-bold text-[10px]" title="Untimed, one question at a time, answer shown immediately">
-                    🎯 Practice
-                  </button>
-                </div>
-              </div>`;
-          }).join('');
+
+      const paperCardHtml = p => {
+        const tries = myAttempts.filter(a => a.paperId === p.id);
+        const best = tries.length ? Math.max(...tries.map(a => parseFloat(a.score))).toFixed(2) : null;
+        const status = tries.length
+          ? `Attempted ${tries.length} time${tries.length > 1 ? 's' : ''}. Best score ${best}.`
+          : 'Not attempted yet.';
+        return `
+          <div class="flex items-center justify-between gap-3 p-3 bg-slate-50 border rounded-xl">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 bg-amber-100 text-amber-900 rounded text-[10px] font-bold">${escapeHtml(p.scheme.examBadge)}</span>
+                ${p.price === 0 ? '<span class="text-[10px] font-bold text-emerald-600">Free</span>'
+                  : activeBundlesFor(student).some(b => bundleCoversPaper(b, p))
+                    ? '<span class="text-[10px] font-bold text-emerald-700">Included in your pass</span>'
+                    : '<span class="text-[10px] font-bold text-slate-500">Purchased</span>'}
+              </div>
+              <div class="font-bold text-slate-900 mt-1 truncate">${escapeHtml(p.title)}</div>
+              <div class="text-[11px] text-slate-500">${status}</div>
+            </div>
+            <div class="shrink-0 flex flex-col gap-1.5 items-stretch">
+              <button onclick="openExamModePicker('${p.id}')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-[11px]">
+                ${tries.length ? 'Retake' : 'Start'}
+              </button>
+              <button onclick="launchExamPaperPractice('${p.id}')" class="px-3 py-1 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg font-bold text-[10px]" title="Untimed, one question at a time, answer shown immediately">
+                🎯 Practice
+              </button>
+            </div>
+          </div>`;
+      };
+
+      if (unlockedPapers.length === 0) {
+        testsBox.innerHTML = '<p class="text-slate-400 py-4 text-center">No test papers unlocked yet. Browse the Exam Hub to unlock one.</p>';
+      } else {
+        // GROUPED BY ATTEMPT STATUS: a student holding even one category-wide or all-access bundle
+        // can have 30+ unlocked papers (see the admin's own paper-count/scale concerns elsewhere in
+        // this project) -- an undifferentiated flat list is exactly where a newly-unlocked paper
+        // goes unnoticed among ones already attempted. Papers never attempted (the ones actually
+        // worth noticing) always render first and in full; papers already attempted collapse into a
+        // closed <details> below so a long history never pushes a new, un-attempted paper out of the
+        // immediately-visible area.
+        const notAttempted = unlockedPapers.filter(p => !myAttempts.some(a => a.paperId === p.id));
+        const attempted = unlockedPapers.filter(p => myAttempts.some(a => a.paperId === p.id));
+
+        const summaryHtml = `<p class="text-[11px] text-slate-500 pb-1">${unlockedPapers.length} test paper${unlockedPapers.length > 1 ? 's' : ''} unlocked — <b class="text-amber-700">${notAttempted.length} not attempted yet</b>, ${attempted.length} already attempted.</p>`;
+        const notAttemptedHtml = notAttempted.length
+          ? `<div class="space-y-2">${notAttempted.map(paperCardHtml).join('')}</div>`
+          : (attempted.length ? '<p class="text-emerald-700 text-[11px] font-bold py-1">✓ You’ve attempted every unlocked paper.</p>' : '');
+        const attemptedHtml = attempted.length
+          ? `<details class="mt-2"><summary class="cursor-pointer text-[11px] font-bold text-slate-500 py-1">Previously attempted (${attempted.length})</summary><div class="space-y-2 pt-1">${attempted.map(paperCardHtml).join('')}</div></details>`
+          : '';
+
+        testsBox.innerHTML = summaryHtml + notAttemptedHtml + attemptedHtml;
+      }
       if (lockedCount > 0) {
         testsBox.innerHTML += `<p class="text-[11px] text-slate-400 pt-1">${lockedCount} more paper${lockedCount > 1 ? 's are' : ' is'} available to unlock in the Exam Hub.</p>`;
       }
