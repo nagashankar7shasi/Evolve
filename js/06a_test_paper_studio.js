@@ -997,6 +997,7 @@
       const minFloor = Math.max(1, parseInt(document.getElementById('studio-split-min').value, 10) || 15);
       const maxCap = Math.max(minFloor, parseInt(document.getElementById('studio-split-max').value, 10) || 60);
       const mergeSmall = document.getElementById('studio-split-merge').checked;
+      const includeCA = document.getElementById('studio-split-include-ca').checked;
       const cat = document.getElementById('studio-category').value;
       preview.innerHTML = '<p class="text-[11px] text-slate-500">Checking the whole category for duplicates…</p>';
 
@@ -1005,7 +1006,11 @@
       const allGroups = studioBankSubTopicGroups(subjectPool);
       const named = allGroups.filter(g => g.label !== '(no sub-topic)');
       const untagged = allGroups.find(g => g.label === '(no sub-topic)');
-      const untaggedCount = untagged ? untagged.static.length + untagged.ca.length : 0;
+      // Current Affairs questions are left untouched in the bank entirely when the toggle is off --
+      // not filtered out after pooling, so they're also excluded from the untagged-question count
+      // below (reporting "N CA questions have no sub-topic" would be confusing when CA isn't even
+      // part of this split run).
+      const untaggedCount = untagged ? untagged.static.length + (includeCA ? untagged.ca.length : 0) : 0;
 
       // Global duplicate scan: every OTHER paper in this category (own + cross-tagged via
       // extraCategories) — NOT just bundle siblings, unlike studioFindBundleMatch's other caller —
@@ -1025,7 +1030,7 @@
       });
 
       const rows = named.map(g => {
-        const pool = shuffle([...cleanPool(g.static), ...cleanPool(g.ca)]);
+        const pool = shuffle([...cleanPool(g.static), ...(includeCA ? cleanPool(g.ca) : [])]);
         const sizes = studioBalancedPaperSizes(pool.length, minFloor, maxCap);
         const titles = sizes.map((_, i) => `${subject} — ${g.label}${sizes.length > 1 ? ` (Part ${i + 1} of ${sizes.length})` : ''}`);
         // Every part of a single-sub-topic paper covers just that one topic -- the "Mixed topics"
@@ -1085,6 +1090,7 @@
       preview.innerHTML = `
         <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-[11px]">
           ${dupCount ? `<p class="text-amber-800 mb-1.5">🔁 Excluded ${dupCount} question(s) already used elsewhere in this category.</p>` : ''}
+          ${!includeCA && subjectPool.ca.length ? `<p class="text-slate-500 mb-1.5">${subjectPool.ca.length} Current Affairs question(s) in "${escapeHtml(subject)}" left untouched in the bank — tick "Include Current Affairs" to fold them into this split.</p>` : ''}
           ${tooSmall.length ? `<p class="text-slate-500 mb-1.5">Skipped (below the ${minFloor}-question minimum): ${tooSmall.map(r => `${escapeHtml(r.label)} (${r.total})`).join(', ')}.</p>` : ''}
           ${untaggedCount ? `<p class="text-slate-500 mb-1.5">${untaggedCount} question(s) in "${escapeHtml(subject)}" have no sub-topic yet and were left out — re-upload with a Sub_Topic column to include them (see 🧩 Sub-topics in Exam Categories admin).</p>` : ''}
           <table class="w-full border-collapse mb-2">
