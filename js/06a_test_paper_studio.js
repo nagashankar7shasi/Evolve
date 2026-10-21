@@ -1063,7 +1063,10 @@
       const baseOrder = (testsCatalog || []).reduce((max, p) => Math.max(max, p.order || 0), 0) + 10;
 
       const newPapers = [];
-      groups.forEach(g => {
+      groups.forEach((g, groupIdx) => {
+        // Only tag siblings when this subject/sub-topic actually produced more than one paper --
+        // a single-part "split" has no siblings to group with in the admin list later.
+        const splitGroupId = g.sizes.length > 1 ? `split_${Date.now()}_${groupIdx}` : null;
         let offset = 0;
         g.sizes.forEach((size, partIdx) => {
           const picked = g.pool.slice(offset, offset + size);
@@ -1094,7 +1097,8 @@
             active: false, delisted: false, bundle_only: false, coming_soon: false, revision_notes: null,
             title: g.titles[partIdx], price: 0, scheme,
             questions: cleanQuestions, question_count: cleanQuestions.length,
-            scheduled_for: null, order_num: baseOrder + newPapers.length * 10
+            scheduled_for: null, order_num: baseOrder + newPapers.length * 10,
+            split_group_id: splitGroupId
           });
         });
       });
@@ -1107,7 +1111,7 @@
             id: p.id, category: p.category, extraCategories: p.extra_categories, alsoListCategories: p.also_list_categories,
             active: p.active, delisted: p.delisted, bundleOnly: p.bundle_only, comingSoon: p.coming_soon, revisionNotes: p.revision_notes,
             title: p.title, price: p.price, scheme: p.scheme, questions: p.questions, questionCount: p.question_count,
-            scheduled_for: p.scheduled_for, order: p.order_num
+            scheduled_for: p.scheduled_for, order: p.order_num, splitGroupId: p.split_group_id
           });
         });
         renderTestsCatalogAdmin();
@@ -1933,8 +1937,14 @@
         if (error) throw error;
 
         // Update local catalog
-        const runtimePaper = { id: paperId, category, extraCategories, alsoListCategories, active, delisted, bundleOnly, comingSoon, revisionNotes, title, price, scheme, questions: cleanQuestions, questionCount: cleanQuestions.length, scheduled_for: scheduledFor, order: orderNum };
         const existingIdx = testsCatalog.findIndex(p => p.id === paperId);
+        // splitGroupId has no field in this form (Studio never sets/clears it), so an in-place edit
+        // must carry it over from whatever's already in memory -- otherwise replacing the whole
+        // object here would silently drop a paper out of its split-sibling group in the admin list
+        // until the next full catalog reload re-fetches it from the DB (the upsert below never
+        // touches that column either way, so the row itself is always fine).
+        const splitGroupId = existingIdx >= 0 ? testsCatalog[existingIdx].splitGroupId : undefined;
+        const runtimePaper = { id: paperId, category, extraCategories, alsoListCategories, active, delisted, bundleOnly, comingSoon, revisionNotes, title, price, scheme, questions: cleanQuestions, questionCount: cleanQuestions.length, scheduled_for: scheduledFor, order: orderNum, splitGroupId };
         if (existingIdx >= 0) testsCatalog[existingIdx] = runtimePaper;
         else testsCatalog.push(runtimePaper);
 
