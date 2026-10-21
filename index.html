@@ -52,7 +52,7 @@
        load; this is the same utility classes, generated once at commit time instead. Rebuild with
        `npm run build-css` (see tailwind.config.js) whenever a new utility class is used anywhere
        in index.html or js/*.js that isn't already covered by the existing build. -->
-  <link rel="stylesheet" href="css/tailwind.css?v=107">
+  <link rel="stylesheet" href="css/tailwind.css?v=109">
   <!-- PapaParse for CSV parsing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <!-- pdf-lib: stamps a watermark footer onto PDFs we host, at download/open time -->
@@ -60,7 +60,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
   <!-- Add Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="css/main.css?v=107">
+  <link rel="stylesheet" href="css/main.css?v=109">
 
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col select-none">
@@ -77,7 +77,11 @@
              keyword-bearing <h1> is the home hero heading below (#home-hero-heading) -- a page
              should have exactly one <h1>, and it should carry actual page content, not a logo. -->
         <div id="site-brand-name" class="leading-tight tracking-wide" style="font-family:'Playfair Display',Georgia,serif; font-weight:900; font-size:1.05rem;"><span class="text-white">EVOLVE</span><span class="text-amber-400">+</span></div>
-        <p id="site-brand-tagline" class="text-[10px] text-slate-400 tracking-widest uppercase">Transform Potential into Performance</p>
+        <!-- text-slate-300 on bg-slate-900 measures 12:1 contrast (slate-400 was already a
+             passing 6.96:1 -- not actually a contrast failure); the real legibility problem was
+             the combination of 10px type with tracking-widest on a 5-word uppercase phrase, fixed
+             by bumping size and easing the letter-spacing a notch. -->
+        <p id="site-brand-tagline" class="text-[11px] text-slate-300 tracking-wide uppercase">Transform Potential into Performance</p>
       </div>
     </div>
 
@@ -784,43 +788,60 @@
 
   <!-- ================= VIEW 6: LIVE OMR TEST ENGINE ================= -->
   <div id="view-engine" class="fixed inset-0 bg-slate-100 z-50 flex flex-col hidden">
-    <header class="bg-slate-900 text-white h-14 px-6 flex items-center justify-between border-b border-slate-800 shrink-0">
-      <div class="flex items-center space-x-3">
-        <div id="engine-logo-box" class="w-8 h-8 rounded bg-amber-500 flex items-center justify-center font-bold text-slate-950 overflow-hidden">
+    <header class="bg-slate-900 text-white h-14 px-3 md:px-6 flex items-center justify-between border-b border-slate-800 shrink-0 gap-2">
+      <div class="flex items-center space-x-2 md:space-x-3 min-w-0">
+        <!-- Hidden below md: the small brand icon is low-value real estate here, and the paper
+             title (which students actually need, to confirm which test they're in) was being
+             squeezed down to 1-2 visible characters without this room back -- confirmed against
+             the exact title length from a real reported paper ("Test 2 — Indian Economic Survey
+             2025-26"), which rendered as literally "T.." before this. -->
+        <div id="engine-logo-box" class="hidden md:flex w-8 h-8 rounded bg-amber-500 items-center justify-center font-bold text-slate-950 overflow-hidden shrink-0">
           <span id="engine-logo-text">ಕ</span>
           <img id="engine-logo-img" src="" alt="" class="hidden w-full h-full object-cover" />
         </div>
-        <div>
+        <div class="min-w-0">
           <!-- Not an <h1> -- the page's one real <h1> is the home hero heading (#home-hero-heading). -->
-          <h2 class="font-bold text-sm md:text-base leading-tight" id="engine-exam-title">Mock Exam</h2>
-          <p class="text-[11px] text-slate-400" id="engine-scheme-info">Marking Scheme Applied</p>
+          <h2 class="font-bold text-xs md:text-base leading-tight truncate" id="engine-exam-title">Mock Exam</h2>
+          <p class="text-[11px] text-slate-400 truncate hidden md:block" id="engine-scheme-info">Marking Scheme Applied</p>
         </div>
       </div>
 
-      <div class="flex items-center space-x-5">
+      <div class="flex items-center gap-1 md:gap-5 shrink-0">
+        <!-- Mobile-only: opens the OMR sheet as a slide-in drawer (openOmrDrawer, js/10_omr_exam_engine.js)
+             since the always-visible sidebar below only fits at md (768px) and up. -->
+        <button id="omr-drawer-toggle" onclick="openOmrDrawer()" class="md:hidden flex items-center gap-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-1.5 py-1.5 rounded-lg font-bold text-[11px] transition" aria-label="Open OMR response sheet">
+          📋<span id="omr-tally-badge" class="bg-amber-500 text-slate-950 text-[10px] font-black rounded-full min-w-[16px] h-[16px] px-1 flex items-center justify-center">0</span>
+        </button>
         <div class="flex items-center bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs">
-          <button id="lang-en" onclick="setLanguage('en')" class="px-2.5 py-0.5 rounded font-bold bg-amber-500 text-slate-950 transition">ENG</button>
-          <button id="lang-kn" onclick="setLanguage('kn')" class="px-2.5 py-0.5 rounded text-slate-300 hover:text-white font-medium transition">ಕನ್ನಡ</button>
+          <button id="lang-en" onclick="setLanguage('en')" class="px-1.5 md:px-2.5 py-0.5 rounded font-bold bg-amber-500 text-slate-950 transition">ENG</button>
+          <button id="lang-kn" onclick="setLanguage('kn')" class="px-1.5 md:px-2.5 py-0.5 rounded text-slate-300 hover:text-white font-medium transition">ಕನ್ನಡ</button>
         </div>
-        <div class="bg-slate-800 px-3.5 py-1 rounded-lg border border-slate-700 flex items-center space-x-2">
-          <span class="text-[10px] text-slate-400 font-mono">TIME LEFT:</span>
-          <span id="exam-timer" class="font-mono text-sm font-bold text-amber-400">02:00:00</span>
+        <div class="bg-slate-800 px-1.5 md:px-3.5 py-1 rounded-lg border border-slate-700 flex items-center space-x-1 md:space-x-2">
+          <span class="hidden md:inline text-[10px] text-slate-400 font-mono">TIME LEFT:</span>
+          <span id="exam-timer" class="font-mono text-xs md:text-sm font-bold text-amber-400">02:00:00</span>
         </div>
-        <button onclick="confirmSubmit()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded font-bold text-xs transition shadow">
-          Submit OMR
+        <button onclick="confirmSubmit()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2 md:px-4 py-1.5 rounded font-bold text-[11px] md:text-xs transition shadow whitespace-nowrap">
+          <span class="md:hidden">Submit</span><span class="hidden md:inline">Submit OMR</span>
         </button>
       </div>
     </header>
 
-    <div class="flex-1 flex overflow-hidden">
-      <main id="paper-container" class="flex-1 overflow-y-auto p-6 md:p-10 space-y-6 bg-slate-100 scroll-smooth">
+    <div class="flex-1 flex overflow-hidden relative">
+      <main id="paper-container" class="flex-1 overflow-y-auto p-4 md:p-10 space-y-6 bg-slate-100 scroll-smooth">
         <div class="max-w-3xl mx-auto space-y-6" id="questions-stream"></div>
       </main>
 
-      <aside class="w-80 md:w-96 bg-amber-50/60 border-l border-amber-200 flex flex-col shrink-0 shadow-lg">
+      <!-- Dims the question area behind the OMR drawer on mobile; tapping it closes the drawer.
+           No-op at md and up (hidden via the same breakpoint as .omr-aside, see css/main.css). -->
+      <div id="omr-drawer-scrim" class="omr-drawer-scrim hidden" onclick="closeOmrDrawer()" aria-hidden="true"></div>
+
+      <aside id="omr-aside" class="omr-aside w-80 md:w-96 bg-amber-50/60 border-l border-amber-200 flex flex-col shrink-0 shadow-lg">
         <div class="p-3 bg-white border-b border-amber-200 flex justify-between items-center shrink-0">
           <h3 class="font-bold text-xs uppercase text-slate-800">OMR Response Sheet</h3>
-          <span id="omr-tally" class="text-xs font-mono font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded">0 Filled</span>
+          <div class="flex items-center gap-2">
+            <span id="omr-tally" class="text-xs font-mono font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded">0 Filled</span>
+            <button onclick="closeOmrDrawer()" class="md:hidden text-slate-400 hover:text-slate-700 text-lg leading-none px-1" aria-label="Close OMR sheet">✕</button>
+          </div>
         </div>
         <div class="flex items-center px-4 py-1.5 bg-amber-100/70 text-slate-700 text-[11px] font-bold border-b border-amber-200 font-mono shrink-0">
           <div class="w-12 text-center">Q.NO</div>
@@ -2308,40 +2329,40 @@ B. Article 360 | 2. Financial Emergency</pre>
   </footer>
 
   <!-- ================= JAVASCRIPT ARCHITECTURE ================= -->
-  <script src="js/00_supabase_init.js?v=107" defer></script>
-  <script src="js/01_exam_category_master.js?v=107" defer></script>
-  <script src="js/02_pricing_master_storage.js?v=107" defer></script>
-  <script src="js/02a_bundles.js?v=107" defer></script>
-  <script src="js/03_pricing_checkout.js?v=107" defer></script>
-  <script src="js/03a_site_branding.js?v=107" defer></script>
-  <script src="js/03b_dev_console.js?v=107" defer></script>
-  <script src="js/03c_bundles_admin_editor.js?v=107" defer></script>
-  <script src="js/03d_payment_claims.js?v=107" defer></script>
-  <script src="js/03e_feedback.js?v=107" defer></script>
-  <script src="js/03f_coupons.js?v=107" defer></script>
-  <script src="js/04_access_permission_checkers.js?v=107" defer></script>
-  <script src="js/05_student_entitlements_desk.js?v=107" defer></script>
-  <script src="js/06_exam_pages_test_ingestion.js?v=107" defer></script>
-  <script src="js/06a_test_paper_studio.js?v=107" defer></script>
-  <script src="js/06b_mains_studio.js?v=107" defer></script>
-  <script src="js/06c_mains_practice.js?v=107" defer></script>
-  <script src="js/06d_mains_test_studio.js?v=107" defer></script>
-  <script src="js/07_pdf_vault.js?v=107" defer></script>
-  <script src="js/07a_pdf_publishing_wizard.js?v=107" defer></script>
-  <script src="js/08_word_page_creator.js?v=107" defer></script>
-  <script src="js/09_navigation_granular_controls.js?v=107" defer></script>
-  <script src="js/09a_site_search.js?v=107" defer></script>
-  <script src="js/10_omr_exam_engine.js?v=107" defer></script>
-  <script src="js/11_dashboard_review_modal.js?v=107" defer></script>
-  <script src="js/11a_study_planners.js?v=107" defer></script>
-  <script src="js/11c_dashboard_access_layers.js?v=107" defer></script>
-  <script src="js/11d_study_planner_admin_csv.js?v=107" defer></script>
-  <script src="js/11b_practice_mistakes_topic_builder.js?v=107" defer></script>
-  <script src="js/12_authentication_export.js?v=107" defer></script>
-  <script src="js/12a_email.js?v=107" defer></script>
-  <script src="js/12b_home_page_configuration.js?v=107" defer></script>
-  <script src="js/13_announcements.js?v=107" defer></script>
-  <script src="js/14_student_directory_admin.js?v=107" defer></script>
-  <script src="js/15_backup_export_restore.js?v=107" defer></script>
+  <script src="js/00_supabase_init.js?v=109" defer></script>
+  <script src="js/01_exam_category_master.js?v=109" defer></script>
+  <script src="js/02_pricing_master_storage.js?v=109" defer></script>
+  <script src="js/02a_bundles.js?v=109" defer></script>
+  <script src="js/03_pricing_checkout.js?v=109" defer></script>
+  <script src="js/03a_site_branding.js?v=109" defer></script>
+  <script src="js/03b_dev_console.js?v=109" defer></script>
+  <script src="js/03c_bundles_admin_editor.js?v=109" defer></script>
+  <script src="js/03d_payment_claims.js?v=109" defer></script>
+  <script src="js/03e_feedback.js?v=109" defer></script>
+  <script src="js/03f_coupons.js?v=109" defer></script>
+  <script src="js/04_access_permission_checkers.js?v=109" defer></script>
+  <script src="js/05_student_entitlements_desk.js?v=109" defer></script>
+  <script src="js/06_exam_pages_test_ingestion.js?v=109" defer></script>
+  <script src="js/06a_test_paper_studio.js?v=109" defer></script>
+  <script src="js/06b_mains_studio.js?v=109" defer></script>
+  <script src="js/06c_mains_practice.js?v=109" defer></script>
+  <script src="js/06d_mains_test_studio.js?v=109" defer></script>
+  <script src="js/07_pdf_vault.js?v=109" defer></script>
+  <script src="js/07a_pdf_publishing_wizard.js?v=109" defer></script>
+  <script src="js/08_word_page_creator.js?v=109" defer></script>
+  <script src="js/09_navigation_granular_controls.js?v=109" defer></script>
+  <script src="js/09a_site_search.js?v=109" defer></script>
+  <script src="js/10_omr_exam_engine.js?v=109" defer></script>
+  <script src="js/11_dashboard_review_modal.js?v=109" defer></script>
+  <script src="js/11a_study_planners.js?v=109" defer></script>
+  <script src="js/11c_dashboard_access_layers.js?v=109" defer></script>
+  <script src="js/11d_study_planner_admin_csv.js?v=109" defer></script>
+  <script src="js/11b_practice_mistakes_topic_builder.js?v=109" defer></script>
+  <script src="js/12_authentication_export.js?v=109" defer></script>
+  <script src="js/12a_email.js?v=109" defer></script>
+  <script src="js/12b_home_page_configuration.js?v=109" defer></script>
+  <script src="js/13_announcements.js?v=109" defer></script>
+  <script src="js/14_student_directory_admin.js?v=109" defer></script>
+  <script src="js/15_backup_export_restore.js?v=109" defer></script>
 </body>
 </html>

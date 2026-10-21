@@ -61,6 +61,22 @@
     .question-card.active-target {
       border-color: #f59e0b; box-shadow: 0 0 0 2px #f59e0b; background-color: #fffbeb;
     }
+    /* OMR drawer (mobile only, < 768px to match Tailwind's md: used throughout the exam engine).
+       Confirmed via Playwright that the always-visible 320-360px sidebar this overrides left only
+       ~50-90px for the actual question on a standard 390-412px phone -- unusable. Below md, the
+       aside is pulled off-screen by default and slides in as a full-height overlay via
+       openOmrDrawer()/closeOmrDrawer() (js/10_omr_exam_engine.js); at md and up both rules below are
+       no-ops (the media query doesn't apply) and the aside is the original always-visible sidebar. */
+    @media (max-width: 767px) {
+      .omr-aside {
+        position: fixed; top: 56px; right: 0; bottom: 0; z-index: 40;
+        width: min(88vw, 360px);
+        transform: translateX(100%);
+        transition: transform .2s ease-out;
+      }
+      .omr-aside.omr-aside-open { transform: translateX(0); }
+      .omr-drawer-scrim { position: fixed; top: 56px; left: 0; right: 0; bottom: 0; z-index: 39; background: rgba(15, 23, 42, .45); }
+    }
     .dropdown-parent:hover .dropdown-menu, .dropdown-parent:focus-within .dropdown-menu { display: block; }
 
     /* ---------- KAS Study Planner (student dashboard) ---------- */
