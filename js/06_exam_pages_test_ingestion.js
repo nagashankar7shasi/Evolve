@@ -255,6 +255,7 @@
             </div>
             <h3 class="text-lg font-bold text-slate-900 mt-2">${paper.title}</h3>
             <p class="text-xs text-slate-500 mt-0.5 font-mono">${paper.questionCount} Bilingual Questions • ${s.duration} Mins</p>
+            ${paper.topicsCovered ? `<p class="text-xs text-slate-500 mt-1.5">📚 Covers: ${escapeHtml(paper.topicsCovered)}</p>` : ''}
             ${(EXAM_CATEGORIES[paper.category] || catInfo).showScoringPattern !== false ? `
             <div class="mt-4 p-3 bg-slate-50 rounded-xl text-xs text-slate-600 space-y-1 border border-slate-100 font-mono">
               <div class="flex justify-between"><span>Marks per Correct:</span><b class="text-emerald-600">+${s.marksCorrect.toFixed(2)}</b></div>
@@ -480,6 +481,7 @@
                   ${p.scheduled_for ? `<span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">🗓 Live ${new Date(p.scheduled_for).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>` : ''}
                   ${inBundles.length ? `<span class="text-slate-500">In ${inBundles.length} bundle${inBundles.length > 1 ? 's' : ''}: ${escapeHtml(inBundles.slice(0, 2).join(', '))}${inBundles.length > 2 ? '…' : ''}</span>` : ''}
                 </div>
+                ${p.topicsCovered ? `<div class="mt-1 text-[11px] text-slate-500">📚 ${escapeHtml(p.topicsCovered)}</div>` : ''}
                 ${p_issue ? `<div class="mt-1 text-[11px] font-bold text-rose-700">⚠ ${escapeHtml(p_issue)}. Re-upload the CSV to fix.</div>` : ''}
               </div>
             </div>
