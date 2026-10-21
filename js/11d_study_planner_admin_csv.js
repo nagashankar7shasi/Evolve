@@ -1223,9 +1223,33 @@
       chip.classList.add('flex');
     }
 
+    // Dashboard Guide (see #dashboard-guide-modal in index.html): students only. openModal/
+    // closeModal come from js/09a_site_search.js.
+    function openDashboardGuide() {
+      openModal('dashboard-guide-modal');
+    }
+    // Jumps to a dashboard section and closes the guide. offsetParent === null covers both
+    // display:none (a hidden dashboard section, e.g. no payments yet) and the element not
+    // existing at all -- in either case this just closes the modal without scrolling, rather
+    // than jumping to the wrong spot or throwing.
+    function scrollToGuideTarget(id) {
+      closeModal('dashboard-guide-modal');
+      const el = document.getElementById(id);
+      if (el && el.offsetParent !== null) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
     function renderDashboard() {
       const admin = isAdmin();
       const attempts = getVisibleAttempts();
+
+      // Guide button: admin built this dashboard and doesn't need a tour of it. Explicit add/
+      // remove rather than classList.toggle('hidden', ...) -- see the comment on #dash-guide-btn
+      // in index.html for why.
+      const guideBtn = document.getElementById('dash-guide-btn');
+      if (guideBtn) {
+        if (admin) { guideBtn.classList.add('hidden'); guideBtn.classList.remove('inline-flex'); }
+        else { guideBtn.classList.remove('hidden'); guideBtn.classList.add('inline-flex'); }
+      }
 
       document.getElementById('dash-title').innerText = admin
         ? 'All Student Attempts'
