@@ -963,15 +963,28 @@
       studioSplitPlan = null;
     }
 
-    // Splits `total` into as few roughly-equal papers as possible, each capped at `maxCap`, each as
-    // close to the others in size as the remainder allows (e.g. 130 with cap 60 → [44, 43, 43], not
-    // [60, 60, 10] — a lopsided last paper is exactly the kind of result an admin reviewing the preview
-    // table would reject and redo by hand). Returns [] when `total` can't support even one paper at the
-    // admin's chosen minimum — the caller skips that group entirely rather than forcing an under-floor
-    // paper into existence.
+    // Splits `total` into as few roughly-equal papers as possible, each within [minFloor, maxCap],
+    // each as close to the others in size as the remainder allows (e.g. 130 with floor 1/cap 60 →
+    // [44, 43, 43], not [60, 60, 10] — a lopsided last paper is exactly the kind of result an admin
+    // reviewing the preview table would reject and redo by hand).
+    //
+    // Picks the SMALLEST paper-count n for which an n-way split can keep every part inside
+    // [minFloor, maxCap] at once (n*minFloor <= total <= n*maxCap) -- fewest, most substantial
+    // papers, same as before. When minFloor and maxCap are far apart (e.g. the 15/60 defaults) this
+    // is almost always satisfiable for any n = ceil(total/maxCap), same result as the old simpler
+    // version. But when they're close together (e.g. min 80/max 100), some totals fall in a "dead
+    // zone" where NO n works at all: one paper would exceed maxCap, but splitting into two would
+    // force each part under minFloor (e.g. total=101 with min 80/max 100 -- 1 paper is 101 > 100,
+    // 2 papers need >= 160 to both clear 80). The old version silently picked ceil(total/maxCap)
+    // regardless and could ship a paper under the stated minimum without telling anyone. This
+    // returns [] for a genuine dead zone instead -- the caller treats it exactly like "too few
+    // questions to meet the minimum" (skipped, or folded into the small-sub-topics merge pool).
     function studioBalancedPaperSizes(total, minFloor, maxCap) {
       if (total < minFloor) return [];
-      const numPapers = Math.max(1, Math.ceil(total / maxCap));
+      const minN = Math.ceil(total / maxCap);   // fewest papers that keeps each one <= maxCap
+      const maxN = Math.floor(total / minFloor); // most papers that keeps each one >= minFloor
+      if (minN > maxN) return []; // dead zone -- no paper-count satisfies both bounds at once
+      const numPapers = Math.max(1, minN);
       const base = Math.floor(total / numPapers);
       const extra = total % numPapers;
       return Array.from({ length: numPapers }, (_, i) => base + (i < extra ? 1 : 0));
