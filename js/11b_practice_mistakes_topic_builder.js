@@ -984,6 +984,65 @@
       }
     }
 
+    // Compact "Jump to a Test" widget, directly on the default dashboard view (#dash-tests-jump in
+    // index.html) -- NOT inside the My Entitlements modal. renderMyAccess()'s full card list (with
+    // its not-attempted/attempted split) only renders once that modal is opened, so a student who
+    // never opens it has no way to even see what they've unlocked. This stays a single compact row
+    // (category select -> paper select -> Start) rather than reintroducing the whole card list,
+    // which is exactly what got it moved off the dashboard in the first place (see the note by
+    // #dash-tests-jump in index.html).
+    function renderTestsJumpWidget() {
+      const wrap = document.getElementById('dash-tests-jump');
+      if (!wrap) return;
+      const student = getCurrentStudent();
+      if (!student) { wrap.classList.add('hidden'); return; }
+      wrap.classList.remove('hidden');
+
+      const unlockedPapers = testsCatalog.filter(p => isTestUnlockedForUser(p.id));
+      document.getElementById('dash-tests-jump-count').innerText = unlockedPapers.length;
+
+      const controls = document.getElementById('dash-tests-jump-controls');
+      const empty = document.getElementById('dash-tests-jump-empty');
+      if (!unlockedPapers.length) {
+        controls.classList.add('hidden');
+        empty.classList.remove('hidden');
+        return;
+      }
+      controls.classList.remove('hidden');
+      empty.classList.add('hidden');
+
+      const catSel = document.getElementById('dash-jump-category');
+      const categories = [...new Set(unlockedPapers.map(p => p.category))];
+      const prevCat = catSel.value;
+      catSel.innerHTML = categories.map(c => `<option value="${c}">${escapeHtml(categoryDisplayName(c))}</option>`).join('');
+      catSel.value = categories.includes(prevCat) ? prevCat : categories[0];
+      // Nothing to pick between when every unlocked paper is in one category -- hide the dropdown
+      // rather than show a disabled single-option select.
+      document.getElementById('dash-jump-category-wrap').classList.toggle('hidden', categories.length <= 1);
+
+      renderTestsJumpPaperOptions();
+    }
+
+    function renderTestsJumpPaperOptions() {
+      const catSel = document.getElementById('dash-jump-category');
+      const paperSel = document.getElementById('dash-jump-paper');
+      if (!catSel || !paperSel) return;
+      const myAttempts = getVisibleAttempts();
+      const papersInCat = testsCatalog.filter(p => isTestUnlockedForUser(p.id) && p.category === catSel.value);
+      // Never-attempted papers first (and flagged) -- same "don't bury what's new" idea as the
+      // My Entitlements list, just inside a dropdown's option order this time.
+      const notAttempted = papersInCat.filter(p => !myAttempts.some(a => a.paperId === p.id));
+      const attempted = papersInCat.filter(p => myAttempts.some(a => a.paperId === p.id));
+      const optionHtml = (p, isNew) => `<option value="${p.id}">${isNew ? '🆕 ' : ''}${escapeHtml(p.title)}</option>`;
+      paperSel.innerHTML = notAttempted.map(p => optionHtml(p, true)).join('') + attempted.map(p => optionHtml(p, false)).join('');
+    }
+
+    function startJumpedTest() {
+      const paperSel = document.getElementById('dash-jump-paper');
+      if (!paperSel || !paperSel.value) return alert('Pick a paper first.');
+      openExamModePicker(paperSel.value);
+    }
+
     let lastSubmittedAttemptId = null;
 
     // Question paper + the student's answers + key + explanations, laid out for "Save as PDF"

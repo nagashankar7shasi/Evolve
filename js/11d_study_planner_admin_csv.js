@@ -1196,6 +1196,7 @@
 
       document.getElementById('dash-student-col').classList.toggle('hidden', !admin);
       renderMyAccess();
+      renderTestsJumpWidget();
       renderPerformanceAnalysis(admin ? [] : attempts);
       renderDailyPracticeBoxes();
       renderPracticeCenter();
