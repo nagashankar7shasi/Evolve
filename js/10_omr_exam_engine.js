@@ -279,12 +279,37 @@
       openModal('resume-exam-modal');
     }
 
-    function resumeExam() {
+    // BUG FIX: testsCatalog is metadata-only on a fresh page load (see ensurePaperQuestionsLoaded's
+    // own comment) -- checkUnfinishedExam() above sets activeTest straight from that metadata-only
+    // entry, so on a real resume (close the tab mid-test, reopen the site later) activeTest.questions
+    // was simply undefined here. renderPaper()/evaluateOMRSubmission() both do
+    // `activeTest.questions.forEach(...)` with no guard, so Resume showed a blank screen and Submit
+    // threw "Cannot read properties of undefined (reading 'forEach')" -- every path out of the resume
+    // modal was broken, which is what looked like an endless loop (the unfinished-session modal just
+    // kept reappearing because nothing ever successfully resumed or submitted to clear it). The normal
+    // launchExamPaper() path already loads questions first (line ~93 above); these two just never did.
+    async function resumeExam() {
+      const resumeBtn = document.querySelector('#resume-exam-modal button[onclick="resumeExam()"]');
+      if (resumeBtn) { resumeBtn.disabled = true; resumeBtn.innerText = 'Loading…'; }
+      const loaded = await ensurePaperQuestionsLoaded(activeTest);
+      if (resumeBtn) { resumeBtn.disabled = false; resumeBtn.innerText = 'Resume test'; }
+      if (!loaded || !Array.isArray(activeTest.questions) || !activeTest.questions.length) {
+        alert(`Couldn't load "${activeTest.title}" to resume it -- check your connection and try again. Your answers so far are still saved.`);
+        return;
+      }
       closeModal('resume-exam-modal');
       openExamEngine();
     }
 
-    function submitSavedExam() {
+    async function submitSavedExam() {
+      const submitBtn = document.querySelector('#resume-exam-modal button[onclick="submitSavedExam()"]');
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = 'Loading…'; }
+      const loaded = await ensurePaperQuestionsLoaded(activeTest);
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = 'Submit now'; }
+      if (!loaded || !Array.isArray(activeTest.questions) || !activeTest.questions.length) {
+        alert(`Couldn't load "${activeTest.title}" to submit it -- check your connection and try again. Your answers so far are still saved.`);
+        return;
+      }
       closeModal('resume-exam-modal');
       examInProgress = true;
       evaluateOMRSubmission();
