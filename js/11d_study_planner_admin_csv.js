@@ -1163,13 +1163,21 @@
       weaknessEmpty.classList.toggle('hidden', weaknesses.length > 0);
     }
 
+    // Time-of-day greeting prefix ("Good morning"/afternoon/evening) for the dashboard hero banner.
+    // Plain local-hour check -- there's no stored timezone per student, so this reads the browser's
+    // own clock, which is the right one anyway (it's wherever the student is sitting right now).
+    function dashboardGreetingPrefix() {
+      const h = new Date().getHours();
+      return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+    }
+
     function renderDashboard() {
       const admin = isAdmin();
       const attempts = getVisibleAttempts();
 
       document.getElementById('dash-title').innerText = admin
         ? 'All Student Attempts'
-        : (currentUser ? `Welcome, ${currentUser.name}` : 'Student Performance Dashboard');
+        : (currentUser ? `${dashboardGreetingPrefix()}, ${displayNameFor(currentUser.email, currentUser.name).split(' ')[0]}` : 'Student Performance Dashboard');
       document.getElementById('dash-subtitle').innerText = admin
         ? 'Admin view: every attempt saved on this device, with the student who took it.'
         : (currentUser ? `Logged in as ${currentUser.email}. Your scorecards, unlocked material and answer keys.` : 'Log in to see your scorecards.');
