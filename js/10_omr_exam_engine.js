@@ -231,13 +231,42 @@
     function openExamEngine() {
       const s = activeTest.scheme;
       examInProgress = true;
+      // BUG FIX: unlike navigate() (which always hides every other view-* main before showing its
+      // target -- see js/09a_site_search.js), this was only ever unhiding view-engine -- it never
+      // hid whichever view was active underneath, because launchExamPaper()/resumeExam() call this
+      // directly instead of going through navigate(). On a desktop-width screen that was invisible
+      // (view-engine's fixed, opaque bg-slate-100 overlay happened to fully cover the viewport), but
+      // the moment a narrow phone forced real content into a cramped layout, the home page's own
+      // hero buttons, nav and chat widget were genuinely visible AND clickable behind/around a live
+      // timed exam. Mirrors navigate()'s own hide-list so nothing is missed.
+      ['home', 'tests', 'dashboard', 'admin', 'custom-page', 'bundle-landing', 'social-feed'].forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        if (el) el.classList.add('hidden');
+      });
+      const mainsPracticeView = document.getElementById('view-mains-practice');
+      if (mainsPracticeView) mainsPracticeView.classList.add('hidden');
       document.getElementById('engine-exam-title').innerText = activeTest.title;
       document.getElementById('engine-scheme-info').innerText = `Scheme: ${s.examBadge} (+${s.marksCorrect} / -${s.marksWrong}) • Duration: ${s.duration}m`;
       document.getElementById('view-engine').classList.remove('hidden');
+      closeOmrDrawer(); // always start with a clean, closed mobile OMR drawer, even on resume
       renderPaper();
       renderOMR();
       saveExamSession();
       startTimer();
+    }
+
+    // Mobile OMR drawer (< md / 768px): the response-sheet aside is a 320-360px panel that would
+    // otherwise steal most of a phone's width from the question itself -- confirmed: a question card
+    // squeezed to ~50px wide and unreadable on a standard 390px phone. Below md it's an off-screen
+    // slide-in overlay toggled by #omr-drawer-toggle in the header; at md and up these are harmless
+    // no-ops because the CSS override in .omr-aside only applies under the same breakpoint.
+    function openOmrDrawer() {
+      document.getElementById('omr-aside')?.classList.add('omr-aside-open');
+      document.getElementById('omr-drawer-scrim')?.classList.remove('hidden');
+    }
+    function closeOmrDrawer() {
+      document.getElementById('omr-aside')?.classList.remove('omr-aside-open');
+      document.getElementById('omr-drawer-scrim')?.classList.add('hidden');
     }
 
     // In-progress test is saved after every answer, so a refresh or closed tab doesn't lose it
@@ -445,6 +474,8 @@
       const unansweredCount = activeTest.questions.length - filledCount;
       const markedCount = Object.keys(markedForReview).filter(k => markedForReview[k]).length;
       document.getElementById('omr-tally').innerText = `${filledCount} Filled · ${unansweredCount} Unanswered${markedCount ? ` · ${markedCount} for review` : ''}`;
+      const mobileBadge = document.getElementById('omr-tally-badge');
+      if (mobileBadge) mobileBadge.textContent = filledCount;
     }
 
     // Difficult Mode: once an option has been chosen for a question, it's final -- neither picking a
@@ -465,6 +496,12 @@
       saveExamSession();
     }
     function scrollToQ(qNum) {
+      // Jumping to a question from the OMR sheet means "show me that question" -- on mobile the
+      // sheet is a drawer covering most of the screen, so it has to close for the student to
+      // actually see what they jumped to. Tapping an answer bubble or the flag/clear buttons inside
+      // the drawer deliberately does NOT close it (selectAnswer/toggleMarkForReview/clearQ), since
+      // filling in several answers in a row straight off the sheet is a normal, useful way to use it.
+      closeOmrDrawer();
       const card = document.getElementById(`q-card-${qNum}`);
       if (card) {
         card.scrollIntoView({ behavior: 'smooth', block: 'center' });
