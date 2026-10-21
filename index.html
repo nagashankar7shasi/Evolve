@@ -52,7 +52,7 @@
        load; this is the same utility classes, generated once at commit time instead. Rebuild with
        `npm run build-css` (see tailwind.config.js) whenever a new utility class is used anywhere
        in index.html or js/*.js that isn't already covered by the existing build. -->
-  <link rel="stylesheet" href="css/tailwind.css?v=109">
+  <link rel="stylesheet" href="css/tailwind.css?v=110">
   <!-- PapaParse for CSV parsing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <!-- pdf-lib: stamps a watermark footer onto PDFs we host, at download/open time -->
@@ -60,7 +60,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
   <!-- Add Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="css/main.css?v=109">
+  <link rel="stylesheet" href="css/main.css?v=110">
 
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col select-none">
@@ -81,13 +81,33 @@
              passing 6.96:1 -- not actually a contrast failure); the real legibility problem was
              the combination of 10px type with tracking-widest on a 5-word uppercase phrase, fixed
              by bumping size and easing the letter-spacing a notch. -->
-        <p id="site-brand-tagline" class="text-[11px] text-slate-300 tracking-wide uppercase">Transform Potential into Performance</p>
+        <!-- Hidden below md: at phone widths this 5-word phrase was wrapping to 2 lines right next
+             to the (also-wrapping, see mobile-menu-btn below) hamburger button -- confirmed nothing
+             actually clipped inside the fixed h-16 header, but it read as cramped/unpolished. The
+             brand name alone carries the header on a phone; the full tagline is still shown in the
+             home hero immediately below.
+             Wrapped in its own div rather than putting "hidden md:block" directly on #site-brand-tagline:
+             applySiteBranding() (js/03a_site_branding.js) does tagEl.classList.toggle('hidden', !tagline)
+             on every boot/save to hide the element when the admin has cleared the tagline text -- that
+             runs unconditionally and would silently strip a 'hidden' class placed on the element itself,
+             undoing this breakpoint fix the moment the page loads. Keeping the responsive "hidden md:block"
+             on a wrapper div means the two concerns (has-content vs. is-narrow-viewport) don't fight over
+             the same class on the same node. Confirmed via a real page load (not just reading the markup)
+             that this actually stays hidden at 360/390/412px after applySiteBranding() runs. -->
+        <div class="hidden md:block">
+          <p id="site-brand-tagline" class="text-[11px] text-slate-300 tracking-wide uppercase">Transform Potential into Performance</p>
+        </div>
       </div>
     </div>
 
     <div class="flex items-center gap-2 md:hidden">
-      <button id="mobile-search-btn" onclick="openSiteSearch()" class="px-2.5 py-1.5 rounded-lg border border-slate-700 text-sm" aria-label="Search the site" title="Search">🔍</button>
-      <button id="mobile-menu-btn" onclick="toggleMobileMenu()" class="px-3 py-1.5 rounded-lg border border-slate-700 text-sm font-bold" aria-expanded="false" aria-controls="mobile-menu">☰ Menu</button>
+      <!-- Icon-only, fixed 40x40 squares: the old "☰ Menu" label wrapped onto its own second line
+           below 420px or so (confirmed via Playwright at 360/390/412px), which pushed the button to
+           54px tall even though nothing was actually clipped by the header -- just looked broken.
+           40px is also a meaningfully bigger tap target than the old 34-36px buttons (WCAG/Apple/
+           Material guidance all point to ~40-44px), with aria-label carrying what the text used to. -->
+      <button id="mobile-search-btn" onclick="openSiteSearch()" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-700 text-base" aria-label="Search the site" title="Search">🔍</button>
+      <button id="mobile-menu-btn" onclick="toggleMobileMenu()" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-700 text-lg" aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu" title="Menu">☰</button>
     </div>
     <nav class="hidden md:flex items-center space-x-6 text-sm font-medium">
       <div id="dynamic-nav-links" class="flex items-center space-x-6"></div>
@@ -2329,40 +2349,40 @@ B. Article 360 | 2. Financial Emergency</pre>
   </footer>
 
   <!-- ================= JAVASCRIPT ARCHITECTURE ================= -->
-  <script src="js/00_supabase_init.js?v=109" defer></script>
-  <script src="js/01_exam_category_master.js?v=109" defer></script>
-  <script src="js/02_pricing_master_storage.js?v=109" defer></script>
-  <script src="js/02a_bundles.js?v=109" defer></script>
-  <script src="js/03_pricing_checkout.js?v=109" defer></script>
-  <script src="js/03a_site_branding.js?v=109" defer></script>
-  <script src="js/03b_dev_console.js?v=109" defer></script>
-  <script src="js/03c_bundles_admin_editor.js?v=109" defer></script>
-  <script src="js/03d_payment_claims.js?v=109" defer></script>
-  <script src="js/03e_feedback.js?v=109" defer></script>
-  <script src="js/03f_coupons.js?v=109" defer></script>
-  <script src="js/04_access_permission_checkers.js?v=109" defer></script>
-  <script src="js/05_student_entitlements_desk.js?v=109" defer></script>
-  <script src="js/06_exam_pages_test_ingestion.js?v=109" defer></script>
-  <script src="js/06a_test_paper_studio.js?v=109" defer></script>
-  <script src="js/06b_mains_studio.js?v=109" defer></script>
-  <script src="js/06c_mains_practice.js?v=109" defer></script>
-  <script src="js/06d_mains_test_studio.js?v=109" defer></script>
-  <script src="js/07_pdf_vault.js?v=109" defer></script>
-  <script src="js/07a_pdf_publishing_wizard.js?v=109" defer></script>
-  <script src="js/08_word_page_creator.js?v=109" defer></script>
-  <script src="js/09_navigation_granular_controls.js?v=109" defer></script>
-  <script src="js/09a_site_search.js?v=109" defer></script>
-  <script src="js/10_omr_exam_engine.js?v=109" defer></script>
-  <script src="js/11_dashboard_review_modal.js?v=109" defer></script>
-  <script src="js/11a_study_planners.js?v=109" defer></script>
-  <script src="js/11c_dashboard_access_layers.js?v=109" defer></script>
-  <script src="js/11d_study_planner_admin_csv.js?v=109" defer></script>
-  <script src="js/11b_practice_mistakes_topic_builder.js?v=109" defer></script>
-  <script src="js/12_authentication_export.js?v=109" defer></script>
-  <script src="js/12a_email.js?v=109" defer></script>
-  <script src="js/12b_home_page_configuration.js?v=109" defer></script>
-  <script src="js/13_announcements.js?v=109" defer></script>
-  <script src="js/14_student_directory_admin.js?v=109" defer></script>
-  <script src="js/15_backup_export_restore.js?v=109" defer></script>
+  <script src="js/00_supabase_init.js?v=110" defer></script>
+  <script src="js/01_exam_category_master.js?v=110" defer></script>
+  <script src="js/02_pricing_master_storage.js?v=110" defer></script>
+  <script src="js/02a_bundles.js?v=110" defer></script>
+  <script src="js/03_pricing_checkout.js?v=110" defer></script>
+  <script src="js/03a_site_branding.js?v=110" defer></script>
+  <script src="js/03b_dev_console.js?v=110" defer></script>
+  <script src="js/03c_bundles_admin_editor.js?v=110" defer></script>
+  <script src="js/03d_payment_claims.js?v=110" defer></script>
+  <script src="js/03e_feedback.js?v=110" defer></script>
+  <script src="js/03f_coupons.js?v=110" defer></script>
+  <script src="js/04_access_permission_checkers.js?v=110" defer></script>
+  <script src="js/05_student_entitlements_desk.js?v=110" defer></script>
+  <script src="js/06_exam_pages_test_ingestion.js?v=110" defer></script>
+  <script src="js/06a_test_paper_studio.js?v=110" defer></script>
+  <script src="js/06b_mains_studio.js?v=110" defer></script>
+  <script src="js/06c_mains_practice.js?v=110" defer></script>
+  <script src="js/06d_mains_test_studio.js?v=110" defer></script>
+  <script src="js/07_pdf_vault.js?v=110" defer></script>
+  <script src="js/07a_pdf_publishing_wizard.js?v=110" defer></script>
+  <script src="js/08_word_page_creator.js?v=110" defer></script>
+  <script src="js/09_navigation_granular_controls.js?v=110" defer></script>
+  <script src="js/09a_site_search.js?v=110" defer></script>
+  <script src="js/10_omr_exam_engine.js?v=110" defer></script>
+  <script src="js/11_dashboard_review_modal.js?v=110" defer></script>
+  <script src="js/11a_study_planners.js?v=110" defer></script>
+  <script src="js/11c_dashboard_access_layers.js?v=110" defer></script>
+  <script src="js/11d_study_planner_admin_csv.js?v=110" defer></script>
+  <script src="js/11b_practice_mistakes_topic_builder.js?v=110" defer></script>
+  <script src="js/12_authentication_export.js?v=110" defer></script>
+  <script src="js/12a_email.js?v=110" defer></script>
+  <script src="js/12b_home_page_configuration.js?v=110" defer></script>
+  <script src="js/13_announcements.js?v=110" defer></script>
+  <script src="js/14_student_directory_admin.js?v=110" defer></script>
+  <script src="js/15_backup_export_restore.js?v=110" defer></script>
 </body>
 </html>
