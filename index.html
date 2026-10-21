@@ -52,7 +52,7 @@
        load; this is the same utility classes, generated once at commit time instead. Rebuild with
        `npm run build-css` (see tailwind.config.js) whenever a new utility class is used anywhere
        in index.html or js/*.js that isn't already covered by the existing build. -->
-  <link rel="stylesheet" href="css/tailwind.css?v=103">
+  <link rel="stylesheet" href="css/tailwind.css?v=104">
   <!-- PapaParse for CSV parsing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <!-- pdf-lib: stamps a watermark footer onto PDFs we host, at download/open time -->
@@ -60,7 +60,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
   <!-- Add Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="css/main.css?v=103">
+  <link rel="stylesheet" href="css/main.css?v=104">
 
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col select-none">
@@ -351,37 +351,54 @@
 
   <!-- ================= VIEW 3: STUDENT DASHBOARD (WITH REVIEW SOLUTIONS LINK) ================= -->
   <main id="view-dashboard" class="flex-1 max-w-6xl mx-auto px-4 py-8 w-full hidden">
-    <div class="flex items-start justify-between gap-3">
+    <!-- Hero banner: a dark gradient band anchors the top of the page visually (every other card on
+         this dashboard is flat white/slate -- this is the one deliberate "this is the premium bit"
+         treatment) and carries the time-of-day personal greeting set by renderDashboard(). -->
+    <div class="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl px-6 py-5 mb-6 flex items-start justify-between gap-3 shadow-sm">
       <div>
-        <h2 id="dash-title" class="text-2xl font-black text-slate-900 mb-1">Student Performance Dashboard</h2>
-        <p id="dash-subtitle" class="text-xs text-slate-500 mb-6">Review your scorecards, analyze mistake patterns, and inspect official answer keys</p>
+        <h2 id="dash-title" class="text-2xl font-black text-white mb-1">Student Performance Dashboard</h2>
+        <p id="dash-subtitle" class="text-xs text-slate-300">Review your scorecards, analyze mistake patterns, and inspect official answer keys</p>
       </div>
-      <button type="button" id="dash-social-btn" onclick="openSocialLinksModal()" class="hidden shrink-0 items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-xs">
+      <button type="button" id="dash-social-btn" onclick="openSocialLinksModal()" class="hidden shrink-0 items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg font-bold text-xs">
         📣 Community
       </button>
     </div>
     <div id="dash-announcements" class="space-y-2 mb-6 hidden"></div>
 
+    <!-- Stat tiles: each now carries a small icon badge (inline SVG, no external icon library) for a
+         consistent visual anchor -- previously three of these four were icon-less text-only cards and
+         only the streak tile had any accent treatment at all. -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-      <div class="bg-white p-5 rounded-2xl border border-slate-200 text-center">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="w-9 h-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center mb-3">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M8 12l2.5 2.5L16 9"/></svg>
+        </div>
+        <div id="dash-attempts-count" class="text-3xl font-black text-slate-900">0</div>
         <span class="text-xs uppercase font-bold text-slate-400">Total Attempts</span>
-        <div id="dash-attempts-count" class="text-3xl font-black text-slate-900 mt-1">0</div>
       </div>
-      <div class="bg-white p-5 rounded-2xl border border-slate-200 text-center">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="w-9 h-9 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-3">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 7-8"/><path d="M15 7h5v5"/></svg>
+        </div>
+        <div id="dash-avg-score" class="text-3xl font-black text-emerald-600">--</div>
         <span class="text-xs uppercase font-bold text-slate-400">Average Score</span>
-        <div id="dash-avg-score" class="text-3xl font-black text-emerald-600 mt-1">--</div>
       </div>
-      <div class="bg-white p-5 rounded-2xl border border-slate-200 text-center">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="w-9 h-9 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mb-3">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
+        </div>
+        <div id="dash-avg-accuracy" class="text-3xl font-black text-slate-900">--%</div>
         <span class="text-xs uppercase font-bold text-slate-400">Average Accuracy</span>
-        <div id="dash-avg-accuracy" class="text-3xl font-black text-slate-900 mt-1">--%</div>
       </div>
-      <div class="bg-gradient-to-br from-amber-50 to-orange-100 p-5 rounded-2xl border border-amber-200 text-center">
-        <span class="text-xs uppercase font-bold text-amber-700">Current Streak</span>
-        <div class="flex items-baseline justify-center gap-1 mt-1">
-          <span class="text-3xl">🔥</span>
+      <div class="bg-gradient-to-br from-amber-50 to-orange-100 p-5 rounded-2xl border border-amber-200 shadow-sm">
+        <div class="w-9 h-9 rounded-full bg-amber-200 text-amber-700 flex items-center justify-center mb-3">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 3-3 4-3 7a3 3 0 006 0c0-1-.5-2-1-2.5.8.3 2 1.5 2 4a5 5 0 01-10 0c0-4 3-5 3-8.5C9 2.5 10.5 1.5 12 2z"/></svg>
+        </div>
+        <div class="flex items-baseline gap-1">
           <span id="dash-streak" class="text-3xl font-black text-amber-800">0</span>
           <span class="text-xs font-bold text-amber-700">day<span id="dash-streak-plural">s</span></span>
         </div>
+        <span class="text-xs uppercase font-bold text-amber-700">Current Streak</span>
         <p id="dash-streak-hint" class="text-[10px] text-amber-700 mt-1 font-semibold">Take a test today to start</p>
       </div>
     </div>
@@ -2284,40 +2301,40 @@ B. Article 360 | 2. Financial Emergency</pre>
   </footer>
 
   <!-- ================= JAVASCRIPT ARCHITECTURE ================= -->
-  <script src="js/00_supabase_init.js?v=103" defer></script>
-  <script src="js/01_exam_category_master.js?v=103" defer></script>
-  <script src="js/02_pricing_master_storage.js?v=103" defer></script>
-  <script src="js/02a_bundles.js?v=103" defer></script>
-  <script src="js/03_pricing_checkout.js?v=103" defer></script>
-  <script src="js/03a_site_branding.js?v=103" defer></script>
-  <script src="js/03b_dev_console.js?v=103" defer></script>
-  <script src="js/03c_bundles_admin_editor.js?v=103" defer></script>
-  <script src="js/03d_payment_claims.js?v=103" defer></script>
-  <script src="js/03e_feedback.js?v=103" defer></script>
-  <script src="js/03f_coupons.js?v=103" defer></script>
-  <script src="js/04_access_permission_checkers.js?v=103" defer></script>
-  <script src="js/05_student_entitlements_desk.js?v=103" defer></script>
-  <script src="js/06_exam_pages_test_ingestion.js?v=103" defer></script>
-  <script src="js/06a_test_paper_studio.js?v=103" defer></script>
-  <script src="js/06b_mains_studio.js?v=103" defer></script>
-  <script src="js/06c_mains_practice.js?v=103" defer></script>
-  <script src="js/06d_mains_test_studio.js?v=103" defer></script>
-  <script src="js/07_pdf_vault.js?v=103" defer></script>
-  <script src="js/07a_pdf_publishing_wizard.js?v=103" defer></script>
-  <script src="js/08_word_page_creator.js?v=103" defer></script>
-  <script src="js/09_navigation_granular_controls.js?v=103" defer></script>
-  <script src="js/09a_site_search.js?v=103" defer></script>
-  <script src="js/10_omr_exam_engine.js?v=103" defer></script>
-  <script src="js/11_dashboard_review_modal.js?v=103" defer></script>
-  <script src="js/11a_study_planners.js?v=103" defer></script>
-  <script src="js/11c_dashboard_access_layers.js?v=103" defer></script>
-  <script src="js/11d_study_planner_admin_csv.js?v=103" defer></script>
-  <script src="js/11b_practice_mistakes_topic_builder.js?v=103" defer></script>
-  <script src="js/12_authentication_export.js?v=103" defer></script>
-  <script src="js/12a_email.js?v=103" defer></script>
-  <script src="js/12b_home_page_configuration.js?v=103" defer></script>
-  <script src="js/13_announcements.js?v=103" defer></script>
-  <script src="js/14_student_directory_admin.js?v=103" defer></script>
-  <script src="js/15_backup_export_restore.js?v=103" defer></script>
+  <script src="js/00_supabase_init.js?v=104" defer></script>
+  <script src="js/01_exam_category_master.js?v=104" defer></script>
+  <script src="js/02_pricing_master_storage.js?v=104" defer></script>
+  <script src="js/02a_bundles.js?v=104" defer></script>
+  <script src="js/03_pricing_checkout.js?v=104" defer></script>
+  <script src="js/03a_site_branding.js?v=104" defer></script>
+  <script src="js/03b_dev_console.js?v=104" defer></script>
+  <script src="js/03c_bundles_admin_editor.js?v=104" defer></script>
+  <script src="js/03d_payment_claims.js?v=104" defer></script>
+  <script src="js/03e_feedback.js?v=104" defer></script>
+  <script src="js/03f_coupons.js?v=104" defer></script>
+  <script src="js/04_access_permission_checkers.js?v=104" defer></script>
+  <script src="js/05_student_entitlements_desk.js?v=104" defer></script>
+  <script src="js/06_exam_pages_test_ingestion.js?v=104" defer></script>
+  <script src="js/06a_test_paper_studio.js?v=104" defer></script>
+  <script src="js/06b_mains_studio.js?v=104" defer></script>
+  <script src="js/06c_mains_practice.js?v=104" defer></script>
+  <script src="js/06d_mains_test_studio.js?v=104" defer></script>
+  <script src="js/07_pdf_vault.js?v=104" defer></script>
+  <script src="js/07a_pdf_publishing_wizard.js?v=104" defer></script>
+  <script src="js/08_word_page_creator.js?v=104" defer></script>
+  <script src="js/09_navigation_granular_controls.js?v=104" defer></script>
+  <script src="js/09a_site_search.js?v=104" defer></script>
+  <script src="js/10_omr_exam_engine.js?v=104" defer></script>
+  <script src="js/11_dashboard_review_modal.js?v=104" defer></script>
+  <script src="js/11a_study_planners.js?v=104" defer></script>
+  <script src="js/11c_dashboard_access_layers.js?v=104" defer></script>
+  <script src="js/11d_study_planner_admin_csv.js?v=104" defer></script>
+  <script src="js/11b_practice_mistakes_topic_builder.js?v=104" defer></script>
+  <script src="js/12_authentication_export.js?v=104" defer></script>
+  <script src="js/12a_email.js?v=104" defer></script>
+  <script src="js/12b_home_page_configuration.js?v=104" defer></script>
+  <script src="js/13_announcements.js?v=104" defer></script>
+  <script src="js/14_student_directory_admin.js?v=104" defer></script>
+  <script src="js/15_backup_export_restore.js?v=104" defer></script>
 </body>
 </html>
