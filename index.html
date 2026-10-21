@@ -52,7 +52,7 @@
        load; this is the same utility classes, generated once at commit time instead. Rebuild with
        `npm run build-css` (see tailwind.config.js) whenever a new utility class is used anywhere
        in index.html or js/*.js that isn't already covered by the existing build. -->
-  <link rel="stylesheet" href="css/tailwind.css?v=110">
+  <link rel="stylesheet" href="css/tailwind.css?v=111">
   <!-- PapaParse for CSV parsing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <!-- pdf-lib: stamps a watermark footer onto PDFs we host, at download/open time -->
@@ -60,7 +60,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
   <!-- Add Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="css/main.css?v=110">
+  <link rel="stylesheet" href="css/main.css?v=111">
 
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col select-none">
@@ -392,6 +392,18 @@
         <button type="button" id="dash-social-btn" onclick="openSocialLinksModal()" class="hidden items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg font-bold text-xs">
           📣 Community
         </button>
+        <!-- Dashboard Guide: students only (admin built this dashboard, doesn't need a tour of it) --
+             toggled the same explicit remove/add-class way as #dash-social-btn above rather than
+             classList.toggle('hidden', ...), for the same reason documented there: .hidden and
+             .inline-flex are equal-specificity Tailwind utilities, so which one actually wins when
+             both are present depends on their order in the compiled stylesheet, not on class order
+             in this markup -- explicitly toggling both avoids relying on that. Named "Guide" rather
+             than "Help": the WhatsApp/Telegram buttons elsewhere already mean "help" as in
+             contact-support, and reusing the word here would make students click expecting a chat
+             and get a feature tour instead. -->
+        <button type="button" id="dash-guide-btn" onclick="openDashboardGuide()" class="hidden items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg font-bold text-xs">
+          ❓ Guide
+        </button>
       </div>
     </div>
     <div id="dash-announcements" class="space-y-2 mb-6 hidden"></div>
@@ -399,7 +411,7 @@
     <!-- Stat tiles: each now carries a small icon badge (inline SVG, no external icon library) for a
          consistent visual anchor -- previously three of these four were icon-less text-only cards and
          only the streak tile had any accent treatment at all. -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div id="dash-stats-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div class="w-9 h-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center mb-3">
           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M8 12l2.5 2.5L16 9"/></svg>
@@ -977,6 +989,67 @@
         <button onclick="closeModal('social-links-modal')" class="text-slate-400 hover:text-slate-700 text-2xl font-bold leading-none" aria-label="Close">&times;</button>
       </div>
       <div id="social-links-modal-body" class="flex-1 overflow-y-auto space-y-2.5 text-xs"></div>
+    </div>
+  </div>
+
+  <!-- ================= DASHBOARD GUIDE MODAL (DASHBOARD "❓ Guide" BUTTON) =================
+       Static content (not data-driven, so plain markup here rather than a JS renderer -- same
+       choice as #studio-help-modal above). Each row scrolls to the matching dashboard section and
+       closes the modal; scrollToGuideTarget() in js/11d_study_planner_admin_csv.js no-ops safely
+       if that section happens to be hidden for this student (e.g. no payments yet), rather than
+       jumping somewhere wrong. Scoped to this dashboard only, not the whole site -- the home page
+       already has its own FAQ for pre-signup questions. -->
+  <div id="dashboard-guide-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" onclick="if(event.target===this) closeModal('dashboard-guide-modal')">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl max-h-[85vh] flex flex-col">
+      <div class="flex justify-between items-center border-b pb-3 mb-1 shrink-0">
+        <div>
+          <h3 class="text-lg font-black text-slate-900">❓ Dashboard Guide</h3>
+          <p class="text-[11px] text-slate-500 mt-0.5">Tap any section below to jump straight to it.</p>
+        </div>
+        <button onclick="closeModal('dashboard-guide-modal')" class="text-slate-400 hover:text-slate-700 text-2xl font-bold leading-none" aria-label="Close">&times;</button>
+      </div>
+      <div class="flex-1 overflow-y-auto text-xs divide-y divide-slate-100">
+        <button type="button" onclick="scrollToGuideTarget('dash-stats-grid')" class="w-full text-left flex items-start gap-3 py-2.5 hover:bg-slate-50 transition rounded-lg px-1">
+          <span class="text-lg shrink-0">📊</span>
+          <span><span class="block font-bold text-slate-900">Your Stats</span><span class="block text-slate-500 mt-0.5">Total attempts, average score, average accuracy and your current daily streak — plus an exam countdown badge up top once your Prelims/Mains date is set.</span></span>
+        </button>
+        <button type="button" onclick="scrollToGuideTarget('dash-tests-jump')" class="w-full text-left flex items-start gap-3 py-2.5 hover:bg-slate-50 transition rounded-lg px-1">
+          <span class="text-lg shrink-0">📝</span>
+          <span><span class="block font-bold text-slate-900">Jump to a Test</span><span class="block text-slate-500 mt-0.5">Resume or start any unlocked paper without digging through the Exam Hub. "View all unlocked" opens your full list and study material.</span></span>
+        </button>
+        <button type="button" onclick="scrollToGuideTarget('dash-weakness-wrap')" class="w-full text-left flex items-start gap-3 py-2.5 hover:bg-slate-50 transition rounded-lg px-1">
+          <span class="text-lg shrink-0">📊</span>
+          <span><span class="block font-bold text-slate-900">Strengths &amp; Weaknesses</span><span class="block text-slate-500 mt-0.5">Your accuracy by subject, split into what you're doing well and what needs more focus (70%+ accuracy counts as a strength).</span></span>
+        </button>
+        <button type="button" onclick="scrollToGuideTarget('dash-analysis-section')" class="w-full text-left flex items-start gap-3 py-2.5 hover:bg-slate-50 transition rounded-lg px-1">
+          <span class="text-lg shrink-0">📈</span>
+          <span><span class="block font-bold text-slate-900">Score Trend</span><span class="block text-slate-500 mt-0.5">A chart of your last 10 attempts, so you can see whether you're actually improving.</span></span>
+        </button>
+        <button type="button" onclick="scrollToGuideTarget('dash-daily-practice-section')" class="w-full text-left flex items-start gap-3 py-2.5 hover:bg-slate-50 transition rounded-lg px-1">
+          <span class="text-lg shrink-0">🗓️</span>
+          <span><span class="block font-bold text-slate-900">Daily Practice</span><span class="block text-slate-500 mt-0.5">Short daily question sets, for exam categories where this is turned on — appears once your exam offers it.</span></span>
+        </button>
+        <button type="button" onclick="scrollToGuideTarget('dash-practice-section')" class="w-full text-left flex items-start gap-3 py-2.5 hover:bg-slate-50 transition rounded-lg px-1">
+          <span class="text-lg shrink-0">🎯</span>
+          <span><span class="block font-bold text-slate-900">Practice Centre</span><span class="block text-slate-500 mt-0.5">"Practise My Mistakes" replays questions you got wrong until you get them right; "Build a Topic Test" makes a custom test from chosen subjects.</span></span>
+        </button>
+        <button type="button" onclick="scrollToGuideTarget('dash-mains-section')" class="w-full text-left flex items-start gap-3 py-2.5 hover:bg-slate-50 transition rounded-lg px-1">
+          <span class="text-lg shrink-0">✍️</span>
+          <span><span class="block font-bold text-slate-900">Mains Answer Writing</span><span class="block text-slate-500 mt-0.5">Write descriptive answers and get AI feedback, or request a personal review — where enabled for your exam.</span></span>
+        </button>
+        <button type="button" onclick="scrollToGuideTarget('dash-payments-section')" class="w-full text-left flex items-start gap-3 py-2.5 hover:bg-slate-50 transition rounded-lg px-1">
+          <span class="text-lg shrink-0">💳</span>
+          <span><span class="block font-bold text-slate-900">My Payments</span><span class="block text-slate-500 mt-0.5">A record of what you've purchased, with UPI reference numbers — appears once you've made a payment.</span></span>
+        </button>
+        <button type="button" onclick="scrollToGuideTarget('dash-planner-section')" class="w-full text-left flex items-start gap-3 py-2.5 hover:bg-slate-50 transition rounded-lg px-1">
+          <span class="text-lg shrink-0">🗂️</span>
+          <span><span class="block font-bold text-slate-900">Study Planner</span><span class="block text-slate-500 mt-0.5">A personal day-by-day study plan you build and track, saved to your account.</span></span>
+        </button>
+        <button type="button" onclick="scrollToGuideTarget('dash-attempts-heading')" class="w-full text-left flex items-start gap-3 py-2.5 hover:bg-slate-50 transition rounded-lg px-1">
+          <span class="text-lg shrink-0">✅</span>
+          <span><span class="block font-bold text-slate-900">Completed Mock Tests</span><span class="block text-slate-500 mt-0.5">Every test you've finished, with your score and accuracy, plus buttons to review solutions or download a PDF.</span></span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -2349,40 +2422,40 @@ B. Article 360 | 2. Financial Emergency</pre>
   </footer>
 
   <!-- ================= JAVASCRIPT ARCHITECTURE ================= -->
-  <script src="js/00_supabase_init.js?v=110" defer></script>
-  <script src="js/01_exam_category_master.js?v=110" defer></script>
-  <script src="js/02_pricing_master_storage.js?v=110" defer></script>
-  <script src="js/02a_bundles.js?v=110" defer></script>
-  <script src="js/03_pricing_checkout.js?v=110" defer></script>
-  <script src="js/03a_site_branding.js?v=110" defer></script>
-  <script src="js/03b_dev_console.js?v=110" defer></script>
-  <script src="js/03c_bundles_admin_editor.js?v=110" defer></script>
-  <script src="js/03d_payment_claims.js?v=110" defer></script>
-  <script src="js/03e_feedback.js?v=110" defer></script>
-  <script src="js/03f_coupons.js?v=110" defer></script>
-  <script src="js/04_access_permission_checkers.js?v=110" defer></script>
-  <script src="js/05_student_entitlements_desk.js?v=110" defer></script>
-  <script src="js/06_exam_pages_test_ingestion.js?v=110" defer></script>
-  <script src="js/06a_test_paper_studio.js?v=110" defer></script>
-  <script src="js/06b_mains_studio.js?v=110" defer></script>
-  <script src="js/06c_mains_practice.js?v=110" defer></script>
-  <script src="js/06d_mains_test_studio.js?v=110" defer></script>
-  <script src="js/07_pdf_vault.js?v=110" defer></script>
-  <script src="js/07a_pdf_publishing_wizard.js?v=110" defer></script>
-  <script src="js/08_word_page_creator.js?v=110" defer></script>
-  <script src="js/09_navigation_granular_controls.js?v=110" defer></script>
-  <script src="js/09a_site_search.js?v=110" defer></script>
-  <script src="js/10_omr_exam_engine.js?v=110" defer></script>
-  <script src="js/11_dashboard_review_modal.js?v=110" defer></script>
-  <script src="js/11a_study_planners.js?v=110" defer></script>
-  <script src="js/11c_dashboard_access_layers.js?v=110" defer></script>
-  <script src="js/11d_study_planner_admin_csv.js?v=110" defer></script>
-  <script src="js/11b_practice_mistakes_topic_builder.js?v=110" defer></script>
-  <script src="js/12_authentication_export.js?v=110" defer></script>
-  <script src="js/12a_email.js?v=110" defer></script>
-  <script src="js/12b_home_page_configuration.js?v=110" defer></script>
-  <script src="js/13_announcements.js?v=110" defer></script>
-  <script src="js/14_student_directory_admin.js?v=110" defer></script>
-  <script src="js/15_backup_export_restore.js?v=110" defer></script>
+  <script src="js/00_supabase_init.js?v=111" defer></script>
+  <script src="js/01_exam_category_master.js?v=111" defer></script>
+  <script src="js/02_pricing_master_storage.js?v=111" defer></script>
+  <script src="js/02a_bundles.js?v=111" defer></script>
+  <script src="js/03_pricing_checkout.js?v=111" defer></script>
+  <script src="js/03a_site_branding.js?v=111" defer></script>
+  <script src="js/03b_dev_console.js?v=111" defer></script>
+  <script src="js/03c_bundles_admin_editor.js?v=111" defer></script>
+  <script src="js/03d_payment_claims.js?v=111" defer></script>
+  <script src="js/03e_feedback.js?v=111" defer></script>
+  <script src="js/03f_coupons.js?v=111" defer></script>
+  <script src="js/04_access_permission_checkers.js?v=111" defer></script>
+  <script src="js/05_student_entitlements_desk.js?v=111" defer></script>
+  <script src="js/06_exam_pages_test_ingestion.js?v=111" defer></script>
+  <script src="js/06a_test_paper_studio.js?v=111" defer></script>
+  <script src="js/06b_mains_studio.js?v=111" defer></script>
+  <script src="js/06c_mains_practice.js?v=111" defer></script>
+  <script src="js/06d_mains_test_studio.js?v=111" defer></script>
+  <script src="js/07_pdf_vault.js?v=111" defer></script>
+  <script src="js/07a_pdf_publishing_wizard.js?v=111" defer></script>
+  <script src="js/08_word_page_creator.js?v=111" defer></script>
+  <script src="js/09_navigation_granular_controls.js?v=111" defer></script>
+  <script src="js/09a_site_search.js?v=111" defer></script>
+  <script src="js/10_omr_exam_engine.js?v=111" defer></script>
+  <script src="js/11_dashboard_review_modal.js?v=111" defer></script>
+  <script src="js/11a_study_planners.js?v=111" defer></script>
+  <script src="js/11c_dashboard_access_layers.js?v=111" defer></script>
+  <script src="js/11d_study_planner_admin_csv.js?v=111" defer></script>
+  <script src="js/11b_practice_mistakes_topic_builder.js?v=111" defer></script>
+  <script src="js/12_authentication_export.js?v=111" defer></script>
+  <script src="js/12a_email.js?v=111" defer></script>
+  <script src="js/12b_home_page_configuration.js?v=111" defer></script>
+  <script src="js/13_announcements.js?v=111" defer></script>
+  <script src="js/14_student_directory_admin.js?v=111" defer></script>
+  <script src="js/15_backup_export_restore.js?v=111" defer></script>
 </body>
 </html>
