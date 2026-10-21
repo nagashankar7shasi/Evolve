@@ -68,9 +68,17 @@
   <!-- ================= TOP NAVIGATION ================= -->
   <header class="bg-slate-900 text-white h-16 px-6 flex items-center justify-between border-b border-slate-800 shrink-0 sticky top-0 z-30">
     <div class="flex items-center space-x-3 cursor-pointer" onclick="navigate('home')">
-      <div id="site-logo-box" class="w-10 h-10 rounded-lg bg-slate-900 border border-amber-500/30 flex items-center justify-center shadow-sm overflow-hidden" style="font-family:'Playfair Display',Georgia,serif; font-weight:900;">
+      <!-- rounded-full + object-contain, not rounded-lg + object-cover: a circular/seal-style
+           uploaded logo (admin branding panel) is rarely a perfect 1:1 square, so object-cover was
+           cropping it to fill the square box and the slightly-rounded corners showed the logo's own
+           background bleeding past the circle instead of a clean round badge. object-contain shows
+           the whole uploaded image with no cropping, and rounded-full means a circular/oval badge
+           actually reads as circular instead of looking squared-off. Confirmed via a synthetic
+           circular-seal test image before/after this change -- the default "E+" text mark (shown
+           when no logo is uploaded) looks fine as a circle too, so this isn't a tradeoff either way. -->
+      <div id="site-logo-box" class="w-10 h-10 rounded-full bg-slate-900 border border-amber-500/30 flex items-center justify-center shadow-sm overflow-hidden" style="font-family:'Playfair Display',Georgia,serif; font-weight:900;">
         <span id="site-logo-text"><span class="text-white text-lg leading-none">E</span><span class="text-amber-400 text-lg leading-none">+</span></span>
-        <img id="site-logo-img" src="" alt="" class="hidden w-full h-full object-cover" />
+        <img id="site-logo-img" src="" alt="" class="hidden w-full h-full object-contain" />
       </div>
       <div>
         <!-- Not an <h1> on purpose: it's the nav-bar brand logo, shown on every screen. The real,
@@ -827,9 +835,11 @@
              squeezed down to 1-2 visible characters without this room back -- confirmed against
              the exact title length from a real reported paper ("Test 2 — Indian Economic Survey
              2025-26"), which rendered as literally "T.." before this. -->
-        <div id="engine-logo-box" class="hidden md:flex w-8 h-8 rounded bg-amber-500 items-center justify-center font-bold text-slate-950 overflow-hidden shrink-0">
+        <!-- Same rounded-full/object-contain fix as #site-logo-box above, same reason: a circular/
+             seal-style uploaded logo was being cropped and square-cornered by rounded + object-cover. -->
+        <div id="engine-logo-box" class="hidden md:flex w-8 h-8 rounded-full bg-amber-500 items-center justify-center font-bold text-slate-950 overflow-hidden shrink-0">
           <span id="engine-logo-text">ಕ</span>
-          <img id="engine-logo-img" src="" alt="" class="hidden w-full h-full object-cover" />
+          <img id="engine-logo-img" src="" alt="" class="hidden w-full h-full object-contain" />
         </div>
         <div class="min-w-0">
           <!-- Not an <h1> -- the page's one real <h1> is the home hero heading (#home-hero-heading). -->
