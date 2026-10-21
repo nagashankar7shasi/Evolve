@@ -630,6 +630,29 @@
           }).join('')}
         </select>`;
 
+      // Each planner is tied to one exam category (plan.category), and EXAM_CATEGORIES (js/
+      // 01_exam_category_master.js, synced from Admin Console -> Exam Category Master) carries
+      // that category's own Prelims/Mains dates. Shown here as well as the dashboard-wide
+      // #dash-exam-countdown badge (js/11d, renderExamCountdown) because that badge only ever
+      // shows ONE soonest date across every category a student has access to -- a student
+      // tracking both KPSC and UPSC, say, would never see the farther-off one there. Scoping the
+      // countdown to the planner itself means each track's own date stays visible regardless of
+      // what else is going on, since a student switches to a specific planner precisely because
+      // they're focused on that one exam.
+      let plannerCountdownHtml = '';
+      const plannerCat = EXAM_CATEGORIES[plan.category];
+      if (plannerCat) {
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const milestone = [['Prelims', plannerCat.prelimsDate], ['Mains', plannerCat.mainsDate]]
+          .find(([, d]) => d && new Date(d + 'T00:00:00') >= today);
+        if (milestone) {
+          const [label, dateStr] = milestone;
+          const daysLeft = Math.round((new Date(dateStr + 'T00:00:00') - today) / 86400000);
+          const when = daysLeft === 0 ? 'today' : daysLeft === 1 ? 'tomorrow' : `in ${daysLeft} days`;
+          plannerCountdownHtml = `<span class="kp-chip" style="background:rgba(255,197,49,0.18); color:#FFC531">⏳ ${escapeHtml(label)} ${when}</span>`;
+        }
+      }
+
       // Basic users see what the advanced version adds, and how to get it
       let upgradeHtml = '';
       if (plan.version === 'basic') {
@@ -653,6 +676,7 @@
                 <div class="kp-title kp-display">${escapeHtml(plan.title)}<span class="kp-version ${plan.version}">${plan.version === 'advanced' ? 'ADVANCED' : 'BASIC'}</span></div>
                 <div class="kp-sub">${escapeHtml(plan.sub)}</div>
                 <div class="kp-chips">
+                  ${plannerCountdownHtml}
                   <span class="kp-chip" style="background:rgba(255,197,49,0.18); color:#FFC531">Prelims ${pPct}%</span>
                   <span class="kp-chip" style="background:rgba(218,59,43,0.22); color:#FFB3A9">Mains ${mPct}%</span>
                   <span class="kp-chip" style="background:rgba(255,255,255,0.12); color:#EAE8FF">Books ${bPct}%</span>
