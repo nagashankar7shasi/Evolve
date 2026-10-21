@@ -1518,9 +1518,16 @@
             </div>
             <div class="flex items-center gap-2 text-xs">
               <select id="tests-list-filter" onchange="renderTestsCatalogAdmin()" class="px-2 py-1 border rounded-lg bg-white outline-none"></select>
+              <select id="tests-list-status-filter" onchange="renderTestsCatalogAdmin()" class="px-2 py-1 border rounded-lg bg-white outline-none">
+                <option value="all">All statuses</option>
+                <option value="active">Active only</option>
+                <option value="inactive">Inactive (drafts) only</option>
+                <option value="delisted">Delisted only</option>
+              </select>
               <input type="search" id="tests-list-search" oninput="renderTestsCatalogAdmin()" placeholder="Search title…" class="px-2 py-1 border rounded-lg outline-none w-40" />
             </div>
           </div>
+          <div id="tests-bulk-bar" class="hidden items-center gap-2 text-xs mb-2 px-2.5 py-2 bg-slate-900 text-white rounded-lg flex-wrap"></div>
           <div id="tests-catalog-list" class="space-y-2 text-xs max-h-96 overflow-y-auto"></div>
         </div>
       </div>

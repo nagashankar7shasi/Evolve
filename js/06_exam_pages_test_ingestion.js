@@ -67,6 +67,14 @@
       if (savedFilter && filterSel && [...filterSel.options].some(o => o.value === savedFilter)) {
         filterSel.value = savedFilter;
       }
+      // Same standing-preference treatment as the category filter above, for the status quick-
+      // filter (All/Active/Inactive/Delisted) -- its options are static HTML, not JS-populated, so
+      // there's no populateCategoryDropdown() call to carry a value through; just restore it here.
+      const savedStatusFilter = localStorage.getItem('kas_tests_list_status_filter');
+      const statusSel = document.getElementById('tests-list-status-filter');
+      if (savedStatusFilter && statusSel && [...statusSel.options].some(o => o.value === savedStatusFilter)) {
+        statusSel.value = savedStatusFilter;
+      }
       populateCategoryDropdown('studio-category');
     }
 
@@ -421,59 +429,59 @@
     // else calls it.
 
     // ---- Uploaded papers: list, edit price/title, delete with cascade ----
-    function renderTestsCatalogAdmin() {
-      const root = document.getElementById('tests-catalog-list');
-      if (!root) return;
-      const filter = (document.getElementById('tests-list-filter') || {}).value || 'all';
-      // Remembered across admin-console loads (see populateAllCategoryDropdowns) so a category
-      // like "Daily PIB Current Affairs" stays the standing filter instead of resetting to the
-      // full list every time the panel reopens.
-      localStorage.setItem('kas_tests_list_filter', filter);
-      const q = ((document.getElementById('tests-list-search') || {}).value || '').trim().toLowerCase();
-      const rows = (testsCatalog || []).filter(p =>
-        (filter === 'all' || p.category === filter) &&
-        (!q || (p.title || '').toLowerCase().includes(q))
-      ).sort(testCatalogSortCompare);
+    // Bulk-select state (module-scope, not tied to one render -- survives filter/search changes so
+    // an admin can select across two different filtered views and act on the union; it's only ever
+    // cleared explicitly, by "Clear" or after a bulk action completes).
+    let bulkSelectedPaperIds = new Set();
+    // Which split-sibling groups (see split_group_id) are expanded right now. Collapsed by default
+    // -- that's the whole point of grouping, declutter first, expand on demand.
+    let expandedSplitGroups = new Set();
+
+    // Papers with problems get flagged so admin can spot the ones that don't work. Shared by the
+    // per-row renderer below and by nothing else, so it's a plain local function, not a global one.
+    function testCatalogAdminProblem(p) {
+      if (!Array.isArray(p.questions) || p.questions.length === 0) return 'No questions attached';
+      if (!p.scheme || typeof p.scheme !== 'object') return 'Marking scheme missing';
+      const bad = p.questions.filter(q => !q || !q.correct || !/^[A-D]$/i.test(q.correct));
+      if (bad.length) return `${bad.length} question${bad.length > 1 ? 's are' : ' is'} missing a valid Correct letter (A-D)`;
+      return null;
+    }
+
+    // One paper's row, shared by the flat (ungrouped) list and by every split-sibling group's
+    // expanded body below. `atTop`/`atBottom` come from the paper's index in the OVERALL filtered
+    // `rows` list (not its position within a group), since moveTestPaper() swaps order_num with
+    // whatever's adjacent in that same flat, filtered sequence -- nesting a paper inside a group
+    // header must never change what "adjacent" means for the ▲▼ buttons.
+    function testCatalogAdminRowHtml(p, atTop, atBottom) {
       const catName = c => (EXAM_CATEGORIES[c] && EXAM_CATEGORIES[c].name) || c || '—';
-      if (!rows.length) {
-        root.innerHTML = '<p class="text-slate-400 text-center py-6">No papers match. Upload one above, or clear the filter.</p>';
-        return;
-      }
-      // Papers with problems get flagged so admin can spot the ones that don't work
-      const problem = p => {
-        if (!Array.isArray(p.questions) || p.questions.length === 0) return 'No questions attached';
-        if (!p.scheme || typeof p.scheme !== 'object') return 'Marking scheme missing';
-        const bad = p.questions.filter(q => !q || !q.correct || !/^[A-D]$/i.test(q.correct));
-        if (bad.length) return `${bad.length} question${bad.length > 1 ? 's are' : ' is'} missing a valid Correct letter (A-D)`;
-        return null;
-      };
-      root.innerHTML = rows.map((p, i) => {
-        const p_issue = problem(p);
-        const inBundles = (bundles || []).filter(b => (b.papers || []).includes(p.id)).map(b => b.name);
-        const isInactive = p.active === false;
-        const isDelisted = !!p.delisted;
-        const isBundleOnly = !!p.bundleOnly;
-        const atTop = i === 0;
-        const atBottom = i === rows.length - 1;
-        return `<div class="border ${p_issue ? 'border-rose-300 bg-rose-50' : isInactive ? 'border-slate-200 bg-slate-100' : 'border-slate-200 bg-white'} rounded-lg p-2.5 ${isInactive ? 'opacity-70' : ''}">
+      const p_issue = testCatalogAdminProblem(p);
+      const inBundles = (bundles || []).filter(b => (b.papers || []).includes(p.id)).map(b => b.name);
+      const isInactive = p.active === false;
+      const isDelisted = !!p.delisted;
+      const isBundleOnly = !!p.bundleOnly;
+      const isChecked = bulkSelectedPaperIds.has(p.id);
+      return `<div class="border ${p_issue ? 'border-rose-300 bg-rose-50' : isInactive ? 'border-slate-200 bg-slate-100' : 'border-slate-200 bg-white'} rounded-lg p-2.5 ${isInactive ? 'opacity-70' : ''}">
           <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0 flex-1">
-              <div class="font-bold text-slate-900 truncate">${escapeHtml(p.title || 'Untitled paper')}</div>
-              <div class="text-[11px] text-slate-500 mt-0.5 flex flex-wrap items-center gap-2">
-                ${isInactive ? '<span class="font-bold uppercase tracking-wider bg-slate-700 text-white px-1.5 py-0.5 rounded">Inactive</span>' : ''}
-                ${isDelisted ? '<span class="font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded" title="Hidden from the Test Papers grid and search — still purchasable via a direct link or a page\'s Test paper card">🙈 Delisted</span>' : ''}
-                ${isBundleOnly ? '<span class="font-bold uppercase tracking-wider bg-violet-100 text-violet-800 px-1.5 py-0.5 rounded" title="Not free, but never sold individually — reachable only via a covering bundle">🎁 Bundle-only</span>' : ''}
-                <span class="font-mono uppercase tracking-wider bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">${escapeHtml(catName(p.category))}</span>
-                ${(p.extraCategories || []).map(c => `<span class="font-mono uppercase tracking-wider bg-slate-50 border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded" title="Feeds the question bank of ${escapeHtml(catName(c))}">🏦 ${escapeHtml(catName(c))}</span>`).join('')}
-                ${(p.alsoListCategories || []).map(c => `<span class="font-mono uppercase tracking-wider bg-amber-50 border border-amber-200 text-amber-700 px-1.5 py-0.5 rounded" title="Also listed as its own paper + unlockable under ${escapeHtml(catName(c))}">🔗 ${escapeHtml(catName(c))}</span>`).join('')}
-                <span class="font-mono text-slate-400" title="Display order — lower sorts first. Edit exactly in the Studio, or nudge with ▲▼.">#${p.order || 0}</span>
-                <span>${(Array.isArray(p.questions) && p.questions.length) ? p.questions.length : (p.questionCount || 0)} Qs</span>
-                <span>${p.price === 0 ? '<b class="text-emerald-700">Free</b>' : '₹' + p.price}</span>
-                ${p.scheme && p.scheme.duration ? `<span>${p.scheme.duration} min</span>` : ''}
-                ${p.scheduled_for ? `<span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">🗓 Live ${new Date(p.scheduled_for).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>` : ''}
-                ${inBundles.length ? `<span class="text-slate-500">In ${inBundles.length} bundle${inBundles.length > 1 ? 's' : ''}: ${escapeHtml(inBundles.slice(0, 2).join(', '))}${inBundles.length > 2 ? '…' : ''}</span>` : ''}
+            <div class="flex items-start gap-2 min-w-0 flex-1">
+              <input type="checkbox" onchange="toggleBulkSelect('${p.id}', this.checked)" ${isChecked ? 'checked' : ''} class="mt-1 shrink-0" title="Select for bulk actions" />
+              <div class="min-w-0 flex-1">
+                <div class="font-bold text-slate-900 truncate">${escapeHtml(p.title || 'Untitled paper')}</div>
+                <div class="text-[11px] text-slate-500 mt-0.5 flex flex-wrap items-center gap-2">
+                  ${isInactive ? '<span class="font-bold uppercase tracking-wider bg-slate-700 text-white px-1.5 py-0.5 rounded">Inactive</span>' : ''}
+                  ${isDelisted ? '<span class="font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded" title="Hidden from the Test Papers grid and search — still purchasable via a direct link or a page\'s Test paper card">🙈 Delisted</span>' : ''}
+                  ${isBundleOnly ? '<span class="font-bold uppercase tracking-wider bg-violet-100 text-violet-800 px-1.5 py-0.5 rounded" title="Not free, but never sold individually — reachable only via a covering bundle">🎁 Bundle-only</span>' : ''}
+                  <span class="font-mono uppercase tracking-wider bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">${escapeHtml(catName(p.category))}</span>
+                  ${(p.extraCategories || []).map(c => `<span class="font-mono uppercase tracking-wider bg-slate-50 border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded" title="Feeds the question bank of ${escapeHtml(catName(c))}">🏦 ${escapeHtml(catName(c))}</span>`).join('')}
+                  ${(p.alsoListCategories || []).map(c => `<span class="font-mono uppercase tracking-wider bg-amber-50 border border-amber-200 text-amber-700 px-1.5 py-0.5 rounded" title="Also listed as its own paper + unlockable under ${escapeHtml(catName(c))}">🔗 ${escapeHtml(catName(c))}</span>`).join('')}
+                  <span class="font-mono text-slate-400" title="Display order — lower sorts first. Edit exactly in the Studio, or nudge with ▲▼.">#${p.order || 0}</span>
+                  <span>${(Array.isArray(p.questions) && p.questions.length) ? p.questions.length : (p.questionCount || 0)} Qs</span>
+                  <span>${p.price === 0 ? '<b class="text-emerald-700">Free</b>' : '₹' + p.price}</span>
+                  ${p.scheme && p.scheme.duration ? `<span>${p.scheme.duration} min</span>` : ''}
+                  ${p.scheduled_for ? `<span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">🗓 Live ${new Date(p.scheduled_for).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>` : ''}
+                  ${inBundles.length ? `<span class="text-slate-500">In ${inBundles.length} bundle${inBundles.length > 1 ? 's' : ''}: ${escapeHtml(inBundles.slice(0, 2).join(', '))}${inBundles.length > 2 ? '…' : ''}</span>` : ''}
+                </div>
+                ${p_issue ? `<div class="mt-1 text-[11px] font-bold text-rose-700">⚠ ${escapeHtml(p_issue)}. Re-upload the CSV to fix.</div>` : ''}
               </div>
-              ${p_issue ? `<div class="mt-1 text-[11px] font-bold text-rose-700">⚠ ${escapeHtml(p_issue)}. Re-upload the CSV to fix.</div>` : ''}
             </div>
             <div class="flex items-center gap-1 shrink-0">
               <button onclick="moveTestPaper('${p.id}', -1)" ${atTop ? 'disabled' : ''} class="px-1.5 py-1 border ${atTop ? 'border-slate-200 text-slate-300 cursor-not-allowed' : 'border-slate-300 hover:bg-slate-100 text-slate-700'} font-bold rounded" title="Move up in this list (nudges display order)">▲</button>
@@ -490,7 +498,211 @@
             </div>
           </div>
         </div>`;
+    }
+
+    // A split-generated group's collapsible header + (when expanded) its member rows. groupId is
+    // the shared split_group_id; `papers` is every member still visible in this filtered view --
+    // one of its siblings can legitimately be filtered out by the status quick-filter without
+    // breaking this (renderTestsCatalogAdmin only calls this helper when 2+ survive the filter).
+    function testCatalogAdminGroupHtml(groupId, papers, rowIndexById) {
+      const expanded = expandedSplitGroups.has(groupId);
+      // Sibling titles were generated as "<Subject> — <Label> (Part N of M)" by
+      // studioConfirmSectionalSplit() -- strip the "(Part …)" suffix to get a shared group label.
+      const label = (papers[0].title || 'Split papers').replace(/\s*\(Part \d+ of \d+\)\s*$/i, '');
+      const activeCount = papers.filter(p => p.active !== false).length;
+      const allChecked = papers.every(p => bulkSelectedPaperIds.has(p.id));
+      const idsJson = JSON.stringify(papers.map(p => p.id));
+      return `<div class="border border-amber-300 bg-amber-50 rounded-lg ${expanded ? '' : 'p-0'}">
+        <div class="flex items-center gap-2 p-2.5 cursor-pointer" onclick="toggleSplitGroupExpanded('${groupId}')">
+          <input type="checkbox" onclick="event.stopPropagation()" onchange="toggleSplitGroupSelectAll('${groupId}', ${idsJson.replace(/"/g, '&quot;')}, this.checked)" ${allChecked ? 'checked' : ''} title="Select all ${papers.length} papers in this group" />
+          <span class="text-base">🧩</span>
+          <div class="min-w-0 flex-1">
+            <div class="font-bold text-slate-900 truncate" title="${escapeHtml(label)}">${escapeHtml(label)}</div>
+            <div class="text-[11px] text-slate-600">${papers.length} papers from one split &middot; ${activeCount} active, ${papers.length - activeCount} inactive</div>
+          </div>
+          <span class="text-slate-500 font-bold text-sm shrink-0">${expanded ? '▾ Collapse' : '▸ Expand'}</span>
+        </div>
+        ${expanded ? `<div class="px-2.5 pb-2.5 space-y-2">${papers.map(p => testCatalogAdminRowHtml(p, rowIndexById.get(p.id) === 0, rowIndexById.get(p.id) === rowIndexById.get('__max__'))).join('')}</div>` : ''}
+      </div>`;
+    }
+
+    function renderTestsCatalogAdmin() {
+      const root = document.getElementById('tests-catalog-list');
+      if (!root) return;
+      const filter = (document.getElementById('tests-list-filter') || {}).value || 'all';
+      // Remembered across admin-console loads (see populateAllCategoryDropdowns) so a category
+      // like "Daily PIB Current Affairs" stays the standing filter instead of resetting to the
+      // full list every time the panel reopens.
+      localStorage.setItem('kas_tests_list_filter', filter);
+      const statusFilter = (document.getElementById('tests-list-status-filter') || {}).value || 'all';
+      localStorage.setItem('kas_tests_list_status_filter', statusFilter);
+      const q = ((document.getElementById('tests-list-search') || {}).value || '').trim().toLowerCase();
+      const rows = (testsCatalog || []).filter(p =>
+        (filter === 'all' || p.category === filter) &&
+        (!q || (p.title || '').toLowerCase().includes(q)) &&
+        (statusFilter === 'all' ||
+          // Active/Inactive and Delisted are independent flags (see toggleTestPaperDelisted's own
+          // comment) -- a paper can be both Active and Delisted at once, and shows under either
+          // filter in that case, rather than these three options being mutually exclusive buckets.
+          (statusFilter === 'active' && p.active !== false) ||
+          (statusFilter === 'inactive' && p.active === false) ||
+          (statusFilter === 'delisted' && !!p.delisted))
+      ).sort(testCatalogSortCompare);
+      renderTestsBulkBar();
+      if (!rows.length) {
+        root.innerHTML = '<p class="text-slate-400 text-center py-6">No papers match. Upload one above, or clear the filter.</p>';
+        return;
+      }
+
+      // ---- Collapse split-siblings (see split_group_id) under one header, same declutter idea as
+      // the student-facing grid's bundle grouping, but admin-side and keyed by "created together in
+      // one split" rather than "unlocked together by one bundle". A paper only counts as grouped
+      // here if 2+ of its siblings survived the current filter -- a lone survivor just renders as
+      // an ordinary row, same as a paper with no split_group_id at all. ----
+      const siblingsByGroup = new Map();
+      rows.forEach(p => {
+        if (!p.splitGroupId) return;
+        if (!siblingsByGroup.has(p.splitGroupId)) siblingsByGroup.set(p.splitGroupId, []);
+        siblingsByGroup.get(p.splitGroupId).push(p);
+      });
+      const realGroups = new Map([...siblingsByGroup].filter(([, papers]) => papers.length > 1));
+
+      // atTop/atBottom for ▲▼ must reflect each paper's position in the flat `rows` sequence (what
+      // moveTestPaper actually swaps against), not its position inside a group's rendered body --
+      // so index every id once, up front, before any grouping/collapsing happens.
+      const rowIndexById = new Map(rows.map((p, i) => [p.id, i]));
+      rowIndexById.set('__max__', rows.length - 1);
+
+      const placedGroups = new Set();
+      root.innerHTML = rows.map(p => {
+        if (p.splitGroupId && realGroups.has(p.splitGroupId)) {
+          if (placedGroups.has(p.splitGroupId)) return ''; // already rendered as part of this group
+          placedGroups.add(p.splitGroupId);
+          return testCatalogAdminGroupHtml(p.splitGroupId, realGroups.get(p.splitGroupId), rowIndexById);
+        }
+        const i = rowIndexById.get(p.id);
+        return testCatalogAdminRowHtml(p, i === 0, i === rows.length - 1);
       }).join('');
+    }
+
+    // ---- Bulk select + bulk actions ----
+    function toggleBulkSelect(paperId, checked) {
+      if (checked) bulkSelectedPaperIds.add(paperId); else bulkSelectedPaperIds.delete(paperId);
+      renderTestsBulkBar();
+    }
+
+    function toggleSplitGroupSelectAll(groupId, ids, checked) {
+      ids.forEach(id => { if (checked) bulkSelectedPaperIds.add(id); else bulkSelectedPaperIds.delete(id); });
+      renderTestsCatalogAdmin();
+    }
+
+    function toggleSplitGroupExpanded(groupId) {
+      if (expandedSplitGroups.has(groupId)) expandedSplitGroups.delete(groupId); else expandedSplitGroups.add(groupId);
+      renderTestsCatalogAdmin();
+    }
+
+    function clearBulkSelection() {
+      bulkSelectedPaperIds.clear();
+      renderTestsCatalogAdmin();
+    }
+
+    // Shows/hides the bulk action bar and keeps its button labels in sync with the current
+    // selection count -- called on every checkbox toggle without re-rendering the whole (possibly
+    // long) paper list underneath it.
+    function renderTestsBulkBar() {
+      const bar = document.getElementById('tests-bulk-bar');
+      if (!bar) return;
+      const n = bulkSelectedPaperIds.size;
+      if (!n) { bar.classList.add('hidden'); bar.classList.remove('flex'); bar.innerHTML = ''; return; }
+      bar.classList.remove('hidden'); bar.classList.add('flex');
+      const btn = (onclick, label, extra) => `<button onclick="${onclick}" class="px-2.5 py-1 border border-white/30 hover:bg-white/10 font-bold rounded ${extra || ''}">${label}</button>`;
+      bar.innerHTML = `<span class="font-bold">${n} selected</span>` +
+        btn('bulkSetTestPapersActive(true)', '▶ Activate') +
+        btn('bulkSetTestPapersActive(false)', '⏸ Deactivate') +
+        btn('bulkSetTestPapersDelisted(false)', '👁 Re-list') +
+        btn('bulkSetTestPapersDelisted(true)', '🙈 Delist') +
+        btn('bulkDeleteTestPapers()', '× Delete', 'text-rose-300 hover:text-rose-200') +
+        btn('clearBulkSelection()', 'Clear', 'ml-auto');
+    }
+
+    async function bulkSetTestPapersActive(nextActive) {
+      const ids = [...bulkSelectedPaperIds];
+      if (!ids.length) return;
+      if (!nextActive && !confirm(`Deactivate ${ids.length} selected paper${ids.length === 1 ? '' : 's'}?\n\nThey'll disappear from the Exam Hub and can't be opened by anyone (even students who already unlocked one), until reactivated.`)) return;
+      try {
+        const { error } = await supabaseClient.from('tests_catalog').update({ active: nextActive }).in('id', ids);
+        if (error) throw error;
+      } catch (err) {
+        return alert('Bulk update failed, nothing was changed: ' + err.message);
+      }
+      ids.forEach(id => { const p = testsCatalog.find(x => x.id === id); if (p) p.active = nextActive; });
+      clearBulkSelection();
+      filterExamCategory(selectedCategory);
+    }
+
+    async function bulkSetTestPapersDelisted(nextDelisted) {
+      const ids = [...bulkSelectedPaperIds];
+      if (!ids.length) return;
+      try {
+        const { error } = await supabaseClient.from('tests_catalog').update({ delisted: nextDelisted }).in('id', ids);
+        if (error) throw error;
+      } catch (err) {
+        return alert('Bulk update failed, nothing was changed: ' + err.message);
+      }
+      ids.forEach(id => { const p = testsCatalog.find(x => x.id === id); if (p) p.delisted = nextDelisted; });
+      clearBulkSelection();
+      filterExamCategory(selectedCategory);
+    }
+
+    async function bulkDeleteTestPapers() {
+      const ids = [...bulkSelectedPaperIds];
+      if (!ids.length) return;
+      const papers = ids.map(id => testsCatalog.find(x => x.id === id)).filter(Boolean);
+      // Same cascade scope as the single-paper deleteTestPaper(): which bundles reference ANY of
+      // the selected papers (each such bundle gets re-upserted once below, however many of the
+      // selected papers it lost), and how many students had individual (non-bundle) access.
+      const affectedBundles = (bundles || []).filter(b => (b.papers || []).some(pid => ids.includes(pid)));
+      const studentsAffected = (studentDirectory || []).filter(s => (s.allowedExams || []).some(pid => ids.includes(pid)));
+      let msg = `Delete ${ids.length} selected paper${ids.length === 1 ? '' : 's'}?\n\nThis cannot be undone.`;
+      if (affectedBundles.length) msg += `\n\n${affectedBundles.length} bundle${affectedBundles.length > 1 ? 's' : ''} will be updated to no longer include them: ${affectedBundles.map(b => b.name).join(', ')}.`;
+      if (studentsAffected.length) msg += `\n\n${studentsAffected.length} student${studentsAffected.length > 1 ? 's' : ''} had individual access to one or more of these — those entries will be dropped (bundle passes are unaffected).`;
+      if (!confirm(msg)) return;
+
+      try {
+        const { error } = await supabaseClient.from('tests_catalog').delete().in('id', ids);
+        if (error) throw error;
+      } catch (err) {
+        return alert('Bulk delete failed, nothing was deleted: ' + err.message);
+      }
+      testsCatalog = testsCatalog.filter(p => !ids.includes(p.id));
+
+      // Cascade: same per-bundle full re-upsert deleteTestPaper() does, just batched over every
+      // bundle that lost at least one of the selected papers instead of one bundle at a time.
+      for (const b of affectedBundles) {
+        b.papers = (b.papers || []).filter(pid => !ids.includes(pid));
+        try {
+          const { error: bErr } = await supabaseClient.from('bundles').upsert({
+            id: b.id, name: b.name, tagline: b.tagline || '', price: b.price,
+            validity_days: b.validityDays, highlights: b.highlights || [], active: b.active,
+            show_on_home: b.showOnHome, featured: b.featured, style: b.style || 'light',
+            order_num: b.order || 0, all_access: b.allAccess, categories: b.categories || [],
+            papers: b.papers || [], pages: b.pages || [], pdfs: b.pdfs || [],
+            planners: b.planners || [], features: b.features || []
+          });
+          if (bErr) console.error('Failed to re-sync bundle after bulk test delete:', bErr);
+        } catch (err) {
+          console.error('Bundle re-sync threw:', fmtErr(err));
+        }
+      }
+      saveBundles();
+
+      studentDirectory.forEach(s => { s.allowedExams = (s.allowedExams || []).filter(pid => !ids.includes(pid)); });
+      localStorage.setItem('kas_student_directory', JSON.stringify(studentDirectory));
+
+      clearBulkSelection();
+      renderHomeBundles();
+      alert(`${papers.length} paper${papers.length === 1 ? '' : 's'} deleted.`);
+      filterExamCategory(selectedCategory);
     }
 
     // Quick reorder: swaps order_num with whichever paper sits adjacent in the EXACT list currently
