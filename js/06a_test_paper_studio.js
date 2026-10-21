@@ -333,6 +333,7 @@
       document.getElementById('studio-coming-soon').checked = false;
       document.getElementById('studio-revision-notes-text').value = '';
       studioSetRevisionNotesFile('', '');
+      document.getElementById('studio-topics-covered').value = '';
       studioApplyCategoryDefaults(firstCatId);
       studioRefreshExtraCategoryOptions([]);
       studioRefreshAlsoListCategoryOptions([]);
@@ -383,6 +384,7 @@
           document.getElementById('studio-coming-soon').checked = !!p.comingSoon;
           document.getElementById('studio-revision-notes-text').value = (p.revisionNotes && p.revisionNotes.text) || '';
           studioSetRevisionNotesFile((p.revisionNotes && p.revisionNotes.fileUrl) || '', (p.revisionNotes && p.revisionNotes.fileName) || '');
+          document.getElementById('studio-topics-covered').value = p.topicsCovered || '';
           // SECURITY FIX: if p.price is undefined/null/NaN (older rows, direct DB edits, or any
           // upload path that didn't set it), assigning it straight to .value leaves the field blank.
           // On save, parseInt("") is NaN, which the old publish code silently coerced to 0 — meaning
@@ -981,6 +983,7 @@
       if (!subject) { studioSplitPlan = null; preview.innerHTML = ''; return alert('Scan the bank first, then pick a subject.'); }
       const minFloor = Math.max(1, parseInt(document.getElementById('studio-split-min').value, 10) || 15);
       const maxCap = Math.max(minFloor, parseInt(document.getElementById('studio-split-max').value, 10) || 60);
+      const mergeSmall = document.getElementById('studio-split-merge').checked;
       const cat = document.getElementById('studio-category').value;
       preview.innerHTML = '<p class="text-[11px] text-slate-500">Checking the whole category for duplicates…</p>';
 
@@ -1012,10 +1015,43 @@
         const pool = shuffle([...cleanPool(g.static), ...cleanPool(g.ca)]);
         const sizes = studioBalancedPaperSizes(pool.length, minFloor, maxCap);
         const titles = sizes.map((_, i) => `${subject} — ${g.label}${sizes.length > 1 ? ` (Part ${i + 1} of ${sizes.length})` : ''}`);
-        return { label: g.label, total: pool.length, pool, sizes, titles };
+        // Every part of a single-sub-topic paper covers just that one topic -- the "Mixed topics"
+        // pseudo-group built below is the only case where this differs part-by-part.
+        return { label: g.label, total: pool.length, pool, sizes, titles, topicsCoveredPerPart: sizes.map(() => [g.label]) };
       });
-      const eligible = rows.filter(r => r.sizes.length);
-      const tooSmall = rows.filter(r => !r.sizes.length && r.total > 0);
+
+      // Sub-topics that don't clear the minimum on their own used to be dropped outright, taking
+      // every one of their questions out of circulation with them. When "Combine smaller
+      // sub-topics" is on, pool ALL of them together (across the whole subject, not pairwise) and
+      // run the exact same balanced-sizing logic on the combined pile -- a handful of 10-20
+      // question sub-topics naturally lands as one or two full-sized "Mixed topics" papers instead
+      // of N discarded piles. A sub-topic that already clears the minimum by itself is never
+      // touched by this -- only genuine leftovers are merged.
+      const tooSmallRows = rows.filter(r => r.sizes.length === 0 && r.total > 0);
+      let mergedRow = null;
+      if (mergeSmall && tooSmallRows.length) {
+        const combinedPool = shuffle(tooSmallRows.flatMap(r => r.pool));
+        const mergedSizes = studioBalancedPaperSizes(combinedPool.length, minFloor, maxCap);
+        if (mergedSizes.length) {
+          let offset = 0;
+          const topicsCoveredPerPart = mergedSizes.map(size => {
+            const chunk = combinedPool.slice(offset, offset + size);
+            offset += size;
+            // Each pooled bank item still carries its ORIGINAL sub-topic tag on the question itself
+            // (b.q.subTopic) -- that's the single source of truth for which topics ended up in this
+            // particular chunk, not the chunk boundaries.
+            return [...new Set(chunk.map(b => (b.q.subTopic || '').trim()).filter(Boolean))];
+          });
+          const titles = mergedSizes.map((_, i) => `${subject} — Mixed topics${mergedSizes.length > 1 ? ` (Part ${i + 1} of ${mergedSizes.length})` : ''}`);
+          mergedRow = { label: 'Mixed topics', total: combinedPool.length, pool: combinedPool, sizes: mergedSizes, titles, topicsCoveredPerPart };
+        }
+      }
+
+      const eligible = rows.filter(r => r.sizes.length).concat(mergedRow ? [mergedRow] : []);
+      // Only genuinely unrecoverable leftovers get reported as skipped now: sub-topics that missed
+      // the minimum alone, where merging is either off or (rarely) the combined pile still missed
+      // the minimum even after pooling every small sub-topic in the subject together.
+      const tooSmall = (mergeSmall && mergedRow) ? [] : tooSmallRows;
       studioSplitPlan = { subject, cat, groups: eligible };
 
       if (!eligible.length) {
@@ -1025,9 +1061,13 @@
 
       const totalPapers = eligible.reduce((sum, r) => sum + r.sizes.length, 0);
       const totalQuestions = eligible.reduce((sum, r) => sum + r.sizes.reduce((a, b) => a + b, 0), 0);
-      const tableRows = eligible.flatMap(r => r.sizes.map((size, i) =>
-        `<tr><td class="py-1 pr-3">${escapeHtml(r.label)}</td><td class="py-1 pr-3">${escapeHtml(r.titles[i])}</td><td class="py-1 text-right font-mono">${size}</td></tr>`
-      )).join('');
+      const tableRows = eligible.flatMap(r => r.sizes.map((size, i) => {
+        const topics = (r.topicsCoveredPerPart && r.topicsCoveredPerPart[i]) || [r.label];
+        // Only a merged "Mixed topics" part actually needs its own topic breakdown shown -- for an
+        // ordinary single-sub-topic part, that's just the Sub-topic column repeated, so skip it.
+        const topicsLine = r.label === 'Mixed topics' ? `<div class="text-slate-500 italic">${escapeHtml(topics.join(', '))}</div>` : '';
+        return `<tr><td class="py-1 pr-3 align-top">${escapeHtml(r.label)}</td><td class="py-1 pr-3 align-top">${escapeHtml(r.titles[i])}${topicsLine}</td><td class="py-1 text-right font-mono align-top">${size}</td></tr>`;
+      })).join('');
 
       preview.innerHTML = `
         <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-[11px]">
@@ -1091,6 +1131,7 @@
               sourceQuestionId: q.sourceQuestionId || `${b.paperId}::${b.q.id}`
             };
           });
+          const topicsCovered = ((g.topicsCoveredPerPart && g.topicsCoveredPerPart[partIdx]) || [g.label]).join(', ');
           newPapers.push({
             id: `paper_${Date.now()}_${newPapers.length}`,
             category: cat, extra_categories: [], also_list_categories: [],
@@ -1098,7 +1139,7 @@
             title: g.titles[partIdx], price: 0, scheme,
             questions: cleanQuestions, question_count: cleanQuestions.length,
             scheduled_for: null, order_num: baseOrder + newPapers.length * 10,
-            split_group_id: splitGroupId
+            split_group_id: splitGroupId, topics_covered: topicsCovered || null
           });
         });
       });
@@ -1111,7 +1152,7 @@
             id: p.id, category: p.category, extraCategories: p.extra_categories, alsoListCategories: p.also_list_categories,
             active: p.active, delisted: p.delisted, bundleOnly: p.bundle_only, comingSoon: p.coming_soon, revisionNotes: p.revision_notes,
             title: p.title, price: p.price, scheme: p.scheme, questions: p.questions, questionCount: p.question_count,
-            scheduled_for: p.scheduled_for, order: p.order_num, splitGroupId: p.split_group_id
+            scheduled_for: p.scheduled_for, order: p.order_num, splitGroupId: p.split_group_id, topicsCovered: p.topics_covered
           });
         });
         renderTestsCatalogAdmin();
@@ -1832,6 +1873,15 @@
     }
 
     // ---- Publish ----
+    // Fills "Topics covered" from the distinct Sub_Topic tags actually present on this paper's
+    // current question set -- a one-time suggestion, not a live sync, so the admin can freely edit
+    // or replace it afterward (e.g. rewrite it into a real sentence) without it snapping back.
+    function studioSuggestTopicsCovered() {
+      const topics = [...new Set(studioState.questions.map(q => (q.subTopic || '').trim()).filter(Boolean))];
+      if (!topics.length) return alert('None of this paper\'s questions have a Sub-topic tag to suggest from. Add one via the Sub_Topic CSV column, or type a description manually.');
+      document.getElementById('studio-topics-covered').value = topics.join(', ');
+    }
+
     async function studioPublish() {
       const title = document.getElementById('studio-paper-title').value.trim();
       const category = document.getElementById('studio-category').value;
@@ -1849,6 +1899,10 @@
       const revNotesFileUrl = revNotesFileLink.dataset.url || '';
       const revNotesFileName = revNotesFileLink.dataset.name || '';
       const revisionNotes = (revNotesText || revNotesFileUrl) ? { text: revNotesText, fileUrl: revNotesFileUrl, fileName: revNotesFileName } : null;
+      // Plain editable text, not re-derived from the questions on every save -- auto-filled once at
+      // creation time (manually via studioSuggestTopicsCovered(), or automatically by a sectional
+      // split) but the admin owns it afterward, same spirit as revisionNotes above.
+      const topicsCovered = document.getElementById('studio-topics-covered').value.trim();
       // SECURITY FIX: previously `parseInt(rawValue, 10) || 0` treated a BLANK/invalid field exactly
       // the same as an admin explicitly typing 0 — meaning a stray cleared field silently published a
       // paid paper as free, with no warning. Now those two cases are told apart: blank/invalid requires
@@ -1932,7 +1986,7 @@
 
       try {
         const { error } = await supabaseClient.from('tests_catalog').upsert({
-          id: paperId, category, extra_categories: extraCategories, also_list_categories: alsoListCategories, active, delisted, bundle_only: bundleOnly, coming_soon: comingSoon, revision_notes: revisionNotes, title, price, scheme, questions: cleanQuestions, question_count: cleanQuestions.length, scheduled_for: scheduledFor, order_num: orderNum
+          id: paperId, category, extra_categories: extraCategories, also_list_categories: alsoListCategories, active, delisted, bundle_only: bundleOnly, coming_soon: comingSoon, revision_notes: revisionNotes, title, price, scheme, questions: cleanQuestions, question_count: cleanQuestions.length, scheduled_for: scheduledFor, order_num: orderNum, topics_covered: topicsCovered || null
         });
         if (error) throw error;
 
@@ -1944,7 +1998,7 @@
         // until the next full catalog reload re-fetches it from the DB (the upsert below never
         // touches that column either way, so the row itself is always fine).
         const splitGroupId = existingIdx >= 0 ? testsCatalog[existingIdx].splitGroupId : undefined;
-        const runtimePaper = { id: paperId, category, extraCategories, alsoListCategories, active, delisted, bundleOnly, comingSoon, revisionNotes, title, price, scheme, questions: cleanQuestions, questionCount: cleanQuestions.length, scheduled_for: scheduledFor, order: orderNum, splitGroupId };
+        const runtimePaper = { id: paperId, category, extraCategories, alsoListCategories, active, delisted, bundleOnly, comingSoon, revisionNotes, title, price, scheme, questions: cleanQuestions, questionCount: cleanQuestions.length, scheduled_for: scheduledFor, order: orderNum, splitGroupId, topicsCovered: topicsCovered || null };
         if (existingIdx >= 0) testsCatalog[existingIdx] = runtimePaper;
         else testsCatalog.push(runtimePaper);
 
