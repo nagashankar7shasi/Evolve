@@ -46,6 +46,7 @@
           if (typeof wirePageDraftAutosave === 'function') wirePageDraftAutosave();
           if (typeof wireBlockDragReorder === 'function') wireBlockDragReorder();
           if (typeof wireInsertPicker === 'function') wireInsertPicker();
+          if (typeof wireCropBoxDrag === 'function') wireCropBoxDrag();
           return true;
         } catch (err) {
           console.error('Failed to load admin-console.html', fmtErr(err));
