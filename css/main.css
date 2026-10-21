@@ -367,6 +367,16 @@
     .word-canvas .kb-ext-link:hover { color: #1d4ed8; }
     #word-editor-canvas figure.kb-figure img { cursor: pointer; }
     #word-editor-canvas figure.kb-figure img.kb-selected { outline: 3px solid #f59e0b; outline-offset: 2px; }
+    /* Free-form image resize handles -- created only while an image is selected (see
+       addImageResizeHandles() in 08_word_page_creator.js), positioned in JS at the image's own
+       corners rather than anchored by CSS, since the figure's box also includes the figcaption
+       below the picture. */
+    #word-editor-canvas .kb-img-handle {
+      position: absolute; width: 12px; height: 12px; background: #2563eb; border: 2px solid #fff;
+      border-radius: 999px; z-index: 5; box-shadow: 0 0 0 1px rgba(15, 23, 42, .25);
+    }
+    #word-editor-canvas .kb-img-handle-nw, #word-editor-canvas .kb-img-handle-se { cursor: nwse-resize; }
+    #word-editor-canvas .kb-img-handle-ne, #word-editor-canvas .kb-img-handle-sw { cursor: nesw-resize; }
 
     /* ---------- New: text alignment classes (safety net alongside inline execCommand) ---------- */
     .word-canvas .kb-align-left   { text-align: left; }
@@ -835,3 +845,17 @@
        the sidebar's active state, so the working tool doesn't feel like a separate, plainer product. ---- */
     #view-admin h2.text-2xl.font-black { font-family: 'Playfair Display', Georgia, serif; letter-spacing: -.01em; }
     .admin-nav-btn.bg-slate-900, .admin-nav-btn[class*="bg-slate-900"] { background: var(--ink-950) !important; }
+
+    /* ---- Hand-rolled crop box for a pasted image (see openImageCropModal()/wireCropBoxDrag() in
+       08_word_page_creator.js) -- #crop-stage holds the preview image at its natural display
+       size; #crop-box is the draggable/resizable selection rectangle positioned over it in JS. ---- */
+    #crop-stage { display: inline-block; max-width: 100%; }
+    #crop-box { box-shadow: 0 0 0 9999px rgba(15, 23, 42, .45); cursor: move; }
+    .kb-crop-handle {
+      position: absolute; width: 14px; height: 14px; background: #f59e0b; border: 2px solid #fff;
+      border-radius: 999px; box-shadow: 0 0 0 1px rgba(15, 23, 42, .25); margin: -7px;
+    }
+    .kb-crop-handle[data-corner="nw"] { top: 0; left: 0; cursor: nwse-resize; }
+    .kb-crop-handle[data-corner="ne"] { top: 0; left: 100%; cursor: nesw-resize; }
+    .kb-crop-handle[data-corner="sw"] { top: 100%; left: 0; cursor: nesw-resize; }
+    .kb-crop-handle[data-corner="se"] { top: 100%; left: 100%; cursor: nwse-resize; }

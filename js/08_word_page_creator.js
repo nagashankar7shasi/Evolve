@@ -914,6 +914,137 @@
       insertFigure(url.trim());
     }
 
+    // ---- Hand-rolled crop box for a pasted image (see the paste listener in wireEditorImages())
+    // -- deliberately not a pulled-in library (Cropper.js etc.), matching this codebase's existing
+    // hand-rolled-over-dependency convention. `cropState` holds the pasted file plus the crop
+    // rectangle in DISPLAY pixels (the size the preview <img> is actually shown at in the modal);
+    // confirmImageCrop() scales that rectangle back up to the image's true (natural) resolution
+    // before drawing the cropped pixels onto an upload canvas, so the crop lands on the right
+    // pixels regardless of how large or small the modal happens to display the preview.
+    let cropState = null;
+
+    function openImageCropModal(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = document.getElementById('crop-source-img');
+        img.onload = () => {
+          const displayWidth = img.clientWidth, displayHeight = img.clientHeight;
+          cropState = {
+            file,
+            naturalWidth: img.naturalWidth,
+            displayWidth, displayHeight,
+            box: { x: displayWidth * 0.1, y: displayHeight * 0.1, w: displayWidth * 0.8, h: displayHeight * 0.8 },
+          };
+          renderCropBox();
+        };
+        img.src = reader.result;
+      };
+      reader.onerror = () => alert('Could not read that pasted image.');
+      reader.readAsDataURL(file);
+      openModal('image-crop-modal');
+    }
+
+    function renderCropBox() {
+      if (!cropState) return;
+      const box = document.getElementById('crop-box');
+      box.style.left = cropState.box.x + 'px';
+      box.style.top = cropState.box.y + 'px';
+      box.style.width = cropState.box.w + 'px';
+      box.style.height = cropState.box.h + 'px';
+    }
+
+    function clampNum(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+    // One pointer-gesture handler covers both moving the box (grabbed anywhere inside it) and
+    // resizing from a corner (grabbed on a .kb-crop-handle) -- which one is decided once, at
+    // mousedown, and carried in cropDrag.corner for the rest of the gesture.
+    let cropDrag = null;
+
+    function wireCropBoxDrag() {
+      const box = document.getElementById('crop-box');
+      if (!box || box.dataset.wired) return;
+      box.dataset.wired = '1';
+      box.addEventListener('mousedown', (e) => {
+        if (!cropState) return;
+        e.preventDefault();
+        const handle = e.target.closest('.kb-crop-handle');
+        cropDrag = { corner: handle ? handle.dataset.corner : 'move', startX: e.clientX, startY: e.clientY, startBox: { ...cropState.box } };
+        document.addEventListener('mousemove', onCropDragMove);
+        document.addEventListener('mouseup', onCropDragEnd);
+      });
+    }
+
+    function onCropDragMove(e) {
+      if (!cropDrag || !cropState) return;
+      const dx = e.clientX - cropDrag.startX, dy = e.clientY - cropDrag.startY;
+      const W = cropState.displayWidth, H = cropState.displayHeight;
+      const MIN = 24;
+      let { x, y, w, h } = cropDrag.startBox;
+      if (cropDrag.corner === 'move') {
+        x = clampNum(x + dx, 0, W - w);
+        y = clampNum(y + dy, 0, H - h);
+      } else {
+        // Resize from whichever corner was grabbed -- the OPPOSITE edges stay fixed, same as a
+        // word processor's own corner-handle resize.
+        let left = x, top = y, right = x + w, bottom = y + h;
+        if (cropDrag.corner.includes('w')) left = clampNum(x + dx, 0, right - MIN);
+        if (cropDrag.corner.includes('e')) right = clampNum(x + w + dx, left + MIN, W);
+        if (cropDrag.corner.includes('n')) top = clampNum(y + dy, 0, bottom - MIN);
+        if (cropDrag.corner.includes('s')) bottom = clampNum(y + h + dy, top + MIN, H);
+        x = left; y = top; w = right - left; h = bottom - top;
+      }
+      cropState.box = { x, y, w, h };
+      renderCropBox();
+    }
+
+    function onCropDragEnd() {
+      cropDrag = null;
+      document.removeEventListener('mousemove', onCropDragMove);
+      document.removeEventListener('mouseup', onCropDragEnd);
+    }
+
+    function cancelImageCrop() {
+      cropState = null;
+      closeModal('image-crop-modal');
+    }
+
+    // "Skip" inserts the ORIGINAL pasted file through the normal insertImageFiles() path (same
+    // resize-for-storage handling as every other image upload) rather than forcing a crop on
+    // someone who just wanted a quick paste.
+    function skipImageCrop() {
+      const file = cropState && cropState.file;
+      cropState = null;
+      closeModal('image-crop-modal');
+      if (file) insertImageFiles([file]);
+    }
+
+    async function confirmImageCrop() {
+      if (!cropState) return;
+      const { file, box, displayWidth, naturalWidth } = cropState;
+      // Display pixels -> natural (real) pixels. Uniform scale factor since the preview <img> is
+      // never stretched/distorted (CSS caps its width and lets height follow automatically).
+      const scale = naturalWidth / displayWidth;
+      const sx = Math.round(box.x * scale), sy = Math.round(box.y * scale);
+      const sw = Math.round(box.w * scale), sh = Math.round(box.h * scale);
+      closeModal('image-crop-modal');
+      cropState = null;
+      const srcUrl = URL.createObjectURL(file);
+      try {
+        const img = new Image();
+        await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; img.src = srcUrl; });
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, sw);
+        c.height = Math.max(1, sh);
+        c.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+        const url = await canvasToStorageUrl(c, 'site_images/page_content', 'image/jpeg', 0.85);
+        insertFigure(url);
+      } catch (err) {
+        alert(`Could not crop that image: ${err.message}.`);
+      } finally {
+        URL.revokeObjectURL(srcUrl);
+      }
+    }
+
     let selectedEditorImage = null;
     let selectedVideoBlock = null;
     function imageAction(action) {
@@ -921,6 +1052,7 @@
       if (!img || !document.getElementById('word-editor-canvas').contains(img)) return alert('Click a picture in the editor first.');
       const fig = img.closest('figure.kb-figure');
       if (action === 'delete') {
+        removeImageResizeHandles();
         (fig || img).remove();
         selectedEditorImage = null;
         document.getElementById('image-tools').classList.add('hidden');
@@ -931,10 +1063,17 @@
       const SIZE_CLASSES  = ['kb-icon', 'kb-tiny', 'kb-small', 'kb-medium', 'kb-large'];
       const ALIGN_CLASSES = ['kb-left', 'kb-right', 'kb-center'];
 
-      // Size actions: icon / tiny / small / medium / large / full (full = no size class)
+      // Size actions: icon / tiny / small / medium / large / full (full = no size class). Picking
+      // a preset after a free-drag resize (see addImageResizeHandles() below) needs to clear the
+      // drag's explicit inline width/max-width too, the same way switching between two presets
+      // already clears the other preset's class -- otherwise the inline style (more specific than
+      // a class) would keep overriding whichever preset was just clicked.
       if (['icon', 'tiny', 'small', 'medium', 'large', 'full'].includes(action)) {
         SIZE_CLASSES.forEach(c => fig.classList.remove(c));
         if (action !== 'full') fig.classList.add(`kb-${action}`);
+        img.style.width = '';
+        img.style.maxWidth = '';
+        if (resizeHandleFig === fig) positionImageResizeHandles(fig, img);
         return;
       }
 
@@ -942,6 +1081,96 @@
       if (action === 'alignLeft')   { ALIGN_CLASSES.forEach(c => fig.classList.remove(c)); fig.classList.add('kb-left');   return; }
       if (action === 'alignRight')  { ALIGN_CLASSES.forEach(c => fig.classList.remove(c)); fig.classList.add('kb-right');  return; }
       if (action === 'alignCenter') { ALIGN_CLASSES.forEach(c => fig.classList.remove(c)); fig.classList.add('kb-center'); return; }
+    }
+
+    // Free-form image resize via drag handles -- an alternative to the Icon/Tiny/Small/Medium/
+    // Large/Full preset buttons above (both stay available; a preset after a drag clears the
+    // drag's inline width, see imageAction() above). Handles are created fresh each time an image
+    // is selected rather than baked into insertFigure()'s saved markup, so this works on images
+    // from pages saved before this feature existed too, and there's nothing transient that would
+    // need stripping from storage if nobody ever deselects before navigating away -- the few call
+    // sites that read canvas.innerHTML for saving/exporting/previewing call
+    // removeImageResizeHandles() defensively first regardless.
+    let resizeHandleFig = null;
+
+    function addImageResizeHandles(fig, img) {
+      removeImageResizeHandles();
+      resizeHandleFig = fig;
+      fig.style.position = 'relative';
+      ['nw', 'ne', 'sw', 'se'].forEach((corner) => {
+        const h = document.createElement('span');
+        h.className = `kb-img-handle kb-img-handle-${corner}`;
+        h.setAttribute('contenteditable', 'false');
+        h.dataset.corner = corner;
+        h.addEventListener('mousedown', (e) => startImageResize(e, fig, img, corner));
+        fig.appendChild(h);
+      });
+      positionImageResizeHandles(fig, img);
+    }
+
+    function removeImageResizeHandles() {
+      if (!resizeHandleFig) return;
+      resizeHandleFig.querySelectorAll('.kb-img-handle').forEach(h => h.remove());
+      resizeHandleFig.style.position = '';
+      resizeHandleFig = null;
+    }
+
+    // Handles sit at the IMAGE's corners, not the figure's (the figure also includes the
+    // figcaption below the image, so anchoring to the figure's own box would float them well
+    // below the bottom-right of the picture) -- recomputed on every resize tick too, not just at
+    // creation, so they visibly track the image as it grows/shrinks under the pointer instead of
+    // staying frozen at the size the image started the drag at.
+    function positionImageResizeHandles(fig, img) {
+      if (resizeHandleFig !== fig) return;
+      const w = img.offsetWidth, h = img.offsetHeight;
+      const HALF = 6;
+      const positions = {
+        nw: { left: -HALF, top: -HALF }, ne: { left: w - HALF, top: -HALF },
+        sw: { left: -HALF, top: h - HALF }, se: { left: w - HALF, top: h - HALF },
+      };
+      fig.querySelectorAll('.kb-img-handle').forEach((handle) => {
+        const p = positions[handle.dataset.corner];
+        if (p) { handle.style.left = p.left + 'px'; handle.style.top = p.top + 'px'; }
+      });
+    }
+
+    let imgResizeDrag = null;
+
+    function startImageResize(e, fig, img, corner) {
+      e.preventDefault();
+      e.stopPropagation();
+      imgResizeDrag = { fig, img, corner, startX: e.clientX, startWidth: img.offsetWidth };
+      document.addEventListener('mousemove', onImageResizeMove);
+      document.addEventListener('mouseup', onImageResizeEnd);
+    }
+
+    function onImageResizeMove(e) {
+      if (!imgResizeDrag) return;
+      const { fig, img, corner, startX, startWidth } = imgResizeDrag;
+      // Left-side handles (nw/sw) grow the image as the pointer moves left (negative clientX
+      // delta); right-side handles (ne/se) grow it moving right -- the same sign flip a word
+      // processor's own corner handles use. Height is left to CSS's existing height:auto on the
+      // img (see .word-canvas figure.kb-figure img in main.css), so the aspect ratio can't drift.
+      const dir = (corner === 'nw' || corner === 'sw') ? -1 : 1;
+      const delta = (e.clientX - startX) * dir;
+      const newWidth = Math.max(40, Math.min(1400, Math.round(startWidth + delta)));
+      img.style.width = newWidth + 'px';
+      img.style.maxWidth = 'none';
+      positionImageResizeHandles(fig, img);
+    }
+
+    function onImageResizeEnd() {
+      if (imgResizeDrag) {
+        // A drag-set explicit width makes the old preset size classes meaningless (and they'd
+        // otherwise still be capping the img's max-width) -- clear them so the figure's class
+        // list matches what's actually showing, the same cleanup picking a NEW preset already
+        // does to whichever preset came before it.
+        const { fig } = imgResizeDrag;
+        ['kb-icon', 'kb-tiny', 'kb-small', 'kb-medium', 'kb-large'].forEach(c => fig.classList.remove(c));
+      }
+      imgResizeDrag = null;
+      document.removeEventListener('mousemove', onImageResizeMove);
+      document.removeEventListener('mouseup', onImageResizeEnd);
     }
 
     // Makes the canvas behave like a word processor instead of a raw contenteditable div.
@@ -1009,7 +1238,12 @@
         editorRange = null;
         const sel = window.getSelection();
         if (sel.rangeCount && canvas.contains(sel.anchorNode)) editorRange = sel.getRangeAt(0).cloneRange();
-        insertImageFiles(files);
+        // Exactly one pasted image (the overwhelmingly common case -- a screenshot or a copied
+        // picture) gets a chance to crop before it's inserted. Several at once skips straight to
+        // the old direct-insert path -- cropping each one in turn would add more friction than it
+        // saves for what's a rare paste shape in a single-admin workflow.
+        if (files.length === 1) openImageCropModal(files[0]);
+        else insertImageFiles(files);
       });
       canvas.addEventListener('dragover', e => { if ([...e.dataTransfer.items].some(i => i.type.startsWith('image/'))) e.preventDefault(); });
       canvas.addEventListener('drop', e => {
@@ -1021,10 +1255,21 @@
         insertImageFiles(files);
       });
       canvas.addEventListener('click', e => {
+        // A resize drag ends with a mouseup over whichever handle the pointer happens to be on,
+        // and mouseup is followed by an ordinary 'click' on that same handle -- without this
+        // guard, that click would bubble up here, find no <img> ancestor (handles are siblings of
+        // the img, not descendants), and immediately deselect the image + tear down the handles
+        // that drag had just finished positioning.
+        if (e.target.closest('.kb-img-handle')) return;
         canvas.querySelectorAll('img.kb-selected').forEach(i => i.classList.remove('kb-selected'));
+        removeImageResizeHandles();
         const img = e.target.closest('img');
         selectedEditorImage = img || null;
-        if (img) img.classList.add('kb-selected');
+        if (img) {
+          img.classList.add('kb-selected');
+          const fig = img.closest('figure.kb-figure');
+          if (fig) addImageResizeHandles(fig, img);
+        }
         const tools = document.getElementById('image-tools');
         tools.classList.toggle('hidden', !img);
         tools.classList.toggle('inline-flex', !!img);
@@ -1452,6 +1697,8 @@
       // does by default. See ensureWordLikeParagraphs() for the same fix applied to every line
       // after the first (via Enter).
       document.getElementById('word-editor-canvas').innerHTML = page.content || '<p><br></p>';
+      resizeHandleFig = null;
+      selectedEditorImage = null;
       fillPageMetaFields(page);
       setSlugFieldEditable(false);
       updateSlugHint();
@@ -1731,6 +1978,11 @@
       // Seeded with an empty paragraph rather than '' -- see the matching comment in
       // loadPageIntoWordEditor() for why a truly empty canvas breaks the first line typed.
       document.getElementById('word-editor-canvas').innerHTML = '<p><br></p>';
+      // The wipe above already destroys any resize-handle spans along with everything else, but
+      // leaves resizeHandleFig/selectedEditorImage pointing at the now-detached old figure/img --
+      // harmless in practice (nothing re-selects them), but cleared anyway to not leave stale refs.
+      resizeHandleFig = null;
+      selectedEditorImage = null;
       fillPageMetaFields(null);
       setSlugFieldEditable(false);
       updateSlugHint();
@@ -2162,6 +2414,7 @@
   const price = isGated && !bundleOnly ? (parseInt(document.getElementById('page-price-input').value) || 49) : 0;
   document.querySelectorAll('#word-editor-canvas img.kb-selected').forEach(i => i.classList.remove('kb-selected'));
   document.querySelectorAll('#word-editor-canvas .kb-video-wrap.kb-selected').forEach(v => v.classList.remove('kb-selected'));
+  removeImageResizeHandles(); // never meant to be saved -- see the comment on addImageResizeHandles()
   const htmlContent = document.getElementById('word-editor-canvas').innerHTML;
   // datetime-local gives a value with no timezone (e.g. "2026-10-17T09:30"), which the browser
   // means as local time -- `new Date(...)` parses that exact string as local time too, so this
@@ -2545,7 +2798,7 @@
         // render here too (unstyled, but present and clickable) -- reported as "there's an X even
         // on the front end". Stripped unconditionally, for every page, regardless of how the
         // content was produced (hand-typed, pasted, or published via the PDF wizard).
-        contentBox.querySelectorAll('.kb-block-delete, .kb-block-move').forEach(btn => btn.remove());
+        contentBox.querySelectorAll('.kb-block-delete, .kb-block-move, .kb-img-handle').forEach(btn => btn.remove());
         hydratePageCards(contentBox);
       }
 
@@ -2835,7 +3088,7 @@
 
       const temp = document.createElement('div');
       temp.innerHTML = canvas.innerHTML;
-      temp.querySelectorAll('.kb-block-delete, .kb-block-move').forEach(btn => btn.remove());
+      temp.querySelectorAll('.kb-block-delete, .kb-block-move, .kb-img-handle').forEach(btn => btn.remove());
       hydratePageCards(temp);
 
       document.getElementById('page-preview-title').innerText = `${icon ? icon + ' ' : ''}${title}`;
@@ -2865,7 +3118,7 @@
 
       const temp = document.createElement('div');
       temp.innerHTML = canvas.innerHTML;
-      temp.querySelectorAll('.kb-block-delete, .kb-block-move').forEach(btn => btn.remove());
+      temp.querySelectorAll('.kb-block-delete, .kb-block-move, .kb-img-handle').forEach(btn => btn.remove());
       // A print window can't reliably render a cross-origin YouTube iframe (and a static PDF
       // couldn't play it anyway) -- swap each video block for a plain clickable link to the real
       // video instead of shipping a blank/broken rectangle in the exported PDF.
