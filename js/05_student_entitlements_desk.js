@@ -26,17 +26,50 @@
           </label>`).join('') || '<span class="text-slate-400">No bundles yet. Create one under Bundles &amp; Passes.</span>';
       }
 
+      // GROUPED BY BUNDLE: a flat list of every catalog paper (79+ in a single category isn't rare
+      // any more -- see the paper-count conversation elsewhere in this engagement) was unscannable
+      // when hunting for one paper to grant/revoke individually. Now sectioned under a collapsible
+      // <details> per bundle that covers it (native, so no JS open/closed state to track), plus a
+      // trailing "Not in any bundle" section for standalone-priced papers -- usually the only ones an
+      // admin actually needs to hand-pick, since bundle coverage already shows via the "via bundle"
+      // badge once a pass is ticked above. A paper covered by more than one bundle legitimately shows
+      // under each (matches bundlesCoveringPaper's own doc comment: that's intentional, not a dup bug)
+      // -- syncDuplicateEntitleCheckbox keeps those repeated checkboxes in lock-step on click.
       const papersBox = document.getElementById('entitle-papers-list');
       if (papersBox) {
-        papersBox.innerHTML = '';
-        testsCatalog.forEach(p => {
-          papersBox.innerHTML += `
-            <label class="flex items-start space-x-2 cursor-pointer" data-entitle-row="paper" data-item-id="${p.id}">
-              <input type="checkbox" value="${p.id}" class="entitle-paper-cb mt-0.5 rounded text-amber-500" />
-              <span class="truncate">${p.title} <b class="text-slate-400 font-mono">(₹${p.price})</b> <span class="via-bundle-badge hidden text-[10px] font-bold text-emerald-600">✓ via bundle</span></span>
-            </label>
-          `;
-        });
+        const paperRowHtml = p => `
+          <label class="flex items-start space-x-2 cursor-pointer" data-entitle-row="paper" data-item-id="${p.id}">
+            <input type="checkbox" value="${p.id}" class="entitle-paper-cb mt-0.5 rounded text-amber-500" onchange="syncDuplicateEntitleCheckbox(this)" />
+            <span class="truncate">${p.title} <b class="text-slate-400 font-mono">(₹${p.price})</b> <span class="via-bundle-badge hidden text-[10px] font-bold text-emerald-600">✓ via bundle</span></span>
+          </label>
+        `;
+        const coveredByAnyBundle = new Set();
+        const bundleSections = bundles.map(b => {
+          if (b.allAccess) {
+            testsCatalog.forEach(p => coveredByAnyBundle.add(p.id));
+            // Listing every paper again here would just recreate the same wall of checkboxes under a
+            // different header -- an All-Access bundle's coverage is already visible via the "via
+            // bundle" badges once it's ticked above.
+            return `<div class="text-[11px] text-slate-400 italic px-1 py-1">${escapeHtml(b.name)} — All-Access, covers every paper below (tick it above instead of granting papers one by one).</div>`;
+          }
+          const covered = testsCatalog.filter(p => bundleCoversPaper(b, p));
+          if (!covered.length) return '';
+          covered.forEach(p => coveredByAnyBundle.add(p.id));
+          return `
+            <details class="border border-slate-100 rounded-lg px-2 py-1">
+              <summary class="cursor-pointer text-[11px] font-bold text-slate-600 py-1">${escapeHtml(b.name)} <span class="text-slate-400 font-normal">(${covered.length})</span></summary>
+              <div class="pl-2 pt-1 space-y-1">${covered.map(paperRowHtml).join('')}</div>
+            </details>`;
+        }).filter(Boolean).join('');
+
+        const uncovered = testsCatalog.filter(p => !coveredByAnyBundle.has(p.id));
+        const uncoveredSection = uncovered.length ? `
+          <details class="border border-slate-100 rounded-lg px-2 py-1" open>
+            <summary class="cursor-pointer text-[11px] font-bold text-slate-600 py-1">Not in any bundle <span class="text-slate-400 font-normal">(${uncovered.length})</span></summary>
+            <div class="pl-2 pt-1 space-y-1">${uncovered.map(paperRowHtml).join('')}</div>
+          </details>` : '';
+
+        papersBox.innerHTML = bundleSections + uncoveredSection || '<span class="text-slate-400">No test papers yet.</span>';
       }
 
       const pagesBox = document.getElementById('entitle-pages-list');
@@ -105,6 +138,16 @@
           </label>
         `).join('') || '<span class="text-slate-400">No Mains test papers yet.</span>';
       }
+    }
+
+    // A paper covered by 2+ bundles now renders one checkbox per bundle section it appears under
+    // (see renderStudentEntitlementsDesk) -- plain HTML doesn't keep same-value checkboxes in sync by
+    // itself, so clicking one here mirrors the checked state onto every other row for the same paper
+    // id, keeping all of its appearances visually consistent without a full re-render.
+    function syncDuplicateEntitleCheckbox(cb) {
+      document.querySelectorAll(`.entitle-paper-cb[value="${cb.value}"]`).forEach(other => {
+        if (other !== cb) other.checked = cb.checked;
+      });
     }
 
     function grantQuickBundle(bundleType) {
@@ -271,7 +314,10 @@
   // ticked bundle already covers that item (see updateBundleCoverageHighlights) — they must NOT be
   // saved as individual grants, or bundle coverage would leak into a permanent individual entitlement
   // that outlives the bundle's own expiry.
-  const exams = Array.from(document.querySelectorAll('.entitle-paper-cb:checked')).filter(cb => cb.dataset.viaBundle !== 'true').map(cb => cb.value);
+  // A paper can now appear under more than one bundle section (see renderStudentEntitlementsDesk),
+  // so de-dupe by id -- syncDuplicateEntitleCheckbox keeps every appearance's checked state in step,
+  // but this guards against collecting the same paper id twice regardless.
+  const exams = [...new Set(Array.from(document.querySelectorAll('.entitle-paper-cb:checked')).filter(cb => cb.dataset.viaBundle !== 'true').map(cb => cb.value))];
   const pages = Array.from(document.querySelectorAll('.entitle-page-cb:checked')).filter(cb => cb.dataset.viaBundle !== 'true').map(cb => cb.value);
   const pdfs = Array.from(document.querySelectorAll('.entitle-pdf-cb:checked')).filter(cb => cb.dataset.viaBundle !== 'true').map(cb => cb.value);
   const plannerGrants = Array.from(document.querySelectorAll('.entitle-planner-cb:checked')).filter(cb => cb.dataset.viaBundle !== 'true').map(cb => cb.value);
