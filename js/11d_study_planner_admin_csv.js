@@ -277,6 +277,16 @@
               </select>
             </div>
           </div>
+          <div class="grid grid-cols-2 gap-2 mt-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1 text-xs">Prelims date (optional — powers the dashboard countdown)</label>
+              <input id="ec-prelims-${c.id}" type="date" value="${c.prelimsDate || ''}" class="w-full px-2 py-1.5 border rounded-lg font-mono text-xs" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1 text-xs">Mains date (optional — countdown switches to this once Prelims has passed)</label>
+              <input id="ec-mains-${c.id}" type="date" value="${c.mainsDate || ''}" class="w-full px-2 py-1.5 border rounded-lg font-mono text-xs" />
+            </div>
+          </div>
           <div class="mt-2 space-y-1.5">
             <label class="flex items-center gap-1.5 cursor-pointer text-xs"><input type="checkbox" id="ec-showscoring-${c.id}" ${c.showScoringPattern !== false ? 'checked' : ''} class="rounded" /> Show scoring pattern (marks per correct/wrong, max marks) on paper cards in this Exam Hub</label>
             <label class="flex items-center gap-1.5 cursor-pointer text-xs"><input type="checkbox" id="ec-dailybox-${c.id}" ${c.dailyPracticeBox ? 'checked' : ''} class="rounded" /> Show as a "Daily Practice" box on the student Dashboard (pick the latest or any day from the last 30 days, jumps straight into Practice Mode) -- for a category you publish on a daily basis, e.g. "Daily PIB Current Affairs"</label>
@@ -971,6 +981,8 @@
         showScoringPattern: v('showscoring').checked,
         dailyPracticeBox: v('dailybox').checked,
         parentId: (v('parent').value || '') || null,
+        prelimsDate: v('prelims').value || null,
+        mainsDate: v('mains').value || null,
         defaultScheme: {
           examBadge: v('badge').value.trim() || id,
           marksCorrect: parseFloat(v('correct').value) || 0,
@@ -1171,6 +1183,46 @@
       return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
     }
 
+    // Exam countdown chip (hero banner). For each exam category the student has at least one
+    // unlocked paper in, the "upcoming" milestone is Prelims if its date is set and still in the
+    // future, else Mains if ITS date is set and still in the future, else none for that category --
+    // this is what makes it auto-switch from Prelims to Mains the day after Prelims passes, with no
+    // admin action needed. Across all the student's categories, the chip shows whichever upcoming
+    // milestone is soonest. Dates are stored as plain 'YYYY-MM-DD' (no time), so "days left" is
+    // computed against local-midnight-to-local-midnight, not a 24h delta, matching how a person
+    // actually thinks about a countdown ("3 days away" shouldn't flip to "2" at 11pm the day before).
+    function studentCountdownCandidates() {
+      if (!currentUser) return [];
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const catIds = new Set(
+        testsCatalog.filter(p => isTestUnlockedForUser(p.id)).map(p => p.category)
+      );
+      const candidates = [];
+      catIds.forEach(catId => {
+        const cat = EXAM_CATEGORIES[catId];
+        if (!cat) return;
+        const milestone = [['Prelims', cat.prelimsDate], ['Mains', cat.mainsDate]]
+          .find(([, d]) => d && new Date(d + 'T00:00:00') >= today);
+        if (!milestone) return;
+        const [label, dateStr] = milestone;
+        const daysLeft = Math.round((new Date(dateStr + 'T00:00:00') - today) / 86400000);
+        candidates.push({ catId, catName: cat.name, label, dateStr, daysLeft });
+      });
+      candidates.sort((a, b) => a.daysLeft - b.daysLeft);
+      return candidates;
+    }
+
+    function renderExamCountdown() {
+      const chip = document.getElementById('dash-exam-countdown');
+      if (!chip) return;
+      const soonest = isAdmin() ? null : studentCountdownCandidates()[0];
+      if (!soonest) { chip.classList.add('hidden'); chip.classList.remove('flex'); return; }
+      const when = soonest.daysLeft === 0 ? 'today' : soonest.daysLeft === 1 ? 'tomorrow' : `in ${soonest.daysLeft} days`;
+      chip.innerHTML = `⏳ ${escapeHtml(soonest.catName)} ${soonest.label} ${when}`;
+      chip.classList.remove('hidden');
+      chip.classList.add('flex');
+    }
+
     function renderDashboard() {
       const admin = isAdmin();
       const attempts = getVisibleAttempts();
@@ -1178,6 +1230,7 @@
       document.getElementById('dash-title').innerText = admin
         ? 'All Student Attempts'
         : (currentUser ? `${dashboardGreetingPrefix()}, ${displayNameFor(currentUser.email, currentUser.name).split(' ')[0]}` : 'Student Performance Dashboard');
+      renderExamCountdown();
       document.getElementById('dash-subtitle').innerText = admin
         ? 'Admin view: every attempt saved on this device, with the student who took it.'
         : (currentUser ? `Logged in as ${currentUser.email}. Your scorecards, unlocked material and answer keys.` : 'Log in to see your scorecards.');
