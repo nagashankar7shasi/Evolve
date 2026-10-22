@@ -542,18 +542,41 @@
       const candidatePapers = testsCatalog.filter(p =>
         (p.category === cat || (p.extraCategories || []).includes(cat)));
       await Promise.all(candidatePapers.map(ensurePaperQuestionsLoaded));
-      studioBankPool = [];
+      // De-dupe by lineage before building the pool: studioGenerateFromBank (below) deep-clones a
+      // sampled question into a brand new paper and tags the clone with sourceQuestionId pointing
+      // back at its true root (chained through to the ORIGINAL if the source was itself already a
+      // clone). Without de-duping here, re-scanning after publishing a generated paper counts that
+      // paper's clones as fresh pool content -- inflating subject/sub-topic counts and letting a
+      // later generation sample the same underlying question into yet another paper. Same lineage
+      // convention and "doesn't matter which copy wins, they're identical by construction"
+      // reasoning as getQuestionBank() (js/11b) -- this scan just never had the matching fix. One
+      // pass collects every TRUE original (no sourceQuestionId), keyed by its own paperId::id, which
+      // is exactly the key a clone's sourceQuestionId resolves to. A second, fallback pass adds a
+      // clone's entry only when its root key isn't already covered by a true original in this scan
+      // (e.g. the original paper was later unpublished/retired) -- so every distinct root still gets
+      // exactly one representative row, never more.
+      const byRoot = new Map(); // rootKey ("paperId::qid" of the TRUE original) -> bank entry
+      const cloneFallback = new Map(); // rootKey -> first clone entry seen, used only as a fallback
       candidatePapers.forEach(p => {
         (p.questions || []).forEach(q => {
           if (q.retired) return;
           if (isCaLapsedPendingReview(q)) return;
-          studioBankPool.push({
+          const entry = {
             paperId: p.id, paperTitle: p.title, q, subject: subjectOf(q),
             contentType: q.contentType === 'ca' ? 'ca' : 'static',
             isPyq: Array.isArray(q.askedInYears) && q.askedInYears.length > 0
-          });
+          };
+          if (q.sourceQuestionId) {
+            if (!cloneFallback.has(q.sourceQuestionId)) cloneFallback.set(q.sourceQuestionId, entry);
+          } else {
+            byRoot.set(`${p.id}::${q.id}`, entry);
+          }
         });
       });
+      cloneFallback.forEach((entry, rootKey) => {
+        if (!byRoot.has(rootKey)) byRoot.set(rootKey, entry);
+      });
+      studioBankPool = [...byRoot.values()];
       status.innerText = `${studioBankPool.length} question${studioBankPool.length === 1 ? '' : 's'} found across ${candidatePapers.length} paper(s).`;
       renderStudioBankSubjectRows();
     }
