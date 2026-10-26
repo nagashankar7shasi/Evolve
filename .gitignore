@@ -4,3 +4,5 @@ tests/harness/test-visual.html
 tests/harness/css/
 tests/harness/js/
 tests/harness/admin-console.html
+# Copied in manually for Playwright image-reachability checks -- not the source of truth either.
+tests/harness/assets/
