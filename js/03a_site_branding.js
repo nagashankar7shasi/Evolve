@@ -187,6 +187,8 @@
       renderTelegramAdminConnectStatus();
       const feedToggle = document.getElementById('social-feed-enabled-toggle');
       if (feedToggle) feedToggle.checked = socialFeedEnabled;
+      const tileStyleSel = document.getElementById('page-tile-style-select');
+      if (tileStyleSel) tileStyleSel.value = pageTileStyle;
       renderQuizAutoAdmin();
     }
 
@@ -499,6 +501,41 @@
     function renderSocialFeedNavVisibility() {
       const link = document.getElementById('nav-social-feed-link');
       if (link) link.classList.toggle('hidden', !socialFeedEnabled);
+    }
+
+    /* ----------------------------------------------------
+       SECTION TILE STYLE -- which visual treatment pageTileHtml() (js/08_word_page_creator.js)
+       uses for sub-page cards: "Inside this section" grids on every custom page, the home
+       page's "Study Rooms" row, and page cards placed inline in content. One of a handful of
+       pre-built looks (picked from Dev Console -> Site branding), not free-form styling -- see
+       pageTileHtml()'s switch for what each one renders. Stored in app_settings
+       ('page_tile_style': {style}), same generic key/value store as everything else here, and
+       fetched for every visitor at boot (js/02a_bundles.js) since it affects public rendering,
+       not just the admin's own view.
+    ----------------------------------------------------- */
+    let pageTileStyle = 'current'; // 'current' | 'badge' | 'numeral' | 'inline' | 'shadow' | 'row'
+
+    async function fetchCloudPageTileStyle() {
+      const cloud = await fetchCloudAppSetting('page_tile_style');
+      pageTileStyle = (cloud && cloud.style) || 'current';
+      const sel = document.getElementById('page-tile-style-select');
+      if (sel) sel.value = pageTileStyle;
+    }
+
+    // Changed from Dev Console -> Site branding; saves immediately (same "no separate Save
+    // button" pattern as the social-feed toggle above), then repaints whatever's already on
+    // screen that uses pageTileHtml() so the admin sees the new look without reloading.
+    async function setPageTileStyle(style) {
+      pageTileStyle = style;
+      if (typeof renderHomeSections === 'function') renderHomeSections();
+      if (typeof refreshVisibleChildPageTiles === 'function') refreshVisibleChildPageTiles();
+      const ok = await saveCloudAppSetting('page_tile_style', { style: pageTileStyle });
+      const flash = document.getElementById('page-tile-style-saved');
+      if (flash) {
+        flash.textContent = ok ? '✓ saved' : "couldn't save";
+        flash.className = ok ? 'text-xs font-bold text-emerald-600' : 'text-xs font-bold text-rose-600';
+        setTimeout(() => { flash.textContent = ''; }, 2500);
+      }
     }
 
     // Fetches the latest captured channel posts and renders them as a scrolling list. Called by
