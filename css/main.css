@@ -167,10 +167,17 @@
     
     /* Word Document Canvas Styling */
     .word-canvas {
-      min-height: 440px;
       outline: none;
       font-size: 14px;
       line-height: 1.8;
+    }
+    /* The 440px floor is only wanted on the admin's editable "blank page" canvas, so it
+       feels like a page to type into -- NOT on the public page-render/preview containers
+       that also share the .word-canvas class, where it forced short pages to pad out with
+       empty space before the "Inside this section" children grid. See #word-editor-canvas
+       in admin-console.html vs #page-render-content / #page-preview-content in index.html. */
+    #word-editor-canvas.word-canvas {
+      min-height: 440px;
     }
     .word-canvas h1 { font-size: 1.75rem; font-weight: 800; margin-bottom: 0.75rem; color: #0f172a; }
     .word-canvas h2 { font-size: 1.35rem; font-weight: 700; margin-top: 1.25rem; margin-bottom: 0.5rem; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.25rem; }
