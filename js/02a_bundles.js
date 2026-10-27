@@ -433,6 +433,7 @@ window.onload = async function() {
         fetchCloudPlanners(),
         fetchCloudAnnouncements(),
         fetchCloudSiteBranding(),  // header logo/name/tagline — same generic app_settings pattern
+        fetchCloudPageTileStyle(), // which look pageTileHtml() renders sub-page cards in — same pattern
         fetchCloudSocialFeedSettings(), // whole-feature on/off switch for the public "Updates" nav link/page
         fetchCloudQuizAutoSettings(), // Dev Console -> Telegram quiz automation panel settings
         fetchCloudCoupons(),

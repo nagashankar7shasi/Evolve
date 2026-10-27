@@ -2807,7 +2807,12 @@
     }
 
     // ---- Tiles for pages (sub-pages, home "Study Rooms", page cards inside content) ----
-    function pageTileHtml(p, variant = 'tile') {
+    // The grid/default variant ('tile') has several interchangeable looks -- see the
+    // `pageTileStyle` switch below -- picked site-wide from Dev Console -> Site branding
+    // (js/03a_site_branding.js: fetchCloudPageTileStyle/setPageTileStyle). The compact 'list'
+    // variant (used when a page's childStyle is set to "list", and for page cards embedded
+    // inline in content) is unaffected by that setting -- it's already minimal.
+    function pageTileHtml(p, variant = 'tile', idx) {
       const locked = !isPageUnlockedForUser(p);
       const kids = childPagesOf(p.id).length;
       const meta = `${kids ? `${kids} page${kids > 1 ? 's' : ''} inside` : ''}${locked ? `${kids ? ' · ' : ''}🔒 Paid` : ''}`;
@@ -2819,16 +2824,87 @@
           <span class="text-slate-300" aria-hidden="true">›</span>
         </a>`;
       }
-      return `<a href="javascript:void(0)" onclick="renderDynamicCustomPage('${p.id}')" class="group flex flex-col bg-white rounded-2xl border border-slate-200 overflow-hidden hover:border-amber-500 hover:shadow-md transition">
-        ${p.image
-          ? `<img src="${p.image}" alt="" class="page-tile-img" />`
-          : `<div class="h-24 flex items-center justify-center bg-amber-50 text-4xl" aria-hidden="true">${escapeHtml(p.icon || '📄')}</div>`}
-        <div class="p-4 flex-1 flex flex-col">
-          <span class="font-bold text-slate-900 group-hover:text-amber-700">${escapeHtml(p.title)}</span>
-          ${p.summary ? `<span class="text-xs text-slate-500 mt-1 flex-1">${escapeHtml(p.summary)}</span>` : '<span class="flex-1"></span>'}
-          ${meta ? `<span class="text-[11px] text-slate-400 mt-2">${meta}</span>` : ''}
-        </div>
-      </a>`;
+
+      const href = `onclick="renderDynamicCustomPage('${p.id}')"`;
+      const title = escapeHtml(p.title);
+      const summary = p.summary ? escapeHtml(p.summary) : '';
+      const metaHtml = meta ? escapeHtml(meta) : '';
+      const icon = escapeHtml(p.icon || '📄');
+      // Every non-'current' look below shows the admin-uploaded cover image (p.image, used on
+      // ~a third of pages site-wide) by filling whatever icon container that style uses --
+      // same box, rounding and position, image instead of emoji -- rather than a separate
+      // image-only layout per style.
+      const iconFill = p.image
+        ? `<img src="${escapeHtml(p.image)}" alt="" style="width:100%;height:100%;object-fit:cover;" />`
+        : `<span aria-hidden="true">${icon}</span>`;
+
+      switch (pageTileStyle) {
+        case 'badge': // small solid-navy rounded badge, icon/image inside, quiet meta footer
+          return `<a href="javascript:void(0)" ${href} class="flex flex-col bg-white rounded-2xl border border-slate-200 p-5 gap-3 hover:shadow-md transition">
+            <div class="rounded-xl overflow-hidden flex items-center justify-center shrink-0 text-xl" style="width:44px;height:44px;background:#172554;color:#fff;">${iconFill}</div>
+            <div class="flex flex-col gap-1">
+              <span class="font-bold text-base text-slate-900">${title}</span>
+              ${summary ? `<span class="text-xs text-slate-500">${summary}</span>` : ''}
+            </div>
+            ${metaHtml ? `<div class="text-[11px] font-bold uppercase tracking-wide text-slate-400" style="margin-top:auto;padding-top:10px;border-top:1px solid #f1f5f9;">${metaHtml}</div>` : ''}
+          </a>`;
+
+        case 'numeral': // no icon -- a quiet serif position number marks each card instead
+          return `<a href="javascript:void(0)" ${href} class="flex flex-col bg-white rounded-2xl border border-slate-200 p-5 gap-2 hover:shadow-md transition">
+            ${p.image
+              ? `<div class="rounded-lg overflow-hidden shrink-0" style="width:48px;height:48px;">${iconFill}</div>`
+              : `<div class="font-bold" style="font-family:'Playfair Display',Georgia,serif;font-size:40px;line-height:1;color:#d4a842;">${String(idx || 1).padStart(2, '0')}</div>`}
+            <span class="font-bold text-base text-slate-900" style="margin-top:4px;">${title}</span>
+            ${summary ? `<span class="text-xs text-slate-500">${summary}</span>` : ''}
+            ${metaHtml ? `<div class="text-[11px] font-bold uppercase tracking-wide text-slate-400" style="margin-top:auto;padding-top:10px;">${metaHtml}</div>` : ''}
+          </a>`;
+
+        case 'inline': // small cream icon swatch beside the title, thin gold rule as the only accent
+          return `<a href="javascript:void(0)" ${href} class="flex flex-col bg-white rounded-xl border border-slate-200 p-4 gap-2 hover:shadow-md transition">
+            <div class="flex items-center gap-3">
+              <div class="rounded-lg overflow-hidden flex items-center justify-center shrink-0" style="width:36px;height:36px;background:#faf6ec;">${iconFill}</div>
+              <span class="font-bold text-sm text-slate-900">${title}</span>
+            </div>
+            <div style="height:2px;width:28px;background:#d4a842;margin-left:48px;"></div>
+            ${summary ? `<span class="text-xs text-slate-500" style="margin-left:48px;">${summary}</span>` : ''}
+            ${metaHtml ? `<span class="text-[11px] font-bold uppercase tracking-wide text-slate-400" style="margin-left:48px;margin-top:auto;">${metaHtml}</span>` : ''}
+          </a>`;
+
+        case 'shadow': // no border, soft drop shadow + lift on hover, round badge, serif title, gold arrow
+          return `<a href="javascript:void(0)" ${href} class="evp-tile-lift flex flex-col bg-white rounded-2xl p-5 gap-3" style="box-shadow:0 1px 2px rgba(15,23,42,.04), 0 4px 14px rgba(15,23,42,.06);">
+            <div class="rounded-full overflow-hidden flex items-center justify-center shrink-0 text-xl" style="width:48px;height:48px;background:#eef1f8;">${iconFill}</div>
+            <div class="flex flex-col gap-1">
+              <span class="font-bold text-base" style="font-family:'Playfair Display',Georgia,serif;color:#172554;">${title}</span>
+              ${summary ? `<span class="text-xs text-slate-500">${summary}</span>` : ''}
+            </div>
+            <div class="flex items-center justify-between" style="margin-top:auto;padding-top:12px;">
+              <span class="text-xs text-slate-400">${metaHtml}</span>
+              <span style="color:#d4a842;" aria-hidden="true">&rarr;</span>
+            </div>
+          </a>`;
+
+        case 'row': // compact horizontal row with a trailing chevron -- the standard settings-list pattern
+          return `<a href="javascript:void(0)" ${href} class="flex items-center gap-3 bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition">
+            <div class="rounded-lg overflow-hidden flex items-center justify-center shrink-0" style="width:38px;height:38px;background:#f1f5f9;">${iconFill}</div>
+            <div class="flex-1 min-w-0 flex flex-col">
+              <span class="font-bold text-sm text-slate-900 truncate">${title}</span>
+              ${metaHtml ? `<span class="text-[11px] text-slate-400">${metaHtml}</span>` : ''}
+            </div>
+            <span class="text-slate-300 shrink-0" aria-hidden="true">›</span>
+          </a>`;
+
+        default: // 'current' -- unchanged original look: amber strip (or cover image), emoji icon
+          return `<a href="javascript:void(0)" ${href} class="group flex flex-col bg-white rounded-2xl border border-slate-200 overflow-hidden hover:border-amber-500 hover:shadow-md transition">
+            ${p.image
+              ? `<img src="${p.image}" alt="" class="page-tile-img" />`
+              : `<div class="h-24 flex items-center justify-center bg-amber-50 text-4xl" aria-hidden="true">${icon}</div>`}
+            <div class="p-4 flex-1 flex flex-col">
+              <span class="font-bold text-slate-900 group-hover:text-amber-700">${title}</span>
+              ${summary ? `<span class="text-xs text-slate-500 mt-1 flex-1">${summary}</span>` : '<span class="flex-1"></span>'}
+              ${metaHtml ? `<span class="text-[11px] text-slate-400 mt-2">${metaHtml}</span>` : ''}
+            </div>
+          </a>`;
+      }
     }
 
     function renderChildPages(page) {
@@ -2842,8 +2918,20 @@
         grid.innerHTML = kids.map(k => pageTileHtml(k, 'list')).join('');
       } else {
         grid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4';
-        grid.innerHTML = kids.map(k => pageTileHtml(k)).join('');
+        grid.innerHTML = kids.map((k, i) => pageTileHtml(k, 'tile', i + 1)).join('');
       }
+    }
+
+    // Re-paints the "Inside this section" grid for whatever custom page is currently on screen
+    // (if any), using the global `currentPageId` set by renderDynamicCustomPage(). Called after
+    // the admin changes the site-wide tile style (setPageTileStyle, Dev Console -> Site
+    // branding) so an already-open page updates without a reload. No-op if the custom-page view
+    // isn't showing, or isn't currently on a page (view-custom-page hidden / currentPageId unset).
+    function refreshVisibleChildPageTiles() {
+      const view = document.getElementById('view-custom-page');
+      if (!view || view.classList.contains('hidden') || !currentPageId) return;
+      const page = customPages.find(p => p.id === currentPageId);
+      if (page) renderChildPages(page);
     }
 
     // Page cards placed inside content are stored as placeholders and filled with live details here
@@ -2905,7 +2993,7 @@
       if (!sec) return;
       const list = customPages.filter(p => p.showOnHome).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       sec.classList.toggle('hidden', !list.length);
-      document.getElementById('home-sections-grid').innerHTML = list.map(p => pageTileHtml(p)).join('');
+      document.getElementById('home-sections-grid').innerHTML = list.map((p, i) => pageTileHtml(p, 'tile', i + 1)).join('');
     }
 
     function showBlobInWindow(win, blob, filename) {

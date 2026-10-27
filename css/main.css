@@ -179,6 +179,16 @@
     #word-editor-canvas.word-canvas {
       min-height: 440px;
     }
+
+    /* "Section tile style" = 'shadow' (Dev Console -> Site branding -> Section tile style, see
+       pageTileHtml()'s 'shadow' case in js/08_word_page_creator.js): soft resting shadow that
+       lifts a bit more on hover. The resting shadow is set inline on the card (it's specific to
+       this one look, not worth a reusable utility), and inline style always outranks a plain
+       stylesheet hover rule regardless of selector -- hence !important here, just to let the
+       hover state actually override it. */
+    .evp-tile-lift { transition: box-shadow .15s, transform .15s; }
+    .evp-tile-lift:hover { box-shadow: 0 2px 4px rgba(15,23,42,.06), 0 10px 24px rgba(15,23,42,.1) !important; transform: translateY(-2px); }
+
     .word-canvas h1 { font-size: 1.75rem; font-weight: 800; margin-bottom: 0.75rem; color: #0f172a; }
     .word-canvas h2 { font-size: 1.35rem; font-weight: 700; margin-top: 1.25rem; margin-bottom: 0.5rem; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.25rem; }
     .word-canvas h3 { font-size: 1.15rem; font-weight: 700; margin-top: 1rem; margin-bottom: 0.25rem; color: #334155; }
