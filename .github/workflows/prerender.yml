@@ -1,0 +1,86 @@
+name: Prerender crawlable pages
+
+# Regenerates p/<slug>/index.html (one crawlable page per custom page) and sitemap.xml from the live
+# Supabase data, using scripts/prerender.js. The app itself is a hash-routed SPA, which search engines
+# can't index page-by-page -- these generated files are what they see; real visitors are bounced into
+# the normal app by a tiny script at the top of each file (see the header of scripts/prerender.js).
+#
+# Runs: daily (after the 06:41 IST "Publish Daily Pub Ad Note" task), whenever index.html or the
+# generator changes on main (so the generated pages pick up the new ?v= cache-bust and head tags), and
+# on demand. On any other branch a manual run only uploads the output as a build artifact -- that is
+# how to validate the real Supabase fetch before merging.
+
+on:
+  schedule:
+    - cron: '30 2 * * *'   # 08:00 IST
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - scripts/prerender.js
+      - package.json
+      - package-lock.json
+      - .github/workflows/prerender.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: prerender
+  cancel-in-progress: false
+
+jobs:
+  prerender:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate pages and sitemap
+        run: node scripts/prerender.js
+
+      - name: Summary
+        run: |
+          echo "pages: $(find p -name index.html | wc -l)"
+          echo "sitemap urls: $(grep -c '<loc>' sitemap.xml)"
+          du -sh p
+
+      # Not main: keep the output as a downloadable artifact only.
+      - name: Upload output (non-main runs)
+        if: github.ref != 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: prerender-output
+          path: |
+            p
+            sitemap.xml
+
+      # (No "[skip ci]" in the message: it would also suppress the GitHub Pages deployment.)
+      # Main: commit only p/ and sitemap.xml, and only if something changed. Retry on a push race
+      # (e.g. a merge landing at the same moment).
+      - name: Commit generated files (main only)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A p sitemap.xml
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Regenerate crawlable pages and sitemap"
+          for i in 1 2 3 4 5; do
+            if git push origin HEAD:main; then exit 0; fi
+            echo "Push rejected (attempt $i); rebasing and retrying..."
+            git pull --rebase origin main
+            sleep $((i * 3))
+          done
+          echo "Could not push after 5 attempts" >&2
+          exit 1
