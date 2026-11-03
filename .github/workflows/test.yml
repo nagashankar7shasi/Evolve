@@ -38,3 +38,6 @@ jobs:
 
       - name: Run regression suite
         run: node tests/run.js
+
+      - name: Run prerender (crawlable pages) tests
+        run: node tests/prerender.test.js

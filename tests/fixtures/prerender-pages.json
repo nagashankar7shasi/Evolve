@@ -1,0 +1,46 @@
+[
+  {
+    "id": "p_root", "slug": "public-administration-notes", "title": "Public Administration Notes", "is_gated": false, "price": 0,
+    "bundle_only": false, "parent_id": null, "icon": "📚", "image": "https://example.com/cover.jpg",
+    "summary": "Short, one-topic-at-a-time notes for the UPSC Optional.", "order_num": 1,
+    "published_at": "2026-10-20T06:41:00+00:00", "old_slugs": ["pub-ad-notes"],
+    "content": "<div class=\"kb-box kb-facts\"><div class=\"kb-box-title\">Overview</div><p>Notes for <b>Paper I</b> and Paper II.</p></div><p>See the <a href=\"#/page/pub-ad-notes\">old-slug link</a> and <a href=\"#/page/p_child\">id link</a> and <a href=\"#/page/no-such-page\">dead link</a>.</p><div class=\"kb-pagelink\" data-page=\"p_child\" contenteditable=\"false\"><button class=\"kb-block-delete\">x</button></div>"
+  },
+  {
+    "id": "p_child", "slug": "what-is-public-administration", "title": "What is Public Administration? Wilson's \"Vision\" & Scope $& more", "is_gated": false, "price": 0,
+    "bundle_only": false, "parent_id": "p_root", "icon": "📄", "image": "", "summary": "", "order_num": 1,
+    "published_at": "2026-10-21T06:41:00+00:00", "old_slugs": [],
+    "content": "<h3 id=\"x\">Meaning</h3><p onclick=\"steal()\" style=\"color:red\">Public administration is the <i>implementation</i> of public policy.</p><script>alert('xss')</script><img src=\"assets/upsc/diagram.png\"><img src=\"https://example.com/a.png\" alt=\"A\"><iframe src=\"https://www.youtube.com/embed/abc\"></iframe><a href=\"javascript:alert(1)\">bad</a><a href=\"#/bundle/all-access\">bundle</a><a href=\"notes/extra.html\">relative</a><a href=\"https://example.org/\">external</a><table><tr><td>cell</td></tr></table>"
+  },
+  {
+    "id": "p_paid", "slug": "premium-handbook", "title": "Premium Handbook", "is_gated": true, "price": 499,
+    "bundle_only": false, "parent_id": null, "icon": "🔒", "image": "", "summary": "Paid handbook, summary is public.", "order_num": 2,
+    "published_at": null, "old_slugs": [],
+    "content": "<p>SECRET-PAID-BODY should never be written out.</p>"
+  },
+  {
+    "id": "p_paid_child", "slug": "premium-handbook-chapter-1", "title": "Chapter 1", "is_gated": false, "price": 0,
+    "bundle_only": false, "parent_id": "p_paid", "icon": "📄", "image": "", "summary": "", "order_num": 1,
+    "published_at": null, "old_slugs": [],
+    "content": "<p>SECRET-INHERITED-BODY is inside a paid section so it is locked too.</p>"
+  },
+  {
+    "id": "p_free_gate_flag", "slug": "gate-flag-but-free", "title": "Flagged but free", "is_gated": true, "price": 0,
+    "bundle_only": false, "parent_id": null, "icon": "📄", "image": "", "summary": "", "order_num": 3,
+    "published_at": null, "old_slugs": [],
+    "content": "<p>is_gated is set but price is 0 and not bundle-only, so the app treats it as open.</p>"
+  },
+  {
+    "id": "p_bad_slug", "slug": "has/slash", "title": "Unsafe slug", "is_gated": false, "price": 0, "bundle_only": false,
+    "parent_id": null, "icon": "", "image": "", "summary": "", "order_num": 4, "published_at": null, "old_slugs": [], "content": "<p>x</p>"
+  },
+  {
+    "id": "p_dup_slug", "slug": "premium-handbook", "title": "Duplicate slug", "is_gated": false, "price": 0, "bundle_only": false,
+    "parent_id": null, "icon": "", "image": "", "summary": "", "order_num": 5, "published_at": null, "old_slugs": [], "content": "<p>x</p>"
+  },
+  {
+    "id": "p_no_slug", "slug": "", "title": "Falls back to id", "is_gated": false, "price": 0, "bundle_only": false,
+    "parent_id": null, "icon": "", "image": "", "summary": "Page whose slug is empty is addressed by id, like pageLinkHash().", "order_num": 6,
+    "published_at": null, "old_slugs": [], "content": ""
+  }
+]
