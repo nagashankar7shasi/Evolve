@@ -159,7 +159,9 @@ function startServer(dir) {
     if (!file.startsWith(dir)) { res.writeHead(403); return res.end(); }
     if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html'); // GitHub Pages behaviour
     fs.readFile(file, (err, data) => {
-      if (err) { res.writeHead(404); return res.end('not found'); }
+      if (err) { // GitHub Pages behaviour: any missing path gets 404.html, with a 404 status
+        return fs.readFile(path.join(dir, '404.html'), (e2, page) => { res.writeHead(404, { 'Content-Type': 'text/html' }); res.end(e2 ? 'not found' : page); });
+      }
       res.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream' });
       res.end(data);
     });
@@ -173,6 +175,7 @@ async function browserChecks(out) {
   fs.cpSync(path.join(out, 'p'), path.join(stage, 'p'), { recursive: true });
   for (const name of ['css', 'js', 'assets']) if (fs.existsSync(path.join(ROOT, name))) fs.cpSync(path.join(ROOT, name), path.join(stage, name), { recursive: true });
   fs.copyFileSync(path.join(ROOT, 'admin-console.html'), path.join(stage, 'admin-console.html'));
+  fs.copyFileSync(path.join(ROOT, '404.html'), path.join(stage, '404.html'));
   const { server, base } = await startServer(stage);
 
   const vendor = path.join(__dirname, 'harness', 'vendor');
@@ -248,6 +251,16 @@ async function browserChecks(out) {
       await titleShown(page, 'What is Public Administration');
       eq('browser: ?query and explicit #/page hash preserved', await page.evaluate(() => location.pathname + location.search + location.hash), '/?utm_source=telegram#/page/what-is-public-administration');
       eq('browser: no uncaught JS errors (explicit hash)', errors, []);
+      await page.close();
+    }
+    // D. 404.html: a /p/<slug>/ with no generated copy (page created since the last run) still opens in the app
+    {
+      const { page } = await newPage();
+      await page.goto(`${base}/p/not-generated-yet/?utm=1`);
+      await page.waitForFunction(() => location.pathname === '/' && location.hash, null, { timeout: 15000 });
+      eq('browser: ungenerated /p/ link is forwarded into the app', await page.evaluate(() => location.pathname + location.search + location.hash), '/?utm=1#/page/not-generated-yet');
+      await page.goto(`${base}/some/other/missing/path`);
+      eq('browser: other missing URLs show the not-found message', await page.evaluate(() => [location.pathname, document.querySelector('h1').textContent]), ['/some/other/missing/path', 'Page not found']);
       await page.close();
     }
     // C. a paid page opened from /p/ goes through the app's own paywall UI, not the static copy

@@ -2503,7 +2503,7 @@
   renderHomeSections();
   fillParentPicker(id, meta.parentId);
   updateSlugHint();
-  alert(`Page "${title}" saved and published live to the cloud!\n\nLink: #/page/${slug}`);
+  alert(`Page "${title}" saved and published live to the cloud!\n\nLink: /p/${slug}/`);
 }
 
     function renderPagesList() {
@@ -2529,7 +2529,7 @@
           <div class="flex items-center gap-2 min-w-0">
             ${p.image ? `<img src="${p.image}" alt="" class="w-8 h-5 object-cover rounded" />` : `<span class="text-base" aria-hidden="true">${escapeHtml(p.icon || '📄')}</span>`}
             <b class="truncate">${escapeHtml(p.title)}</b>
-            <span class="text-slate-400 font-mono hidden md:inline">#/page/${escapeHtml(p.slug)}</span>
+            <span class="text-slate-400 font-mono hidden md:inline">/p/${escapeHtml(p.slug)}/</span>
             <span class="px-1.5 rounded text-[10px] ${gatedHere ? 'bg-amber-100 text-amber-800 font-bold' : inheritsLock ? 'bg-amber-50 text-amber-700' : 'bg-slate-200'}">
               ${gatedHere ? (p.bundleOnly ? 'PAID · BUNDLES ONLY' : `PAID ₹${p.price}`) : inheritsLock ? 'LOCKED WITH PARENT' : 'FREE'}
             </span>
@@ -2553,7 +2553,7 @@
     function copyPageLink(id) {
       const page = findPage(id);
       if (!page) return;
-      const url = location.href.split('#')[0] + pageLinkHash(page);
+      const url = pageShareUrl(page);
       const fallback = () => prompt('Copy this page link:', url);
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(url).then(() => alert(`Link copied:\n${url}`)).catch(fallback);

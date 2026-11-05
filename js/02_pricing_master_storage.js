@@ -294,6 +294,13 @@
       return '#/page/' + encodeURIComponent(page.slug || page.id);
     }
 
+    // Public, shareable address of a page: the crawlable /p/<slug>/ URL (see scripts/prerender.js).
+    // Search engines index this form; a person opening it lands in the normal app at /#/page/<slug>.
+    // If no generated copy exists yet, 404.html forwards it into the app, so the link never dead-ends.
+    function pageShareUrl(page) {
+      return location.origin + '/p/' + encodeURIComponent(page.slug || page.id) + '/';
+    }
+
     // Converts any old slug-based references (menus, student access) to page IDs. Safe to run on every load.
     function normalizePageReferences() {
       customPages.forEach((pg, i) => {
