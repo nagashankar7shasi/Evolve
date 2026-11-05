@@ -29,7 +29,7 @@ fi
 
 lftp -p "$PORT" -u "$FTP_USERNAME,$FTP_PASSWORD" -e "$SETTINGS \
   mirror --reverse --delete --verbose=1 --parallel=4 \
-    --exclude '^\.well-known/' --exclude '^cgi-bin/' --exclude '^error_log\$' \
+    --exclude '^\.well-known/' --exclude '^cgi-bin/' --exclude '^error_log\$' --exclude '^\.ftpquota\$' \
     '$SRC' '$REMOTE_DIR'; \
   bye" "$FTP_HOST"
 echo "upload: done."
