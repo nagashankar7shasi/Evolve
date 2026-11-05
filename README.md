@@ -12,6 +12,11 @@ Mock-test and exam-prep platform for KPSC KAS / Karnataka PSI / KPSC FDA-SDA / U
 - **`/sql`** — every database migration that's been run against the Supabase project, in the order they were written. Each file is self-contained and idempotent (safe to re-run), and says in its own header what it does and why.
 - **`/archive`** — a one-time import of ~27 historical snapshots of `index.html` that had accumulated as separate files (`index V9 Null`, `index main V11.1`, etc.) before this repo had real version control. They're numbered `000`–`026` in true chronological order (verified by content growth and feature fingerprinting, not by their original names — several of the original names were out of order). Each filename keeps the original name for reference. These are historical reference only; nothing here is live or should be built on.
 
+## Crawlable pages and deploy targets
+
+- **`/p/<slug>/` + `sitemap.xml`** are generated (never hand-edited) by `scripts/prerender.js` via the "Prerender crawlable pages" workflow; each is the real app shell plus per-page SEO tags, and bounces visitors to `/#/page/<slug>`. `404.html` forwards a `/p/<slug>/` with no generated copy yet into the app.
+- **`/deploy`** publishes the site to the BigRock cPanel host over FTPS (`.github/workflows/deploy-bigrock.yml`): `stage-site.sh` copies exactly the served files, `upload.sh` mirrors them with `lftp`, and `.htaccess` carries the Apache rules GitHub Pages used to provide (404 page, HTTPS, caching). The workflow skips itself until the `FTP_HOST` / `FTP_USERNAME` / `FTP_PASSWORD` repository secrets exist. GitHub Pages can keep serving the same files in parallel as a fallback.
+
 ## Versioning
 
 This repo uses normal git history instead of saving a new file per version:
