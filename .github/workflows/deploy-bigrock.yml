@@ -1,0 +1,101 @@
+name: Deploy to BigRock
+
+# Uploads the live site (see deploy/stage-site.sh for the exact file list) to the BigRock cPanel host
+# over FTPS. GitHub stays the source of truth; this only publishes what is on main.
+#
+# Runs after: a push to main, the "Prerender crawlable pages" workflow finishing (it commits fresh p/
+# pages and sitemap.xml with the built-in token, which does not itself trigger push workflows), and
+# on demand. It always deploys the latest main.
+#
+# Does nothing (and stays green) until the FTP_HOST secret exists, so it is safe to merge first.
+#
+# Repository secrets:   FTP_HOST  FTP_USERNAME  FTP_PASSWORD
+# Repository variables (all optional):
+#   FTP_PORT (21), FTP_REMOTE_DIR (/), FTP_VERIFY_CERT (yes -- set "no" only if the FTP host's
+#   certificate name doesn't match the host you connect to), DEPLOY_SITE_URL (e.g.
+#   https://test.evolveplus.in -- enables a post-deploy smoke check)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - admin-console.html
+      - 404.html
+      - og-image.png
+      - robots.txt
+      - sitemap.xml
+      - css/**
+      - js/**
+      - assets/**
+      - p/**
+      - deploy/**
+      - .github/workflows/deploy-bigrock.yml
+  workflow_run:
+    workflows: ['Prerender crawlable pages']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-bigrock
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # A failed prerender run must not trigger a deploy; push and manual runs always may.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    env:
+      FTP_HOST: ${{ secrets.FTP_HOST }}
+      FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+      FTP_PORT: ${{ vars.FTP_PORT || '21' }}
+      FTP_REMOTE_DIR: ${{ vars.FTP_REMOTE_DIR || '/' }}
+      FTP_VERIFY_CERT: ${{ vars.FTP_VERIFY_CERT || 'yes' }}
+      FTP_TLS: '1'
+      SITE_URL: ${{ vars.DEPLOY_SITE_URL }}
+    steps:
+      - name: Check configuration
+        id: cfg
+        run: |
+          if [ -z "$FTP_HOST" ] || [ -z "$FTP_USERNAME" ] || [ -z "$FTP_PASSWORD" ]; then
+            echo "FTP_HOST / FTP_USERNAME / FTP_PASSWORD secrets are not all set -- skipping deploy."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.configured == 'true'
+        with:
+          ref: main
+
+      - name: Install lftp
+        if: steps.cfg.outputs.configured == 'true'
+        run: sudo apt-get update -q && sudo apt-get install -y -q lftp
+
+      - name: Stage site files
+        if: steps.cfg.outputs.configured == 'true'
+        run: deploy/stage-site.sh "$RUNNER_TEMP/site"
+
+      - name: Upload over FTPS
+        if: steps.cfg.outputs.configured == 'true'
+        run: deploy/upload.sh "$RUNNER_TEMP/site"
+
+      - name: Smoke check
+        if: steps.cfg.outputs.configured == 'true' && env.SITE_URL != ''
+        run: |
+          set -e
+          for path in / /sitemap.xml /robots.txt; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 5 "$SITE_URL$path")
+            echo "$path -> $code"
+            [ "$code" = "200" ] || { echo "Smoke check failed for $path" >&2; exit 1; }
+          done
+          # an unknown /p/ page must still reach the app via 404.html
+          body=$(curl -sS --retry 3 "$SITE_URL/p/definitely-not-a-page/")
+          echo "$body" | grep -q "location.replace" || { echo "404.html fallback not served" >&2; exit 1; }
+          echo "Smoke check passed."
