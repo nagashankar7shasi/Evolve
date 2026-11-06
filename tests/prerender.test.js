@@ -135,14 +135,14 @@ function installableAppChecks() {
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   ok('pwa: index.html links the manifest file, root-relative', /<link rel="manifest" href="\/manifest\.webmanifest"/.test(html));
   ok('pwa: no inline data: manifest left in index.html', !/rel="manifest" href=['"]data:/.test(html));
-  ok('pwa: apple-touch-icon is a real PNG file', /<link rel="apple-touch-icon" href="\/icons\/apple-touch-icon\.png"/.test(html));
+  ok('pwa: apple-touch-icon is a real PNG file', /<link rel="apple-touch-icon" href="\/icons\/apple-touch-icon\.png(\?v=\d+)?"/.test(html));
   let m;
   try { m = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.webmanifest'), 'utf8')); } catch (e) { m = null; }
   ok('pwa: manifest.webmanifest is valid JSON', !!m);
   if (!m) return;
   eq('pwa: manifest start_url / scope / display', [m.start_url, m.scope, m.display], ['/', '/', 'standalone']);
   ok('pwa: manifest has name and short_name', !!m.name && !!m.short_name);
-  const png = f => { const b = fs.readFileSync(path.join(ROOT, f.replace(/^\//, ''))); return b.readUInt32BE(0) === 0x89504e47 ? [b.readUInt32BE(16), b.readUInt32BE(20)] : null; };
+  const png = f => { const b = fs.readFileSync(path.join(ROOT, f.replace(/^\//, '').split('?')[0])); return b.readUInt32BE(0) === 0x89504e47 ? [b.readUInt32BE(16), b.readUInt32BE(20)] : null; };
   for (const [size, purpose] of [[192, 'any'], [512, 'any'], [512, 'maskable']]) {
     const icon = (m.icons || []).find(i => i.sizes === `${size}x${size}` && i.purpose === purpose);
     ok(`pwa: manifest declares a ${size}px ${purpose} icon`, !!icon);
