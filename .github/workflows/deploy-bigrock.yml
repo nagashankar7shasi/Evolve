@@ -100,4 +100,11 @@ jobs:
           # an unknown /p/ page must still reach the app via 404.html
           body=$(curl -sS --retry 3 "$SITE_URL/p/definitely-not-a-page/")
           echo "$body" | grep -q "location.replace" || { echo "404.html fallback not served" >&2; exit 1; }
+          # the live manifest and icons must be byte-identical to what was just uploaded (catches a stale
+          # server-side cache serving old app icons)
+          for f in manifest.webmanifest icons/icon-192.png icons/icon-512.png icons/icon-maskable-512.png icons/apple-touch-icon.png; do
+            live=$(curl -sS --retry 3 -H 'Cache-Control: no-cache' "$SITE_URL/$f?cb=$GITHUB_RUN_ID" | sha256sum | cut -d' ' -f1)
+            local_sum=$(sha256sum "$RUNNER_TEMP/site/$f" | cut -d' ' -f1)
+            if [ "$live" = "$local_sum" ]; then echo "$f: live copy matches"; else echo "$f: LIVE COPY DIFFERS from uploaded file" >&2; exit 1; fi
+          done
           echo "Smoke check passed."
