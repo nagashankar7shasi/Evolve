@@ -22,7 +22,7 @@ AddType application/manifest+json .webmanifest
   AddOutputFilterByType DEFLATE text/html text/css text/xml application/javascript application/json application/manifest+json application/xml image/svg+xml
 </IfModule>
 
-# css/js are cache-busted with ?v=N, so a day is safe; HTML must always be re-checked so a new
+# The manifest is also always re-checked (it names the app icons). css/js are cache-busted with ?v=N, so a day is safe; HTML must always be re-checked so a new
 # ?v= is picked up immediately.
 <IfModule mod_expires.c>
   ExpiresActive On
@@ -30,7 +30,7 @@ AddType application/manifest+json .webmanifest
   ExpiresByType text/css "access plus 1 day"
   ExpiresByType application/javascript "access plus 1 day"
   ExpiresByType text/javascript "access plus 1 day"
-  ExpiresByType application/manifest+json "access plus 1 day"
+  ExpiresByType application/manifest+json "access plus 0 seconds"
   ExpiresByType image/png "access plus 7 days"
   ExpiresByType image/jpeg "access plus 7 days"
   ExpiresByType image/svg+xml "access plus 7 days"
