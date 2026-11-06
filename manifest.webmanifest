@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "Evolve+",
+  "short_name": "Evolve+",
+  "description": "UPSC CSE, KPSC KAS, Karnataka PSI and FDA/SDA mock tests, notes and study rooms.",
+  "lang": "en-IN",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#172554",
+  "theme_color": "#172554",
+  "categories": ["education"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

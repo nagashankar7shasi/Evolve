@@ -254,10 +254,15 @@
     deferredPrompt = e;
     // Show a small install chip if not already installed
     if (window.matchMedia('(display-mode: standalone)').matches) return;
-    if (localStorage.getItem('gp_pwa_dismissed')) return;
+    // "Not now" hides the chip for 30 days. Stored as a timestamp: the old setTimeout-based expiry
+    // died on page reload, so a dismissal used to be permanent.
+    try {
+      const dismissedAt = Number(localStorage.getItem('gp_pwa_dismissed_at') || 0);
+      if (dismissedAt && Date.now() - dismissedAt < 30 * 24 * 60 * 60 * 1000) return;
+    } catch (_) {}
     const chip = document.createElement('div');
     chip.id = 'pwa-install-chip';
-    chip.style.cssText = 'position:fixed;bottom:20px;left:20px;z-index:9997;background:#172554;color:#fff;padding:10px 14px;border-radius:12px;box-shadow:0 6px 18px rgba(15,23,42,.3);font-family:system-ui,sans-serif;font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px;';
+    chip.style.cssText = 'position:fixed;bottom:84px;left:50%;transform:translateX(-50%);max-width:calc(100vw - 24px);z-index:9997;background:#172554;color:#fff;padding:10px 14px;border-radius:12px;box-shadow:0 6px 18px rgba(15,23,42,.3);font-family:system-ui,sans-serif;font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px;';
     chip.innerHTML = `
       <span style="font-size:16px;">📱</span>
       <span>Install Evolve+ on your device?</span>
@@ -275,8 +280,7 @@
     };
     document.getElementById('pwa-install-no').onclick = () => {
       chip.remove();
-      localStorage.setItem('gp_pwa_dismissed', '1');   // don't re-show for 30 days
-      setTimeout(() => localStorage.removeItem('gp_pwa_dismissed'), 30 * 24 * 60 * 60 * 1000);
+      try { localStorage.setItem('gp_pwa_dismissed_at', String(Date.now())); } catch (_) {}
     };
   });
   window.addEventListener('appinstalled', () => {
