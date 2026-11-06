@@ -25,6 +25,8 @@ on:
       - og-image.png
       - robots.txt
       - sitemap.xml
+      - manifest.webmanifest
+      - icons/**
       - css/**
       - js/**
       - assets/**

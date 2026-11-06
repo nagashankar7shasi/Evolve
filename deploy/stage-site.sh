@@ -10,11 +10,11 @@ rm -rf "$OUT"
 mkdir -p "$OUT"
 cd "$ROOT"
 
-for f in index.html admin-console.html 404.html og-image.png robots.txt sitemap.xml; do
+for f in index.html admin-console.html 404.html og-image.png robots.txt sitemap.xml manifest.webmanifest; do
   [ -f "$f" ] || { echo "stage-site: required file missing: $f" >&2; exit 1; }
   cp "$f" "$OUT/$f"
 done
-for d in css js assets p; do
+for d in css js assets icons p; do
   [ -d "$d" ] || { echo "stage-site: required folder missing: $d" >&2; exit 1; }
   cp -R "$d" "$OUT/$d"
 done

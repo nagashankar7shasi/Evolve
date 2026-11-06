@@ -128,6 +128,32 @@ function staticChecks(out) {
   eq('static: empty slug falls back to id', cheerio.load(read(out, 'p/p_no_slug/index.html'))('link[rel=canonical]').attr('href'), 'https://evolveplus.in/p/p_no_slug/');
 }
 
+
+function installableAppChecks() {
+  // The app must stay installable: a real manifest FILE (Chrome ignores data: manifests), PNG icons
+  // of the sizes it requires, and root-relative links so /p/<slug>/ pages share the same head.
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  ok('pwa: index.html links the manifest file, root-relative', /<link rel="manifest" href="\/manifest\.webmanifest"/.test(html));
+  ok('pwa: no inline data: manifest left in index.html', !/rel="manifest" href=['"]data:/.test(html));
+  ok('pwa: apple-touch-icon is a real PNG file', /<link rel="apple-touch-icon" href="\/icons\/apple-touch-icon\.png"/.test(html));
+  let m;
+  try { m = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.webmanifest'), 'utf8')); } catch (e) { m = null; }
+  ok('pwa: manifest.webmanifest is valid JSON', !!m);
+  if (!m) return;
+  eq('pwa: manifest start_url / scope / display', [m.start_url, m.scope, m.display], ['/', '/', 'standalone']);
+  ok('pwa: manifest has name and short_name', !!m.name && !!m.short_name);
+  const png = f => { const b = fs.readFileSync(path.join(ROOT, f.replace(/^\//, ''))); return b.readUInt32BE(0) === 0x89504e47 ? [b.readUInt32BE(16), b.readUInt32BE(20)] : null; };
+  for (const [size, purpose] of [[192, 'any'], [512, 'any'], [512, 'maskable']]) {
+    const icon = (m.icons || []).find(i => i.sizes === `${size}x${size}` && i.purpose === purpose);
+    ok(`pwa: manifest declares a ${size}px ${purpose} icon`, !!icon);
+    if (icon) { let dim = null; try { dim = png(icon.src); } catch (e) {} eq(`pwa: ${icon.src} is a real ${size}x${size} PNG`, dim, [size, size]); }
+  }
+  let ap = null; try { ap = png('/icons/apple-touch-icon.png'); } catch (e) {}
+  eq('pwa: apple-touch-icon.png is 180x180', ap, [180, 180]);
+  const stage = fs.readFileSync(path.join(ROOT, 'deploy', 'stage-site.sh'), 'utf8');
+  ok('pwa: deploy stages the manifest and icons', /manifest\.webmanifest/.test(stage) && /\bicons\b/.test(stage));
+}
+
 function driftGuardChecks() {
   // If index.html's <head> loses a tag the generator rewrites, it must fail loudly and leave any
   // existing output exactly as it was -- never half-write or wipe the site's crawlable pages.
@@ -288,6 +314,7 @@ async function browserChecks(out) {
   ok('generator runs cleanly on the fixture against the real index.html', gen.code === 0, gen);
   if (gen.code === 0) {
     staticChecks(out);
+    installableAppChecks();
     driftGuardChecks();
     await browserChecks(out);
   }
