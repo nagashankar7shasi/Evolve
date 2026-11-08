@@ -1170,6 +1170,11 @@
     // admin before Phase 1b, or a student who hasn't activated the new login yet) never had one, and
     // must not be logged out here just because supabase auth has no session for them.
     async function restoreSupabaseSession() {
+      // A reset link that has expired or was already used: tell the student what to do next, instead of
+      // dropping them on the home page with no explanation.
+      if (openedFromExpiredLink) {
+        openLoginModal('That reset link has expired or was already used. Tap "Forgot password?" and request a new one (only the newest email\'s link works).');
+      }
       // PHASE 3c: a pending recovery session takes priority over everything below -- it must never be
       // treated as an ordinary "welcome back, you're logged in" session (which would skip straight to
       // the dashboard with the OLD password still active and no chance to set a new one).
@@ -1180,7 +1185,24 @@
         return;
       }
       const { data } = await supabaseClient.auth.getSession();
+      // getSession() waits for the client to finish initialising, and that is exactly when the
+      // PASSWORD_RECOVERY event fires -- so the event can arrive AFTER the check above but BEFORE this
+      // line. Without this second check a student who tapped a reset link was signed straight in and
+      // landed on the dashboard without ever being asked for a new password (reported November 2026).
+      if (pendingPasswordRecoverySession) {
+        const recoverySession = pendingPasswordRecoverySession;
+        pendingPasswordRecoverySession = null;
+        enterPasswordRecoveryMode(recoverySession);
+        return;
+      }
       const session = data && data.session;
+
+      // Belt and braces: the page was opened from a reset link and there is a session, whether or not the
+      // event was seen -- always go to "Set a new password" first.
+      if (openedFromRecoveryLink && session) {
+        enterPasswordRecoveryMode(session);
+        return;
+      }
 
       if (!session) {
         if (currentUser && currentUser.viaSupabaseAuth) {
@@ -1337,7 +1359,7 @@
             <div id="account-dropdown-menu" class="hidden absolute right-0 mt-2 w-52 bg-white text-slate-800 rounded-xl shadow-2xl border border-slate-200 py-1.5 z-50">
               <button onclick="closeAccountDropdown(); navigate('dashboard')" class="w-full text-left px-3 py-2 hover:bg-slate-50 font-bold flex items-center gap-2">📊 Dashboard</button>
               ${!isAdmin() ? `<button onclick="closeAccountDropdown(); renderMyAccess(); openModal('my-entitlements-modal')" class="w-full text-left px-3 py-2 hover:bg-slate-50 font-bold flex items-center gap-2">📚 My Entitlements</button>
-              <button onclick="closeAccountDropdown(); openLoginModal(); startOtpFlow('reset', '${escapeHtml(currentUser.email)}')" class="w-full text-left px-3 py-2 hover:bg-slate-50 font-bold flex items-center gap-2">🔑 Change Password</button>` : ''}
+              <button onclick="closeAccountDropdown(); changePasswordFromAccount()" class="w-full text-left px-3 py-2 hover:bg-slate-50 font-bold flex items-center gap-2">🔑 Change Password</button>` : ''}
               ${isAdmin() ? `<button onclick="closeAccountDropdown(); navigate('admin')" class="w-full text-left px-3 py-2 hover:bg-slate-50 font-bold flex items-center gap-2">⚙️ Admin Console</button>` : ''}
               <div class="border-t my-1"></div>
               <button onclick="closeAccountDropdown(); logout()" class="w-full text-left px-3 py-2 hover:bg-rose-50 text-rose-600 font-bold flex items-center gap-2">🚪 Logout</button>
@@ -1348,6 +1370,20 @@
         if (isAdmin()) adminLink.classList.remove('hidden');
         else adminLink.classList.add('hidden');
       }
+    }
+
+    // "Change Password" for a signed-in student. They already have a real Supabase session, so no email
+    // round trip is needed: reuse the "Set a new password" panel (the same one a reset link opens).
+    // Students still on the legacy login have no real session, so they keep the email-code route.
+    async function changePasswordFromAccount() {
+      const { data } = await supabaseClient.auth.getSession();
+      const session = data && data.session;
+      if (session && currentUser && normalizeEmail(session.user.email) === normalizeEmail(currentUser.email)) {
+        enterPasswordRecoveryMode(session);
+        return;
+      }
+      openLoginModal();
+      startOtpFlow('reset', currentUser ? currentUser.email : '');
     }
 
     function toggleAccountDropdown() {
