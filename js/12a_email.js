@@ -4,7 +4,7 @@
 
     // Sensible defaults so email works before the admin edits anything.
     // Placeholders: {{otp_code}} {{expiry_minutes}} {{portal_name}} {{name}} {{email}}
-    //               {{item_title}} {{amount}} {{receipt_no}} {{reject_reason}}
+    //               {{item_title}} {{amount}} {{receipt_no}} {{reject_reason}} {{reset_link}}
     const EMAIL_TEMPLATE_DEFAULTS = {
       otp_login: {
         subject: 'Your {{portal_name}} login code',
@@ -20,6 +20,11 @@
         subject: 'Reset your {{portal_name}} password',
         html_body: '<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a"><h2 style="margin:0 0 12px">Reset your password</h2><p style="margin:0 0 8px;color:#475569">Use this code to set a new password:</p><p style="font-size:32px;font-weight:800;letter-spacing:4px;background:#fef3c7;color:#78350f;padding:14px 20px;border-radius:12px;text-align:center;margin:16px 0">{{otp_code}}</p><p style="margin:8px 0;color:#64748b;font-size:13px">Expires in {{expiry_minutes}} minutes. If you didn\'t request this, you can safely ignore this email.</p></div>',
         text_body: 'Reset code: {{otp_code}}\nExpires in {{expiry_minutes}} minutes.'
+      },
+      password_reset_link: {
+        subject: 'Reset your {{portal_name}} password',
+        html_body: '<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a"><h2 style="margin:0 0 12px">Reset your password</h2><p style="margin:0 0 8px;color:#475569">Hi {{name}},</p><p style="margin:0 0 16px;color:#475569">Tap the button to choose a new password for your {{portal_name}} account.</p><p style="margin:0 0 16px"><a href="{{reset_link}}" style="display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px">Set a new password</a></p><p style="margin:0 0 8px;color:#64748b;font-size:13px">This link works once and expires soon, usually within an hour. If you ask for another email, only the newest link works.</p><p style="margin:0 0 8px;color:#64748b;font-size:13px">If the button does not open, copy this address into your browser:<br><span style="word-break:break-all">{{reset_link}}</span></p><p style="margin:0 0 8px;color:#64748b;font-size:13px">If you did not ask for this, you can ignore this email. Your password stays the same.</p><p style="color:#94a3b8;font-size:12px;margin-top:24px">— {{portal_name}} team</p></div>',
+        text_body: 'Hi {{name}},\nSet a new password for your {{portal_name}} account: {{reset_link}}\nThe link works once and expires soon. If you did not ask for this, ignore this email.'
       },
       welcome: {
         subject: 'Welcome to {{portal_name}}',
@@ -47,7 +52,8 @@
     const EMAIL_TEMPLATE_META = {
       otp_login:        { title: 'Login OTP',           when: 'When a student signs in with a one-time code.' },
       otp_signup:       { title: 'Sign-up verification', when: 'When a new student registers and email verification is on.' },
-      otp_reset:        { title: 'Password reset',      when: 'When a student clicks "Forgot password?".' },
+      otp_reset:        { title: 'Password reset code', when: 'When a student who has not yet moved to the new login clicks "Forgot password?".' },
+      password_reset_link: { title: 'Password reset link', when: 'When a student with a password clicks "Forgot password?". Sent by the student-password-reset function; keep {{reset_link}} in the body.' },
       welcome:          { title: 'Welcome',             when: 'Sent right after a student\'s account is created. (Wired in Round 2.)' },
       payment_approved: { title: 'Payment approved',    when: 'Sent when you approve a payment claim. (Wired in Round 2.)' },
       payment_rejected: { title: 'Payment rejected',    when: 'Sent when you reject a payment claim. (Wired in Round 2.)' },
@@ -234,6 +240,7 @@
         otp_login:        ['otp_code', 'expiry_minutes', 'portal_name', 'name', 'email'],
         otp_signup:       ['otp_code', 'expiry_minutes', 'portal_name', 'name', 'email'],
         otp_reset:        ['otp_code', 'expiry_minutes', 'portal_name', 'name', 'email'],
+        password_reset_link: ['reset_link', 'portal_name', 'name', 'email'],
         welcome:          ['portal_name', 'name', 'email'],
         payment_approved: ['portal_name', 'name', 'email', 'item_title', 'amount', 'receipt_no'],
         payment_rejected: ['portal_name', 'name', 'email', 'item_title', 'reject_reason'],
@@ -611,15 +618,59 @@
       otpPurpose = purpose;
       document.getElementById('auth-otp-request-title').innerText = purpose === 'reset' ? 'Reset your password' : 'Log in with OTP';
       document.getElementById('auth-otp-request-desc').innerText = purpose === 'reset'
-        ? "Enter your account email and we'll send a 6-digit code to reset your password."
-        : "Enter your account email and we'll send a 6-digit code to log you in.";
+        ? "Enter your account email. We'll email you a link (or a 6-digit code, for older accounts) to set a new password."
+        : "Enter your account email. We'll email you a 6-digit code or, if your account has a password, a link to sign in by resetting it.";
       document.getElementById('auth-otp-email').value = email || document.getElementById('auth-login-email').value || '';
       showAuthPanel('otp-request');
     }
 
+    // Guards against a double tap / double submit: two requests in the same second made the second one
+    // hit the reset cooldown and show a misleading "couldn't send" error even though the first had
+    // already gone out (seen in the auth logs, November 2026).
+    let otpRequestInFlight = false;
+
     async function handleOtpRequest(e) {
       e.preventDefault();
-      const email = normalizeEmail(document.getElementById('auth-otp-email').value);
+      if (otpRequestInFlight) return;
+      otpRequestInFlight = true;
+      setBusy('auth-send-otp-btn', true, 'Sending…');
+      try {
+        await processOtpRequest(normalizeEmail(document.getElementById('auth-otp-email').value));
+      } finally {
+        otpRequestInFlight = false;
+        setBusy('auth-send-otp-btn', false);
+      }
+    }
+
+    // Emails an already-migrated student a password-reset LINK through the 'student-password-reset' Edge
+    // Function (Brevo, the same route as the sign-up codes). Supabase Auth's own reset email depends on
+    // its separate SMTP settings, which failed silently in production (accepted the request, never
+    // delivered). Returns { ok } or { cooldown: true, retryAfter } when a link was sent moments ago.
+    async function requestPasswordResetLink(email) {
+      const redirectTo = window.location.origin + window.location.pathname;
+      try {
+        const { data, error } = await supabaseClient.functions.invoke('student-password-reset', {
+          body: { email, redirect_to: redirectTo }
+        });
+        let body = data;
+        if (error) {
+          const res = error.context;
+          if (res && typeof res.json === 'function') { try { body = await res.json(); } catch (_) { body = null; } }
+          if ((res && res.status === 429) || (body && body.code === 'cooldown')) {
+            return { ok: false, cooldown: true, retryAfter: Math.max(1, Math.ceil((body && body.retry_after) || 60)) };
+          }
+          throw error;
+        }
+        if (body && body.code === 'cooldown') return { ok: false, cooldown: true, retryAfter: Math.max(1, Math.ceil(body.retry_after || 60)) };
+        if (body && body.success === false) throw new Error(body.error || 'send failed');
+        return { ok: true };
+      } catch (err) {
+        console.error('student-password-reset failed:', fmtErr(err));
+        return { ok: false };
+      }
+    }
+
+    async function processOtpRequest(email) {
       // PHASE 3b: this runs anonymously, before any OTP has been sent, so `students` SELECT (now
       // scoped to "your own row") can't be read directly here -- same precheck RPC as handlePasswordLogin.
       const pre = await studentLoginPrecheck(email);
@@ -630,27 +681,30 @@
       // app has never had a way to verify a code against it (this app's own OTP is only ever checked
       // client-side, in memory, which is fine for proving email ownership but was never a mechanism
       // that could touch an existing Supabase Auth password). For a migrated account, whether they
-      // clicked "Forgot password?" or "Log in with OTP", what they actually need either way is
-      // Supabase's own password-recovery email -- clicking its link is what lands back here via
-      // enterPasswordRecoveryMode (see restoreSupabaseSession) with a session real enough to set a new
-      // password from. Not-yet-migrated accounts have no Supabase Auth password to recover yet, so they
-      // keep using this app's own OTP flow below (which is also how they migrate in the first place).
+      // clicked "Forgot password?" or "Log in with OTP", what they actually need either way is a
+      // password-reset link -- clicking it is what lands back here via enterPasswordRecoveryMode (see
+      // restoreSupabaseSession) with a session real enough to set a new password from. Not-yet-migrated
+      // accounts have no Supabase Auth password to recover yet, so they keep using this app's own OTP
+      // flow below (which is also how they migrate in the first place).
       if (pre.migrated) {
-        setBusy('auth-send-otp-btn', true, 'Sending…');
-        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin + window.location.pathname
-        });
-        setBusy('auth-send-otp-btn', false);
+        const sent = await requestPasswordResetLink(email);
+        if (sent.ok) {
+          return showAuthMessage('We have emailed you a password reset link. Open the newest email (check Spam or Promotions too) and tap "Set a new password". Only the newest link works, so please do not request another one.', 'info');
+        }
+        if (sent.cooldown) {
+          return showAuthMessage(`A reset email was already sent a moment ago. Check your Inbox and Spam, or try again in ${sent.retryAfter} seconds.`, 'info');
+        }
+        // Fallback: Supabase's own reset email, so a problem with the new function never leaves a
+        // student with no way at all to reset.
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
         if (error) {
           console.error('resetPasswordForEmail failed:', fmtErr(error));
-          return showAuthMessage("We couldn't send the reset email. Please try again or contact the academy.");
+          return showAuthMessage("We couldn't send the reset email. Please try again in a few minutes or contact the academy.");
         }
         return showAuthMessage('Check your email for a password reset link.', 'info');
       }
 
-      setBusy('auth-send-otp-btn', true, 'Sending…');
       await sendOtp(email, otpPurpose);
-      setBusy('auth-send-otp-btn', false);
     }
 
     // deliverOtp is now a thin wrapper: it picks the right template for the OTP purpose

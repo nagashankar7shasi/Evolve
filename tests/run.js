@@ -436,6 +436,54 @@ const { chromium } = require('playwright');
     ok('task55_control_unrelated_questions_not_flagged', !lastAlert.includes('near-duplicate'));
     window.alert = origAlert2;
 
+    // ============================================================
+    // Group: password reset link for migrated students (student-password-reset function)
+    // ============================================================
+    {
+      const realPrecheck = studentLoginPrecheck;
+      const realInvoke = supabaseClient.functions.invoke;
+      const realReset = supabaseClient.auth.resetPasswordForEmail;
+      const emailBox = document.getElementById('auth-otp-email');
+      const btn = document.getElementById('auth-send-otp-btn');
+      const msg = () => (document.getElementById('auth-msg').innerText || '');
+      const fakeEvent = { preventDefault() {} };
+      const calls = { invoke: [], reset: [] };
+      studentLoginPrecheck = async () => ({ row_exists: true, blocked: false, migrated: true, has_password: true });
+      supabaseClient.auth.resetPasswordForEmail = async (email) => { calls.reset.push(email); return { error: null }; };
+
+      emailBox.value = 'Reset.Test@Example.com';
+      supabaseClient.functions.invoke = async (name, opts) => { calls.invoke.push({ name, body: opts.body }); return { data: { success: true }, error: null }; };
+      await handleOtpRequest(fakeEvent);
+      ok('pwreset_migrated_student_uses_reset_function',
+        calls.invoke.length === 1 && calls.invoke[0].name === 'student-password-reset'
+        && calls.invoke[0].body.email === 'reset.test@example.com' && calls.reset.length === 0);
+      ok('pwreset_success_message_explains_link_not_code',
+        msg().includes('password reset link') && msg().includes('newest') && !msg().includes('6-digit'));
+      ok('pwreset_button_enabled_again_after_request', btn.disabled === false);
+
+      calls.invoke.length = 0;
+      await Promise.all([handleOtpRequest(fakeEvent), handleOtpRequest(fakeEvent)]);
+      ok('pwreset_double_submit_sends_only_one_request', calls.invoke.length === 1);
+
+      supabaseClient.functions.invoke = async () => ({ data: null, error: { context: { status: 429, json: async () => ({ code: 'cooldown', retry_after: 42 }) } } });
+      await handleOtpRequest(fakeEvent);
+      ok('pwreset_cooldown_shows_wait_message_not_failure',
+        msg().includes('try again in 42 seconds') && !msg().includes("couldn't send"));
+
+      calls.reset.length = 0;
+      supabaseClient.functions.invoke = async () => { throw new Error('function down'); };
+      await handleOtpRequest(fakeEvent);
+      ok('pwreset_falls_back_to_supabase_reset_if_function_fails',
+        calls.reset.length === 1 && msg().includes('Check your email'));
+
+      ok('pwreset_template_default_has_reset_link_placeholder',
+        EMAIL_TEMPLATE_DEFAULTS.password_reset_link && EMAIL_TEMPLATE_DEFAULTS.password_reset_link.html_body.includes('{{reset_link}}'));
+
+      studentLoginPrecheck = realPrecheck;
+      supabaseClient.functions.invoke = realInvoke;
+      supabaseClient.auth.resetPasswordForEmail = realReset;
+    }
+
     return results;
   });
 
