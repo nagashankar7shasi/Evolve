@@ -339,6 +339,8 @@
       const account = !currentUser
         ? `<button onclick="toggleMobileMenu(false); openLoginModal()" class="w-full mt-2 py-2 bg-amber-500 text-slate-950 font-bold rounded-lg">Aspirant Login</button>`
         : `${link('My Dashboard', 'dashboard', 'font-bold text-amber-400')}${isAdmin() ? link('⚙️ Dev Console', 'admin', 'font-bold text-amber-400') : ''}
+           ${!isAdmin() ? `<button onclick="toggleMobileMenu(false); renderMyAccess(); openModal('my-entitlements-modal')" class="block w-full text-left py-2 font-bold">📚 My Entitlements</button>
+           <button onclick="toggleMobileMenu(false); changePasswordFromAccount()" class="block w-full text-left py-2 font-bold">🔑 Change Password</button>` : ''}
            <button onclick="toggleMobileMenu(false); logout()" class="py-2 text-slate-400 underline">Logout (${escapeHtml(currentUser.name)})</button>`;
       // Public, not nested under currentUser -- the feed needs no login, same as Home/Exam Hub.
       const socialFeedLink = socialFeedEnabled ? `<div class="pt-1 pb-1 border-t border-slate-700">${link('📣 Updates', 'social-feed', 'font-bold')}</div>` : '';

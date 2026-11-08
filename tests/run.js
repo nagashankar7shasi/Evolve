@@ -484,6 +484,57 @@ const { chromium } = require('playwright');
       supabaseClient.auth.resetPasswordForEmail = realReset;
     }
 
+    // ============================================================
+    // Group: recovery link must open "Set a new password"; Change Password reachable from account menus
+    // ============================================================
+    {
+      const realGetSession = supabaseClient.auth.getSession;
+      const panelVisible = () => !document.getElementById('auth-panel-set-password').classList.contains('hidden');
+      const fakeSession = { user: { email: 'Race.Test@Example.com', id: 'u1' } };
+      const resetUi = () => { closeModal('student-login-modal'); showAuthPanel('login'); isNativePasswordRecovery = false; };
+
+      // Race: PASSWORD_RECOVERY fires while getSession() is being awaited (after the first check).
+      pendingPasswordRecoverySession = null;
+      currentUser = null;
+      supabaseClient.auth.getSession = async () => { pendingPasswordRecoverySession = fakeSession; return { data: { session: fakeSession } }; };
+      await restoreSupabaseSession();
+      ok('recovery_event_arriving_during_getSession_still_opens_set_password',
+        panelVisible() && document.getElementById('auth-setpass-email').innerText === 'race.test@example.com' && !currentUser);
+      resetUi();
+
+      // Event stashed before boot: still works.
+      pendingPasswordRecoverySession = fakeSession;
+      supabaseClient.auth.getSession = async () => ({ data: { session: fakeSession } });
+      await restoreSupabaseSession();
+      ok('recovery_event_before_boot_opens_set_password', panelVisible() && !currentUser);
+      resetUi();
+
+      // Signed-in student (ordinary session, no recovery) is NOT pushed to set-password.
+      pendingPasswordRecoverySession = null;
+      supabaseClient.auth.getSession = async () => ({ data: { session: null } });
+      await restoreSupabaseSession();
+      ok('no_session_no_recovery_does_not_open_set_password', !panelVisible());
+      resetUi();
+
+      // Change Password for a signed-in student reuses the set-password panel with no email round trip.
+      currentUser = { email: 'race.test@example.com', name: 'Race', role: 'student', viaSupabaseAuth: true };
+      supabaseClient.auth.getSession = async () => ({ data: { session: fakeSession } });
+      await changePasswordFromAccount();
+      ok('change_password_from_account_opens_set_password_panel', panelVisible() && isNativePasswordRecovery === true);
+      resetUi();
+
+      // Mobile menu offers Change Password + My Entitlements to a signed-in student, not to the admin.
+      renderMobileMenu();
+      const mm = document.getElementById('mobile-menu').innerHTML;
+      ok('mobile_menu_has_change_password_and_entitlements_for_student',
+        mm.includes('changePasswordFromAccount()') && mm.includes('my-entitlements-modal') && mm.includes('My Dashboard') && mm.includes('Logout'));
+
+      supabaseClient.auth.getSession = realGetSession;
+      currentUser = null;
+      pendingPasswordRecoverySession = null;
+      renderMobileMenu();
+    }
+
     return results;
   });
 
